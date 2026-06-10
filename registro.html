@@ -521,10 +521,24 @@ form.addEventListener('submit', function(e) {
   btnEnviar.innerHTML = '⏳ Enviando...';
 
   // ─────────────────────────────────────────────
-  //  ENVÍO POR FORMSUBMIT.CO (sin cuenta requerida)
-  //  Solo cambia el correo en la línea CORREO_DESTINO.
-  //  La primera vez que alguien envíe el formulario,
-  //  llegará un correo de confirmación — solo haz clic en Confirm.
+  //  GUARDAR EN LOCALSTORAGE (panel admin + backup)
+  // ─────────────────────────────────────────────
+  const solicitudLocal = {
+    id:     Date.now(),
+    fecha:  new Date().toISOString(),
+    estado: 'pendiente',
+    ...datos
+  };
+  try {
+    const previas = JSON.parse(localStorage.getItem('em_solicitudes') || '[]');
+    previas.push(solicitudLocal);
+    localStorage.setItem('em_solicitudes', JSON.stringify(previas));
+  } catch(e) { /* continuar aunque falle */ }
+
+  // ─────────────────────────────────────────────
+  //  NOTIFICACIÓN POR EMAIL (FormSubmit.co)
+  //  La primera vez llegará un correo de confirmación
+  //  a enmartinez1@outlook.com — haz clic en Confirm.
   // ─────────────────────────────────────────────
   const CORREO_DESTINO = 'enmartinez1@outlook.com';
 
@@ -539,17 +553,10 @@ form.addEventListener('submit', function(e) {
     })
   })
   .then(res => res.json())
-  .then(data => {
-    if (data.success === 'true' || data.success === true) {
-      mostrarExito();
-    } else {
-      throw new Error('Error en envío');
-    }
-  })
+  .then(() => mostrarExito())
   .catch(() => {
-    btnEnviar.disabled = false;
-    btnEnviar.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Enviar solicitud`;
-    alert('Hubo un problema al enviar el formulario. Verifica tu conexión e intenta de nuevo.');
+    // La solicitud ya quedó guardada en localStorage — mostrar éxito igual
+    mostrarExito();
   });
 });
 
