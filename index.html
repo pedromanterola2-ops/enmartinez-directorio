@@ -1071,13 +1071,15 @@ const categorias = [
 function renderChips() {
   const conteos = {};
   negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
-  const conNegocios = categorias.filter(c => conteos[c.id]);
   const wrap = document.getElementById('filtrosChips');
-  wrap.innerHTML = conNegocios.map(c => `
-    <span class="chip${filtroActivo === c.id ? ' active' : ''}" onclick="filtrarPorCat('${c.id}')">
+  wrap.innerHTML = categorias.map(c => {
+    const vacio = !conteos[c.id];
+    return `<span class="chip${filtroActivo === c.id ? ' active' : ''}"
+      onclick="filtrarPorCat('${c.id}')"
+      style="${vacio ? 'opacity:0.38;pointer-events:none;' : ''}">
       ${c.icono} ${c.nombre}
-    </span>
-  `).join('');
+    </span>`;
+  }).join('');
 }
 
 function renderCategorias() {
@@ -1668,13 +1670,15 @@ let filtroMapaActivo = null;
 function renderChipsMapa() {
   const conteos = {};
   negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
-  const conNegocios = categorias.filter(c => conteos[c.id]);
   const wrap = document.getElementById('filtrosChipsMapa');
-  wrap.innerHTML = conNegocios.map(c => `
-    <span class="chip${filtroMapaActivo === c.id ? ' active' : ''}" onclick="filtrarMapaPorCat('${c.id}')">
+  wrap.innerHTML = categorias.map(c => {
+    const vacio = !conteos[c.id];
+    return `<span class="chip${filtroMapaActivo === c.id ? ' active' : ''}"
+      onclick="filtrarMapaPorCat('${c.id}')"
+      style="${vacio ? 'opacity:0.38;pointer-events:none;' : ''}">
       ${c.icono} ${c.nombre}
-    </span>
-  `).join('');
+    </span>`;
+  }).join('');
 }
 
 function filtrarMapaPorCat(cat) {
