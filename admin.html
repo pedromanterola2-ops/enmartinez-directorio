@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — EnMartinez.com</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --verde: #1a6b3c; --verde-claro: #22883f; --verde-bg: #f0f7f2;
+      --naranja: #f97316; --naranja-hover: #ea6c0a;
+      --texto: #1f2937; --texto-muted: #6b7280;
+      --blanco: #ffffff; --borde: #e5e7eb;
+      --rojo: #dc2626; --rojo-bg: #fee2e2;
+      --sombra: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8faf8; color: var(--texto); }
+
+    /* ── LOGIN ── */
+    #loginScreen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--verde) 0%, #0f4d2b 100%); padding: 1.5rem;
+    }
+    .login-card {
+      background: #fff; border-radius: 18px; padding: 2.5rem 2rem;
+      width: 100%; max-width: 360px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .login-logo { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .login-card h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.3rem; }
+    .login-card p { font-size: 0.85rem; color: var(--texto-muted); margin-bottom: 1.5rem; }
+    .login-card input {
+      width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--borde);
+      border-radius: 10px; font-size: 0.95rem; outline: none;
+      margin-bottom: 0.75rem; font-family: inherit; transition: border-color 0.2s;
+    }
+    .login-card input:focus { border-color: var(--verde); }
+    .login-card input.error { border-color: var(--rojo); }
+    .btn-login {
+      width: 100%; background: var(--verde); color: #fff; border: none;
+      padding: 0.85rem; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-login:hover { background: var(--verde-claro); }
+    .login-error { font-size: 0.82rem; color: var(--rojo); margin-top: 0.6rem; display: none; }
+
+    /* ── ADMIN APP ── */
+    #adminApp { display: none; min-height: 100vh; }
+
+    header {
+      background: var(--verde); padding: 0 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); position: sticky; top: 0; z-index: 100;
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 1rem;
+    }
+    .logo-text { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .logo-text span { color: var(--naranja); }
+    .admin-badge {
+      background: rgba(255,255,255,0.2); color: #fff;
+      padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+    }
+    .btn-salir {
+      color: rgba(255,255,255,0.8); background: none; border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.35rem 0.9rem; border-radius: 7px; cursor: pointer; font-size: 0.82rem; transition: all 0.2s;
+    }
+    .btn-salir:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    /* ── TABS ── */
+    .tabs-bar { background: #fff; border-bottom: 2px solid var(--borde); padding: 0 1.5rem; }
+    .tabs-inner { max-width: 1100px; margin: 0 auto; display: flex; }
+    .tab {
+      padding: 0.9rem 1.25rem; font-size: 0.88rem; font-weight: 600;
+      color: var(--texto-muted); cursor: pointer; border: none; background: none;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: all 0.2s; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;
+    }
+    .tab:hover { color: var(--texto); }
+    .tab.active { color: var(--verde); border-bottom-color: var(--verde); }
+    .tab-badge {
+      background: var(--naranja); color: #fff; border-radius: 20px;
+      padding: 0.05rem 0.5rem; font-size: 0.7rem;
+    }
+
+    /* ── MAIN ── */
+    .main { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── PANEL CARD ── */
+    .panel-card {
+      background: var(--blanco); border: 1px solid var(--borde);
+      border-radius: 14px; overflow: hidden;
+      box-shadow: var(--sombra); margin-bottom: 1.5rem;
+    }
+    .panel-card-header {
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--borde);
+      font-weight: 800; font-size: 0.95rem;
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .panel-card-body { padding: 1.5rem; }
+
+    /* ── LISTA NEGOCIOS ── */
+    .neg-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--borde);
+      transition: background 0.15s;
+    }
+    .neg-row:last-child { border-bottom: none; }
+    .neg-row:hover { background: #fafafa; }
+    .neg-icon { font-size: 1.6rem; width: 38px; text-align: center; flex-shrink: 0; }
+    .neg-info { flex: 1; min-width: 0; }
+    .neg-nombre { font-weight: 700; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .neg-meta { font-size: 0.75rem; color: var(--texto-muted); margin-top: 0.15rem; }
+    .neg-cat-pill {
+      display: inline-block; background: var(--verde-bg); color: var(--verde);
+      padding: 0.1rem 0.45rem; border-radius: 20px; font-weight: 600; margin-right: 0.3rem;
+    }
+    .dest-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+      cursor: pointer; border: 1px solid; transition: all 0.18s; white-space: nowrap;
+    }
+    .dest-pill.on  { background: #ffedd5; color: #c2410c; border-color: #fed7aa; }
+    .dest-pill.off { background: #f3f4f6; color: var(--texto-muted); border-color: var(--borde); }
+    .dest-pill:hover.on  { background: #fed7aa; }
+    .dest-pill:hover.off { background: #e5e7eb; }
+    .neg-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+    .btn-edit {
+      padding: 0.35rem 0.7rem; border-radius: 7px; cursor: pointer; font-size: 0.78rem;
+      font-weight: 600; background: var(--verde-bg); color: var(--verde);
+      border: 1px solid var(--verde); transition: all 0.18s;
+    }
+    .btn-edit:hover { background: var(--verde); color: #fff; }
+    .btn-del {
+      padding: 0.35rem 0.7rem; border-radius: 7px; cursor: pointer; font-size: 0.78rem;
+      font-weight: 600; background: var(--rojo-bg); color: var(--rojo);
+      border: 1px solid #fca5a5; transition: all 0.18s;
+    }
+    .btn-del:hover { background: var(--rojo); color: #fff; }
+
+    /* ── FORMULARIO ── */
+    .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+    .form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.85rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .form-group.span2 { grid-column: span 2; }
+    .form-group.span3 { grid-column: span 3; }
+    label.fl { font-size: 0.8rem; font-weight: 600; }
+    label .req { color: var(--rojo); }
+    input[type="text"], input[type="tel"], input[type="url"],
+    input[type="password"], select, textarea {
+      padding: 0.6rem 0.8rem; border: 1.5px solid var(--borde);
+      border-radius: 8px; font-size: 0.88rem; outline: none;
+      font-family: inherit; width: 100%; color: var(--texto);
+      transition: border-color 0.2s; background: #fff;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--verde); }
+    textarea { resize: vertical; min-height: 80px; }
+    .check-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .check-pill {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: #f9fafb; border: 1.5px solid var(--borde);
+      border-radius: 8px; padding: 0.4rem 0.7rem;
+      cursor: pointer; font-size: 0.82rem; user-select: none;
+    }
+    .check-pill input { width: auto; margin: 0; cursor: pointer; }
+    .check-pill:has(input:checked) { background: var(--verde-bg); border-color: var(--verde); color: var(--verde); }
+
+    /* ── PREVIEW ── */
+    .preview-area { background: var(--verde-bg); border-radius: 12px; padding: 1.25rem; margin-top: 1rem; }
+    .preview-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-muted); margin-bottom: 0.85rem; }
+    .preview-card {
+      background: var(--blanco); border: 1px solid var(--borde);
+      border-radius: 12px; overflow: hidden; max-width: 220px; box-shadow: var(--sombra);
+    }
+    .preview-img {
+      height: 80px; background: linear-gradient(135deg, var(--verde-bg), #d1fae5);
+      display: flex; align-items: center; justify-content: center; font-size: 2.2rem; position: relative;
+    }
+    .preview-badge {
+      position: absolute; top: 0.4rem; right: 0.4rem;
+      background: var(--naranja); color: #fff;
+      padding: 0.1rem 0.4rem; border-radius: 20px; font-size: 0.6rem; font-weight: 600;
+    }
+    .preview-body { padding: 0.65rem 0.75rem; }
+    .preview-cat { display: inline-block; font-size: 0.65rem; font-weight: 600; color: var(--verde); background: var(--verde-bg); padding: 0.1rem 0.4rem; border-radius: 20px; margin-bottom: 0.3rem; }
+    .preview-nombre { font-size: 0.85rem; font-weight: 800; margin-bottom: 0.3rem; line-height: 1.3; }
+    .preview-dato { font-size: 0.72rem; color: var(--texto-muted); margin-bottom: 0.2rem; }
+
+    /* ── BOTONES GENERALES ── */
+    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    .btn {
+      padding: 0.65rem 1.25rem; border-radius: 9px; cursor: pointer;
+      font-size: 0.88rem; font-weight: 700; border: none;
+      display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--verde); color: #fff; }
+    .btn-primary:hover { background: var(--verde-claro); }
+    .btn-naranja { background: var(--naranja); color: #fff; }
+    .btn-naranja:hover { background: var(--naranja-hover); }
+    .btn-gris { background: #f3f4f6; color: var(--texto); border: 1px solid var(--borde); }
+    .btn-gris:hover { background: #e5e7eb; }
+    .btn-danger { background: var(--rojo-bg); color: var(--rojo); border: 1px solid #fca5a5; }
+    .btn-danger:hover { background: var(--rojo); color: #fff; }
+
+    /* ── CONFIG ── */
+    .config-section { margin-bottom: 1.5rem; }
+    .config-section h3 { font-size: 0.9rem; font-weight: 800; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+    .config-row { display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap; }
+    .export-box {
+      background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem;
+      font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.6;
+      white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow-y: auto;
+      margin-top: 0.75rem;
+    }
+    .import-area { width: 100%; min-height: 120px; font-family: monospace; font-size: 0.8rem; }
+
+    /* ── VACÍO / AVISO ── */
+    .aviso {
+      background: #fef9c3; border: 1px solid #fde047; border-radius: 10px;
+      padding: 0.85rem 1rem; font-size: 0.82rem; color: #854d0e; margin-bottom: 1rem;
+    }
+    .empty-state { padding: 3rem; text-align: center; color: var(--texto-muted); font-size: 0.9rem; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
+      background: var(--texto); color: #fff; padding: 0.75rem 1.25rem;
+      border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: none;
+      animation: slideUp 0.25s ease;
+    }
+    .toast.exito { background: var(--verde); }
+    .toast.error { background: var(--rojo); }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── MODAL CONFIRM ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 16px; padding: 2rem;
+      max-width: 380px; width: 100%; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-box h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .modal-box p { font-size: 0.88rem; color: var(--texto-muted); margin-bottom: 1.25rem; }
+    .modal-btns { display: flex; gap: 0.6rem; justify-content: center; }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:640px){
+      .form-grid2,.form-grid3 { grid-template-columns: 1fr; }
+      .form-group.span2,.form-group.span3 { grid-column: span 1; }
+      .neg-row { flex-wrap: wrap; }
+      .neg-actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🌿</div>
+    <h2>Panel de Administrador</h2>
+    <p>EnMartinez.com — Acceso restringido</p>
+    <input type="password" id="passInput" placeholder="Contraseña"
+      onkeydown="if(event.key==='Enter')intentarLogin()">
+    <button class="btn-login" onclick="intentarLogin()">Entrar</button>
+    <p class="login-error" id="loginError">Contraseña incorrecta</p>
+  </div>
+</div>
+
+<!-- ═══ ADMIN APP ═══ -->
+<div id="adminApp">
+
+  <header>
+    <div class="header-inner">
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <span style="font-size:1.3rem">🌿</span>
+        <span class="logo-text">En<span>Martinez</span>.com</span>
+        <span class="admin-badge">🔐 Admin</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <a href="index.html" target="_blank" style="color:rgba(255,255,255,0.8);font-size:0.82rem;text-decoration:none">
+          Ver sitio →
+        </a>
+        <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs-bar">
+    <div class="tabs-inner">
+      <button class="tab active" onclick="cambiarTab('negocios')" id="tab-negocios">
+        🏪 Negocios <span class="tab-badge" id="badge-count">0</span>
+      </button>
+      <button class="tab" onclick="abrirFormularioNuevo()" id="tab-form">
+        ➕ Nuevo negocio
+      </button>
+      <button class="tab" onclick="cambiarTab('config')" id="tab-config">
+        ⚙️ Configuración
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- ════ TAB: NEGOCIOS ════ -->
+    <div class="tab-content active" id="content-negocios">
+      <div class="panel-card">
+        <div class="panel-card-header">
+          🏪 Negocios registrados
+          <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <select id="filtroCategoria" onchange="renderLista()"
+              style="padding:0.38rem 0.65rem;border:1px solid var(--borde);border-radius:8px;font-size:0.8rem;outline:none;color:var(--texto-muted)">
+              <option value="">Todas las categorías</option>
+            </select>
+            <input type="text" id="searchAdmin" placeholder="Buscar negocio…"
+              style="padding:0.38rem 0.75rem;border:1px solid var(--borde);border-radius:8px;font-size:0.82rem;outline:none;width:180px"
+              oninput="renderLista()">
+          </div>
+        </div>
+        <div id="listaNegociosAdmin"><!-- generado por JS --></div>
+      </div>
+    </div>
+
+    <!-- ════ TAB: FORMULARIO ════ -->
+    <div class="tab-content" id="content-form">
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <span id="form-titulo">➕ Nuevo negocio</span>
+          <button class="btn btn-gris" style="margin-left:auto;padding:0.35rem 0.75rem;font-size:0.8rem"
+            onclick="cancelarForm()">✕ Cancelar</button>
+        </div>
+        <div class="panel-card-body">
+
+          <div class="form-grid2" style="margin-bottom:0.85rem">
+            <div class="form-group span2">
+              <label class="fl">Nombre del negocio <span class="req">*</span></label>
+              <input type="text" id="a-nombre" placeholder="Nombre del negocio" oninput="actualizarPreview()">
+            </div>
+          </div>
+
+          <div class="form-grid3" style="margin-bottom:0.85rem">
+            <div class="form-group">
+              <label class="fl">Categoría <span class="req">*</span></label>
+              <select id="a-categoria" onchange="actualizarPreview()">
+                <option value="">— Selecciona —</option>
+                <option value="restaurantes">🍽️ Restaurantes</option>
+                <option value="abarrotes">🛒 Abarrotes</option>
+                <option value="salud">🏥 Salud</option>
+                <option value="talleres">🔧 Talleres</option>
+                <option value="belleza">💇 Belleza</option>
+                <option value="hoteles">🏨 Hoteles</option>
+                <option value="construccion">🏗️ Construcción</option>
+                <option value="veterinarias">🐾 Veterinarias</option>
+                <option value="ropa">👗 Ropa</option>
+                <option value="servicios">⚡ Servicios Profesionales</option>
+                <option value="agro">🌿 Agro</option>
+                <option value="educacion">🏫 Educación</option>
+                <option value="tecnologia">💻 Tecnología</option>
+                <option value="eventos">🎉 Eventos</option>
+                <option value="transporte">🚕 Transporte</option>
+                <option value="panaderias">🥐 Panaderías</option>
+                <option value="bancos">🏦 Bancos</option>
+                <option value="profesionales">⚖️ Profesionales</option>
+                <option value="agroindustria">🍊 Agroindustria</option>
+                <option value="oficios">🔩 Oficios y servicios del hogar</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="fl">Emoji / Ícono <span class="req">*</span></label>
+              <input type="text" id="a-icono" placeholder="🍽️" oninput="actualizarPreview()">
+            </div>
+            <div class="form-group">
+              <label class="fl">Horario <span class="req">*</span></label>
+              <input type="text" id="a-horario" placeholder="Lun–Sáb 9:00–18:00">
+            </div>
+          </div>
+
+          <div class="form-grid2" style="margin-bottom:0.85rem">
+            <div class="form-group">
+              <label class="fl">Dirección <span class="req">*</span></label>
+              <input type="text" id="a-direccion" placeholder="Calle, número, colonia" oninput="actualizarPreview()">
+            </div>
+            <div class="form-group">
+              <label class="fl">Teléfono <span class="req">*</span></label>
+              <input type="tel" id="a-telefono" placeholder="232 000 0000" oninput="actualizarPreview()">
+            </div>
+            <div class="form-group">
+              <label class="fl">WhatsApp <span style="font-size:0.72rem;color:var(--texto-muted)">(solo números, sin código país)</span></label>
+              <input type="tel" id="a-whatsapp" placeholder="2320000000">
+            </div>
+            <div class="form-group">
+              <label class="fl">Facebook</label>
+              <input type="url" id="a-facebook" placeholder="https://facebook.com/...">
+            </div>
+            <div class="form-group span2">
+              <label class="fl">Sitio web</label>
+              <input type="url" id="a-web" placeholder="https://...">
+            </div>
+            <div class="form-group span2">
+              <label class="fl">Descripción <span class="req">*</span></label>
+              <textarea id="a-descripcion" placeholder="Descripción del negocio para que los clientes sepan qué ofrecen…"></textarea>
+            </div>
+            <div class="form-group span2">
+              <label class="fl">Servicios <span style="font-size:0.72rem;color:var(--texto-muted)">(separados por coma)</span></label>
+              <input type="text" id="a-servicios" placeholder="Tacos al pastor, Para llevar, A domicilio">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.85rem">
+            <label class="fl">Métodos de pago</label>
+            <div class="check-row">
+              <label class="check-pill"><input type="checkbox" name="a-pago" value="Efectivo"> 💵 Efectivo</label>
+              <label class="check-pill"><input type="checkbox" name="a-pago" value="Tarjeta"> 💳 Tarjeta</label>
+              <label class="check-pill"><input type="checkbox" name="a-pago" value="Transferencia"> 📲 Transferencia</label>
+              <label class="check-pill"><input type="checkbox" name="a-pago" value="Crédito"> 🤝 Crédito</label>
+            </div>
+          </div>
+
+          <div class="form-grid3" style="margin-bottom:0.85rem">
+            <div class="form-group">
+              <label class="fl">Latitud</label>
+              <input type="text" id="a-lat" placeholder="20.0731">
+            </div>
+            <div class="form-group">
+              <label class="fl">Longitud</label>
+              <input type="text" id="a-lng" placeholder="-97.0527">
+            </div>
+            <div class="form-group" style="justify-content:flex-end;padding-top:1.1rem">
+              <a href="https://www.google.com/maps" target="_blank" style="font-size:0.78rem;color:var(--verde)">
+                📍 Obtener coordenadas →
+              </a>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.85rem">
+            <label class="fl">⭐ Negocio Destacado</label>
+            <div class="check-row">
+              <label class="check-pill">
+                <input type="checkbox" id="a-destacado" onchange="actualizarPreview()"> Activar ficha Destacada (pago mensual)
+              </label>
+            </div>
+          </div>
+
+          <!-- PREVIEW -->
+          <div class="preview-area" id="previewArea" style="display:none">
+            <div class="preview-title">Vista previa</div>
+            <div class="preview-card">
+              <div class="preview-img">
+                <span id="prev-icono">🏪</span>
+                <span class="preview-badge" id="prev-badge" style="display:none">⭐ Destacado</span>
+              </div>
+              <div class="preview-body">
+                <span class="preview-cat" id="prev-cat"></span>
+                <div class="preview-nombre" id="prev-nombre">Nombre del negocio</div>
+                <div class="preview-dato" id="prev-dir">📍 Dirección</div>
+                <div class="preview-dato" id="prev-tel">📞 Teléfono</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="guardarFormulario()">💾 Guardar negocio</button>
+            <button class="btn btn-gris" onclick="actualizarPreview()">👁️ Vista previa</button>
+            <button class="btn btn-gris" onclick="cancelarForm()">Cancelar</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ TAB: CONFIGURACIÓN ════ -->
+    <div class="tab-content" id="content-config">
+
+      <!-- Contraseña -->
+      <div class="panel-card">
+        <div class="panel-card-header">🔐 Cambiar contraseña del panel</div>
+        <div class="panel-card-body">
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="fl">Nueva contraseña</label>
+              <input type="password" id="cfg-pass1" placeholder="Nueva contraseña">
+            </div>
+            <div class="form-group">
+              <label class="fl">Confirmar contraseña</label>
+              <input type="password" id="cfg-pass2" placeholder="Repite la contraseña">
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="cambiarPassword()">Cambiar contraseña</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exportar -->
+      <div class="panel-card">
+        <div class="panel-card-header">📤 Exportar datos</div>
+        <div class="panel-card-body">
+          <p style="font-size:0.85rem;color:var(--texto-muted);margin-bottom:0.75rem">
+            Guarda una copia de seguridad de todos los negocios en formato JSON.
+            Úsala para restaurar datos o migrar a otro dispositivo.
+          </p>
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn btn-naranja" onclick="exportarJSON()">📋 Copiar JSON al portapapeles</button>
+            <button class="btn btn-gris" onclick="mostrarExport()">Ver JSON</button>
+          </div>
+          <div class="export-box" id="exportBox" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Importar -->
+      <div class="panel-card">
+        <div class="panel-card-header">📥 Importar datos</div>
+        <div class="panel-card-body">
+          <div class="aviso">
+            ⚠️ Importar reemplaza <strong>todos</strong> los negocios actuales. Haz una exportación antes.
+          </div>
+          <div class="form-group">
+            <label class="fl">Pega el JSON aquí</label>
+            <textarea class="import-area" id="importBox" placeholder='[{"id":1,"nombre":"..."}]'></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-danger" onclick="importarJSON()">📥 Importar y reemplazar datos</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reset -->
+      <div class="panel-card">
+        <div class="panel-card-header">♻️ Restaurar datos originales</div>
+        <div class="panel-card-body">
+          <p style="font-size:0.85rem;color:var(--texto-muted);margin-bottom:0.75rem">
+            Borra todos los cambios y vuelve a los 13 negocios de ejemplo con los que arrancó el directorio.
+          </p>
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn btn-danger" onclick="confirmarReset()">♻️ Restaurar datos originales</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRM ═══ -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal-box">
+    <h3 id="modal-titulo">¿Confirmar?</h3>
+    <p id="modal-msg"></p>
+    <div class="modal-btns">
+      <button class="btn btn-danger" id="modal-btn-ok">Sí, continuar</button>
+      <button class="btn btn-gris" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  CONSTANTES Y CLAVES
+// ══════════════════════════════════════
+const NEGOCIOS_KEY  = 'em_negocios';
+const PASS_KEY      = 'em_admin_pass';
+const PASS_DEFAULT  = 'enmartinez2026';
+
+const CAT_LABELS = {
+  restaurantes:'🍽️ Restaurantes', abarrotes:'🛒 Abarrotes', salud:'🏥 Salud',
+  talleres:'🔧 Talleres', belleza:'💇 Belleza', hoteles:'🏨 Hoteles',
+  construccion:'🏗️ Construcción', veterinarias:'🐾 Veterinarias', ropa:'👗 Ropa',
+  servicios:'⚡ Servicios Profesionales', agro:'🌿 Agro', educacion:'🏫 Educación',
+  tecnologia:'💻 Tecnología', eventos:'🎉 Eventos', transporte:'🚕 Transporte',
+  panaderias:'🥐 Panaderías', bancos:'🏦 Bancos', profesionales:'⚖️ Profesionales',
+  agroindustria:'🍊 Agroindustria',
+  oficios:'🔩 Oficios y servicios del hogar'
+};
+
+// ── Datos por defecto (mismos que index.html) ──
+const NEGOCIOS_DEFAULT = [
+  { id:1,  nombre:"Taquería El Buen Taco",          categoria:"restaurantes",  catLabel:"🍽️ Restaurantes",  icono:"🌮", descripcion:"Los mejores tacos de canasta y al pastor de Martínez. Más de 20 años de tradición familiar sirviendo a la comunidad con sabores auténticos veracruzanos.", direccion:"Av. Insurgentes 45, Centro",            telefono:"232 123 4567", whatsapp:"2321234567", horario:"Lun–Sáb 8:00–20:00",                     servicios:["Tacos al pastor","Tacos de canasta","Tortas","Para llevar","A domicilio"],     pago:["Efectivo","Transferencia"],          facebook:"https://facebook.com", web:"", destacado:true,  lat:20.0731, lng:-97.0527 },
+  { id:2,  nombre:"Farmacia San Francisco",          categoria:"salud",         catLabel:"🏥 Salud",          icono:"💊", descripcion:"Medicamentos de patente y genéricos, vitaminas, artículos de salud y cuidado personal. Contamos con médico de guardia sin costo y servicio a domicilio disponible.", direccion:"Calle Hidalgo 12, Centro",              telefono:"232 234 5678", whatsapp:"2322345678", horario:"Lun–Dom 8:00–22:00",                     servicios:["Medicamentos genéricos","Vitaminas","Médico sin costo","Inyecciones","Servicio a domicilio"], pago:["Efectivo","Tarjeta","Transferencia"],  facebook:"", web:"", destacado:false, lat:20.0715, lng:-97.0510 },
+  { id:3,  nombre:"Abarrotes La Esperanza",          categoria:"abarrotes",     catLabel:"🛒 Abarrotes",      icono:"🛒", descripcion:"Abarrotes completos, frutas, verduras y productos de limpieza. Manejamos precios de mayoreo para negocios y familias. Surtido fresco todos los días.", direccion:"Blvd. Adolfo Ruiz Cortines 88",         telefono:"232 345 6789", whatsapp:"2323456789", horario:"Lun–Sáb 7:00–21:00",                     servicios:["Abarrotes","Frutas y verduras","Limpieza","Precios mayoreo","Refrescos y agua"], pago:["Efectivo","Transferencia"],          facebook:"", web:"", destacado:false, lat:20.0725, lng:-97.0535 },
+  { id:4,  nombre:"Hotel Plaza Martínez",            categoria:"hoteles",       catLabel:"🏨 Hoteles",        icono:"🏨", descripcion:"Hotel céntrico con 30 habitaciones equipadas, WiFi de alta velocidad, estacionamiento gratuito y aire acondicionado. Ideal para viajeros de negocios y turistas.", direccion:"Calle 20 de Noviembre 5, Centro",       telefono:"232 456 7890", whatsapp:"2324567890", horario:"Recepción 24 hrs",                        servicios:["WiFi gratis","Estacionamiento","Aire acondicionado","TV cable","Desayuno incluido"], pago:["Efectivo","Tarjeta","Transferencia"], facebook:"https://facebook.com", web:"", destacado:true,  lat:20.0718, lng:-97.0520 },
+  { id:5,  nombre:"Taller Mecánico García",          categoria:"talleres",      catLabel:"🔧 Talleres",       icono:"🔧", descripcion:"Servicio mecánico general para todo tipo de vehículos. Especialistas en frenos, suspensión, afinaciones y diagnóstico computarizado. 15 años de experiencia.", direccion:"Carretera a Tlapacoyan km 2",            telefono:"232 567 8901", whatsapp:"2325678901", horario:"Lun–Sáb 8:00–18:00",                     servicios:["Afinación","Frenos","Suspensión","Diagnóstico computarizado","Cambio de aceite"], pago:["Efectivo","Transferencia"],          facebook:"", web:"", destacado:false, lat:20.0735, lng:-97.0515 },
+  { id:6,  nombre:"Salón de Belleza Vanity",         categoria:"belleza",       catLabel:"💇 Belleza",        icono:"💇", descripcion:"Salón de belleza profesional con tratamientos capilares, cortes modernos, tintes, manicure y pedicure. Trabajamos con cita previa para brindarte mejor atención.", direccion:"Av. Veracruz 67, Col. Centro",           telefono:"232 678 9012", whatsapp:"2326789012", horario:"Mar–Sáb 9:00–19:00",                     servicios:["Corte y peinado","Tintes","Manicure","Pedicure","Tratamientos capilares"],       pago:["Efectivo","Transferencia"],          facebook:"https://facebook.com", web:"", destacado:false, lat:20.0722, lng:-97.0525 },
+  { id:7,  nombre:"Ferretería El Tornillo",          categoria:"construccion",  catLabel:"🏗️ Construcción",  icono:"🏗️", descripcion:"Ferretería y materiales de construcción con el surtido más completo de la región. Herramientas, tornillería, pinturas, tablarroca y más. Asesoría personalizada.", direccion:"Calle Morelos 34, Centro",               telefono:"232 789 0123", whatsapp:"2327890123", horario:"Lun–Sáb 8:00–19:00",                     servicios:["Materiales de construcción","Herramientas","Pinturas","Tornillería","Instalación eléctrica"], pago:["Efectivo","Tarjeta","Transferencia","Crédito"], facebook:"", web:"", destacado:false, lat:20.0710, lng:-97.0530 },
+  { id:8,  nombre:"Veterinaria Patitas",             categoria:"veterinarias",  catLabel:"🐾 Veterinarias",   icono:"🐾", descripcion:"Clínica veterinaria con médico titulado para consultas, vacunas, cirugías y estética de mascotas. Atendemos perros, gatos y animales de granja. Urgencias disponibles.", direccion:"Av. Juárez 101, Col. Centro",            telefono:"232 890 1234", whatsapp:"2328901234", horario:"Lun–Vie 9:00–18:00, Sáb 9:00–14:00",    servicios:["Consultas","Vacunación","Cirugías","Estética","Urgencias"],                      pago:["Efectivo","Tarjeta","Transferencia"], facebook:"https://facebook.com", web:"", destacado:false, lat:20.0740, lng:-97.0518 },
+  { id:9,  nombre:"Taxis Martínez Express",          categoria:"transporte",    catLabel:"🚕 Transporte",     icono:"🚕", descripcion:"Servicio de taxi local y foráneo las 24 horas del día. Viajes seguros a Xalapa, Poza Rica, Tuxpan y aeropuerto. Unidades cómodas y choferes de confianza.", direccion:"Base: Av. Independencia 23, Centro",     telefono:"232 901 2345", whatsapp:"2329012345", horario:"24 horas, los 365 días",                  servicios:["Taxi local","Viajes foráneos","Aeropuerto","Xalapa / Poza Rica","Grupos"],        pago:["Efectivo","Transferencia"],          facebook:"", web:"", destacado:false, lat:20.0728, lng:-97.0512 },
+  { id:10, nombre:"Panadería El Trigal",             categoria:"panaderias",    catLabel:"🥐 Panaderías",     icono:"🥐", descripcion:"Panadería artesanal con hornada fresca dos veces al día. Pan de dulce, teleras, bolillos, pasteles y repostería para eventos. Sabor casero de toda la vida.", direccion:"Calle Zaragoza 78, Col. Centro",         telefono:"232 012 3456", whatsapp:"2320123456", horario:"Lun–Dom 7:00–21:00",                     servicios:["Pan de dulce","Teleras y bolillos","Pasteles","Repostería","Pedidos especiales"],  pago:["Efectivo"],                          facebook:"", web:"", destacado:false, lat:20.0720, lng:-97.0528 },
+  { id:11, nombre:"Banco BBVA Martínez",             categoria:"bancos",        catLabel:"🏦 Bancos",         icono:"🏦", descripcion:"Sucursal bancaria con cajeros automáticos, ventanilla de servicio, créditos personales y empresariales, y atención a empresas. Estacionamiento disponible.", direccion:"Av. Insurgentes 10, Centro",             telefono:"800 226 2663", whatsapp:"",            horario:"Lun–Vie 9:00–16:00",                     servicios:["Cajero automático","Cuentas de ahorro","Créditos","Transferencias","Atención empresarial"], pago:["N/A"],                            facebook:"", web:"https://bbva.mx", destacado:false, lat:20.0717, lng:-97.0523 },
+  { id:12, nombre:"Despacho Contable Ramírez",       categoria:"profesionales", catLabel:"⚖️ Profesionales", icono:"📋", descripcion:"Despacho contable y fiscal con más de 10 años de experiencia. Declaraciones de impuestos, nómina, contabilidad mensual y asesoría para personas físicas y morales.", direccion:"Calle Allende 56, Planta Alta",          telefono:"232 111 2233", whatsapp:"2321112233", horario:"Lun–Vie 9:00–18:00",                     servicios:["Declaraciones SAT","Contabilidad","Nómina","Facturación CFDI","Asesoría fiscal"],  pago:["Efectivo","Transferencia"],          facebook:"", web:"", destacado:false, lat:20.0724, lng:-97.0519 },
+  { id:13, nombre:"Empacadora Cítricos del Norte",   categoria:"agroindustria", catLabel:"🍊 Agroindustria",  icono:"🍊", descripcion:"Empresa empacadora y distribuidora de cítricos de la región. Naranja, mandarina y limón en presentaciones para mayoristas, supermercados y exportación.", direccion:"Carretera Nautla km 4.5",                 telefono:"232 222 3344", whatsapp:"2322223344", horario:"Lun–Sáb 7:00–17:00",                     servicios:["Empaque de naranja","Mandarina","Limón","Venta mayoreo","Exportación"],           pago:["Efectivo","Transferencia","Crédito"], facebook:"", web:"", destacado:false, lat:20.0755, lng:-97.0500 }
+];
+
+// ══════════════════════════════════════
+//  PERSISTENCIA
+// ══════════════════════════════════════
+function cargarNegocios() {
+  try {
+    const s = localStorage.getItem(NEGOCIOS_KEY);
+    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(NEGOCIOS_DEFAULT));
+  } catch(e) {
+    return JSON.parse(JSON.stringify(NEGOCIOS_DEFAULT));
+  }
+}
+
+function guardarNegocios() {
+  localStorage.setItem(NEGOCIOS_KEY, JSON.stringify(negocios));
+  actualizarBadge();
+}
+
+function getPassword() {
+  return localStorage.getItem(PASS_KEY) || PASS_DEFAULT;
+}
+
+let negocios = cargarNegocios();
+let editandoId = null;
+
+// ══════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════
+function intentarLogin() {
+  const pass = document.getElementById('passInput').value;
+  if (pass === getPassword()) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminApp').style.display = 'block';
+    renderLista();
+    poblarFiltroCategoria();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('passInput').classList.add('error');
+    document.getElementById('passInput').value = '';
+  }
+}
+
+function cerrarSesion() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('passInput').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('passInput').classList.remove('error');
+}
+
+document.getElementById('passInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') intentarLogin();
+});
+
+// ══════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════
+function cambiarTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + id)?.classList.add('active');
+  document.getElementById('content-' + id)?.classList.add('active');
+}
+
+function actualizarBadge() {
+  document.getElementById('badge-count').textContent = negocios.length;
+}
+
+// ══════════════════════════════════════
+//  LISTA DE NEGOCIOS
+// ══════════════════════════════════════
+function poblarFiltroCategoria() {
+  const cats = [...new Set(negocios.map(n => n.categoria))].sort();
+  const sel = document.getElementById('filtroCategoria');
+  sel.innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c => `<option value="${c}">${CAT_LABELS[c] || c}</option>`).join('');
+}
+
+function renderLista() {
+  const q   = (document.getElementById('searchAdmin')?.value || '').toLowerCase().trim();
+  const cat = document.getElementById('filtroCategoria')?.value || '';
+
+  let lista = negocios.filter(n => {
+    const matchCat = !cat || n.categoria === cat;
+    const matchQ   = !q   || n.nombre.toLowerCase().includes(q) ||
+                     (CAT_LABELS[n.categoria] || '').toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+
+  actualizarBadge();
+  const container = document.getElementById('listaNegociosAdmin');
+
+  if (!lista.length) {
+    container.innerHTML = '<div class="empty-state">No se encontraron negocios.</div>';
+    return;
+  }
+
+  container.innerHTML = lista.map(n => `
+    <div class="neg-row">
+      <div class="neg-icon">${n.icono}</div>
+      <div class="neg-info">
+        <div class="neg-nombre">${n.nombre}</div>
+        <div class="neg-meta">
+          <span class="neg-cat-pill">${CAT_LABELS[n.categoria] || n.categoria}</span>
+          ${n.direccion}
+        </div>
+      </div>
+      <span class="dest-pill ${n.destacado ? 'on' : 'off'}" onclick="toggleDestacado(${n.id})">
+        ${n.destacado ? '⭐ Destacado' : '— Normal'}
+      </span>
+      <div class="neg-actions">
+        <button class="btn-edit" onclick="abrirFormularioEditar(${n.id})">✏️ Editar</button>
+        <button class="btn-del"  onclick="pedirEliminar(${n.id})">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════
+//  CRUD — DESTACADO
+// ══════════════════════════════════════
+function toggleDestacado(id) {
+  const n = negocios.find(x => x.id === id);
+  if (!n) return;
+  n.destacado = !n.destacado;
+  guardarNegocios();
+  renderLista();
+  mostrarToast(n.destacado ? '⭐ Marcado como Destacado' : '— Quitado de Destacados', 'exito');
+}
+
+// ══════════════════════════════════════
+//  FORMULARIO — NUEVO / EDITAR
+// ══════════════════════════════════════
+function limpiarForm() {
+  ['a-nombre','a-icono','a-direccion','a-telefono','a-whatsapp',
+   'a-facebook','a-web','a-descripcion','a-servicios','a-horario','a-lat','a-lng']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('a-categoria').value = '';
+  document.getElementById('a-destacado').checked = false;
+  document.querySelectorAll('input[name="a-pago"]').forEach(c => c.checked = false);
+  document.getElementById('previewArea').style.display = 'none';
+  editandoId = null;
+}
+
+function abrirFormularioNuevo() {
+  limpiarForm();
+  editandoId = null;
+  document.getElementById('form-titulo').textContent = '➕ Nuevo negocio';
+  document.getElementById('tab-form').textContent = '➕ Nuevo negocio';
+  cambiarTab('form');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function abrirFormularioEditar(id) {
+  const n = negocios.find(x => x.id === id);
+  if (!n) return;
+  limpiarForm();
+  editandoId = id;
+
+  document.getElementById('a-nombre').value     = n.nombre      || '';
+  document.getElementById('a-icono').value      = n.icono       || '';
+  document.getElementById('a-horario').value    = n.horario     || '';
+  document.getElementById('a-direccion').value  = n.direccion   || '';
+  document.getElementById('a-telefono').value   = n.telefono    || '';
+  document.getElementById('a-whatsapp').value   = n.whatsapp    || '';
+  document.getElementById('a-facebook').value   = n.facebook    || '';
+  document.getElementById('a-web').value        = n.web         || '';
+  document.getElementById('a-descripcion').value= n.descripcion || '';
+  document.getElementById('a-servicios').value  = (n.servicios  || []).join(', ');
+  document.getElementById('a-lat').value        = n.lat         || '';
+  document.getElementById('a-lng').value        = n.lng         || '';
+  document.getElementById('a-categoria').value  = n.categoria   || '';
+  document.getElementById('a-destacado').checked= !!n.destacado;
+
+  (n.pago || []).forEach(p => {
+    const cb = document.querySelector(`input[name="a-pago"][value="${p}"]`);
+    if (cb) cb.checked = true;
+  });
+
+  document.getElementById('form-titulo').textContent = `✏️ Editando: ${n.nombre}`;
+  document.getElementById('tab-form').textContent = '✏️ Editar negocio';
+  actualizarPreview();
+  cambiarTab('form');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function guardarFormulario() {
+  const nombre    = document.getElementById('a-nombre').value.trim();
+  const cat       = document.getElementById('a-categoria').value;
+  const icono     = document.getElementById('a-icono').value.trim();
+  const direccion = document.getElementById('a-direccion').value.trim();
+  const telefono  = document.getElementById('a-telefono').value.trim();
+  const horario   = document.getElementById('a-horario').value.trim();
+  const desc      = document.getElementById('a-descripcion').value.trim();
+
+  if (!nombre || !cat || !icono || !direccion || !telefono || !horario || !desc) {
+    mostrarToast('⚠️ Completa los campos obligatorios (*)','error');
+    return;
+  }
+
+  const data = {
+    nombre, categoria: cat, catLabel: CAT_LABELS[cat] || cat, icono,
+    descripcion: desc, direccion, telefono,
+    whatsapp:  document.getElementById('a-whatsapp').value.trim(),
+    facebook:  document.getElementById('a-facebook').value.trim(),
+    web:       document.getElementById('a-web').value.trim(),
+    horario,
+    servicios: document.getElementById('a-servicios').value.trim()
+               .split(',').map(s => s.trim()).filter(Boolean),
+    pago: [...document.querySelectorAll('input[name="a-pago"]:checked')].map(c => c.value),
+    lat: parseFloat(document.getElementById('a-lat').value) || 20.0725,
+    lng: parseFloat(document.getElementById('a-lng').value) || -97.0522,
+    destacado: document.getElementById('a-destacado').checked
+  };
+  if (!data.pago.length) data.pago = ['Efectivo'];
+
+  if (editandoId !== null) {
+    // Editar existente
+    const idx = negocios.findIndex(x => x.id === editandoId);
+    if (idx !== -1) {
+      negocios[idx] = { ...negocios[idx], ...data };
+      mostrarToast('✅ Negocio actualizado correctamente', 'exito');
+    }
+  } else {
+    // Nuevo
+    const newId = negocios.length ? Math.max(...negocios.map(n => n.id)) + 1 : 1;
+    negocios.push({ id: newId, ...data });
+    mostrarToast('✅ Negocio agregado al directorio', 'exito');
+  }
+
+  guardarNegocios();
+  poblarFiltroCategoria();
+  renderLista();
+  document.getElementById('tab-form').textContent = '➕ Nuevo negocio';
+  cambiarTab('negocios');
+}
+
+function cancelarForm() {
+  limpiarForm();
+  document.getElementById('tab-form').textContent = '➕ Nuevo negocio';
+  cambiarTab('negocios');
+}
+
+// ══════════════════════════════════════
+//  CRUD — ELIMINAR
+// ══════════════════════════════════════
+let pendingDeleteId = null;
+
+function pedirEliminar(id) {
+  const n = negocios.find(x => x.id === id);
+  if (!n) return;
+  pendingDeleteId = id;
+  document.getElementById('modal-titulo').textContent = 'Eliminar negocio';
+  document.getElementById('modal-msg').textContent =
+    `¿Seguro que quieres eliminar "${n.nombre}"? Esta acción no se puede deshacer.`;
+  document.getElementById('modal-btn-ok').onclick = confirmarEliminar;
+  document.getElementById('modalConfirm').classList.add('open');
+}
+
+function confirmarEliminar() {
+  negocios = negocios.filter(x => x.id !== pendingDeleteId);
+  guardarNegocios();
+  poblarFiltroCategoria();
+  renderLista();
+  cerrarModal();
+  mostrarToast('🗑️ Negocio eliminado', 'exito');
+}
+
+// ══════════════════════════════════════
+//  PREVIEW
+// ══════════════════════════════════════
+function actualizarPreview() {
+  const nombre = document.getElementById('a-nombre').value.trim() || 'Nombre del negocio';
+  const icono  = document.getElementById('a-icono').value.trim()  || '🏪';
+  const cat    = document.getElementById('a-categoria').value;
+  const dir    = document.getElementById('a-direccion').value.trim() || 'Dirección';
+  const tel    = document.getElementById('a-telefono').value.trim()  || 'Teléfono';
+  const dest   = document.getElementById('a-destacado').checked;
+
+  document.getElementById('previewArea').style.display = 'block';
+  document.getElementById('prev-icono').textContent    = icono;
+  document.getElementById('prev-nombre').textContent   = nombre;
+  document.getElementById('prev-cat').textContent      = CAT_LABELS[cat] || '— Categoría —';
+  document.getElementById('prev-dir').textContent      = '📍 ' + dir;
+  document.getElementById('prev-tel').textContent      = '📞 ' + tel;
+  document.getElementById('prev-badge').style.display  = dest ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════
+//  CONFIGURACIÓN
+// ══════════════════════════════════════
+function cambiarPassword() {
+  const p1 = document.getElementById('cfg-pass1').value;
+  const p2 = document.getElementById('cfg-pass2').value;
+  if (!p1) { mostrarToast('Escribe una contraseña','error'); return; }
+  if (p1 !== p2) { mostrarToast('Las contraseñas no coinciden','error'); return; }
+  if (p1.length < 6) { mostrarToast('Mínimo 6 caracteres','error'); return; }
+  localStorage.setItem(PASS_KEY, p1);
+  document.getElementById('cfg-pass1').value = '';
+  document.getElementById('cfg-pass2').value = '';
+  mostrarToast('🔐 Contraseña actualizada', 'exito');
+}
+
+function mostrarExport() {
+  const box = document.getElementById('exportBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  if (box.style.display === 'block') {
+    box.textContent = JSON.stringify(negocios, null, 2);
+  }
+}
+
+function exportarJSON() {
+  const texto = JSON.stringify(negocios, null, 2);
+  navigator.clipboard.writeText(texto)
+    .then(() => mostrarToast('📋 JSON copiado al portapapeles', 'exito'))
+    .catch(() => mostrarToast('Selecciona el JSON y copia con Ctrl+C','error'));
+  // También mostrar
+  const box = document.getElementById('exportBox');
+  box.style.display = 'block';
+  box.textContent = texto;
+}
+
+function importarJSON() {
+  const texto = document.getElementById('importBox').value.trim();
+  try {
+    const data = JSON.parse(texto);
+    if (!Array.isArray(data)) throw new Error('No es un array');
+    pendingImportData = data;
+    document.getElementById('modal-titulo').textContent = 'Importar datos';
+    document.getElementById('modal-msg').textContent =
+      `Se importarán ${data.length} negocios y se reemplazarán los ${negocios.length} actuales. ¿Continuar?`;
+    document.getElementById('modal-btn-ok').onclick = confirmarImport;
+    document.getElementById('modalConfirm').classList.add('open');
+  } catch(e) {
+    mostrarToast('❌ JSON inválido. Verifica el formato.','error');
+  }
+}
+
+let pendingImportData = null;
+
+function confirmarImport() {
+  negocios = pendingImportData;
+  guardarNegocios();
+  poblarFiltroCategoria();
+  renderLista();
+  cerrarModal();
+  document.getElementById('importBox').value = '';
+  mostrarToast(`✅ ${negocios.length} negocios importados`, 'exito');
+}
+
+function confirmarReset() {
+  document.getElementById('modal-titulo').textContent = 'Restaurar datos originales';
+  document.getElementById('modal-msg').textContent =
+    'Esto borrará todos los cambios y restaurará los 13 negocios de ejemplo. ¿Continuar?';
+  document.getElementById('modal-btn-ok').onclick = ejecutarReset;
+  document.getElementById('modalConfirm').classList.add('open');
+}
+
+function ejecutarReset() {
+  negocios = JSON.parse(JSON.stringify(NEGOCIOS_DEFAULT));
+  guardarNegocios();
+  poblarFiltroCategoria();
+  renderLista();
+  cerrarModal();
+  mostrarToast('♻️ Datos restaurados al original', 'exito');
+}
+
+// ══════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════
+function cerrarModal() {
+  document.getElementById('modalConfirm').classList.remove('open');
+  pendingDeleteId  = null;
+  pendingImportData = null;
+}
+
+document.getElementById('modalConfirm').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalConfirm')) cerrarModal();
+});
+
+// ══════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════
+let toastTimer;
+function mostrarToast(msg, tipo = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (tipo ? ' ' + tipo : '');
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+</script>
+</body>
+</html>

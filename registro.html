@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registra tu negocio — EnMartinez.com</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --verde: #1a6b3c; --verde-claro: #22883f; --verde-bg: #f0f7f2;
+      --naranja: #f97316; --naranja-hover: #ea6c0a;
+      --texto: #1f2937; --texto-muted: #6b7280;
+      --blanco: #ffffff; --borde: #e5e7eb; --error: #ef4444; --exito: #16a34a;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8faf8; color: var(--texto); }
+
+    /* HEADER */
+    header {
+      background: var(--verde); padding: 0 1.5rem;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-inner {
+      max-width: 860px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+    .logo-text { font-size: 1.2rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .logo-text span { color: var(--naranja); }
+    .btn-volver {
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      font-size: 0.88rem; display: flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-volver:hover { color: #fff; }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--verde) 0%, #0f4d2b 100%);
+      padding: 3rem 1.5rem; text-align: center;
+    }
+    .hero h1 { font-size: 1.9rem; font-weight: 900; color: #fff; margin-bottom: 0.6rem; }
+    .hero h1 span { color: var(--naranja); }
+    .hero p { color: rgba(255,255,255,0.78); font-size: 1rem; max-width: 520px; margin: 0 auto; }
+
+    /* PASOS */
+    .pasos {
+      max-width: 860px; margin: 2.5rem auto 0;
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; padding: 0 1.5rem;
+    }
+    .paso {
+      background: var(--blanco); border: 1px solid var(--borde);
+      border-radius: 12px; padding: 1.1rem; text-align: center;
+    }
+    .paso-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--verde); color: #fff;
+      font-weight: 800; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 0.6rem;
+    }
+    .paso h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .paso p { font-size: 0.78rem; color: var(--texto-muted); line-height: 1.5; }
+
+    /* FORMULARIO */
+    .form-wrap { max-width: 860px; margin: 2rem auto 3rem; padding: 0 1.5rem; }
+    .form-card {
+      background: var(--blanco); border: 1px solid var(--borde);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .form-section {
+      padding: 1.75rem 2rem;
+      border-bottom: 1px solid var(--borde);
+    }
+    .form-section:last-of-type { border-bottom: none; }
+    .form-section-title {
+      font-size: 1rem; font-weight: 800; color: var(--texto);
+      display: flex; align-items: center; gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-section-title span {
+      background: var(--verde-bg); color: var(--verde);
+      font-size: 0.75rem; padding: 0.15rem 0.55rem;
+      border-radius: 20px; font-weight: 600;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid.full { grid-template-columns: 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group.span2 { grid-column: span 2; }
+    label {
+      font-size: 0.82rem; font-weight: 600; color: var(--texto);
+      display: flex; align-items: center; gap: 0.3rem;
+    }
+    label .req { color: var(--error); }
+    label .opt { color: var(--texto-muted); font-weight: 400; font-size: 0.75rem; }
+    input[type="text"], input[type="tel"], input[type="email"], input[type="url"],
+    select, textarea {
+      padding: 0.65rem 0.85rem; border: 1.5px solid var(--borde);
+      border-radius: 8px; font-size: 0.9rem; color: var(--texto);
+      background: #fff; outline: none; width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--verde);
+      box-shadow: 0 0 0 3px rgba(26,107,60,0.1);
+    }
+    input.error, select.error, textarea.error { border-color: var(--error); }
+    textarea { resize: vertical; min-height: 90px; }
+    .hint { font-size: 0.74rem; color: var(--texto-muted); margin-top: 0.15rem; }
+
+    /* Checkboxes */
+    .check-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; }
+    .check-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: #f9fafb; border: 1.5px solid var(--borde);
+      border-radius: 8px; padding: 0.45rem 0.75rem;
+      cursor: pointer; transition: all 0.15s; font-size: 0.85rem;
+      user-select: none;
+    }
+    .check-item input { width: auto; margin: 0; cursor: pointer; }
+    .check-item:has(input:checked) {
+      background: var(--verde-bg); border-color: var(--verde); color: var(--verde);
+    }
+
+    /* DESTACADO */
+    .destacado-card {
+      border: 2px solid var(--naranja); border-radius: 12px;
+      padding: 1.25rem 1.5rem; background: #fff8f5;
+      display: flex; gap: 1rem; align-items: flex-start;
+    }
+    .destacado-icon { font-size: 2.2rem; flex-shrink: 0; }
+    .destacado-info h4 { font-size: 0.95rem; font-weight: 800; color: var(--texto); margin-bottom: 0.35rem; }
+    .destacado-info p { font-size: 0.83rem; color: var(--texto-muted); line-height: 1.55; margin-bottom: 0.75rem; }
+    .destacado-benefits { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+    .benefit-tag {
+      background: #ffedd5; color: #c2410c; border-radius: 20px;
+      padding: 0.2rem 0.65rem; font-size: 0.75rem; font-weight: 600;
+    }
+    .destacado-check {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    }
+    .destacado-check input { width: auto; margin: 0; cursor: pointer; transform: scale(1.2); }
+
+    /* AVISO */
+    .aviso-admin {
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 10px; padding: 0.9rem 1.1rem;
+      font-size: 0.82rem; color: #1e40af; line-height: 1.55;
+      display: flex; gap: 0.6rem; align-items: flex-start;
+    }
+    .aviso-icon { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
+
+    /* BOTÓN ENVIAR */
+    .form-footer {
+      padding: 1.5rem 2rem; background: #f9fafb;
+      border-top: 1px solid var(--borde);
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .form-footer p { font-size: 0.8rem; color: var(--texto-muted); }
+    .btn-submit {
+      background: var(--verde); color: #fff; border: none;
+      padding: 0.85rem 2rem; border-radius: 10px; cursor: pointer;
+      font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; gap: 0.5rem;
+      transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-submit:hover { background: var(--verde-claro); }
+    .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    /* ÉXITO */
+    .mensaje-exito {
+      display: none; text-align: center; padding: 3.5rem 2rem;
+    }
+    .mensaje-exito .icon { font-size: 4rem; margin-bottom: 1rem; }
+    .mensaje-exito h2 { font-size: 1.5rem; font-weight: 900; color: var(--exito); margin-bottom: 0.5rem; }
+    .mensaje-exito p { color: var(--texto-muted); font-size: 0.95rem; line-height: 1.6; max-width: 400px; margin: 0 auto 1.5rem; }
+    .btn-volver-home {
+      display: inline-block; background: var(--verde); color: #fff;
+      padding: 0.75rem 1.75rem; border-radius: 10px; text-decoration: none;
+      font-weight: 700; font-size: 0.95rem; transition: background 0.2s;
+    }
+    .btn-volver-home:hover { background: var(--verde-claro); }
+
+    /* RECUADRO EMAIL */
+    .email-box {
+      display: flex; align-items: center; gap: 0.85rem;
+      background: #f0f7f2; border: 1.5px solid #a7d4b5;
+      border-radius: 10px; padding: 0.9rem 1.1rem;
+      margin-top: 1.25rem;
+    }
+    .email-box-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .email-box-text { font-size: 0.82rem; color: var(--texto-muted); line-height: 1.4; }
+    .email-box-text strong {
+      font-size: 0.9rem; color: var(--verde);
+      display: block; margin-top: 0.15rem; user-select: all;
+    }
+    .email-box-standalone {
+      max-width: 860px; margin: 0 auto 2.5rem; padding: 0 1.5rem;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.span2 { grid-column: span 1; }
+      .form-section { padding: 1.25rem 1.25rem; }
+      .form-footer { flex-direction: column; align-items: stretch; }
+      .pasos { grid-template-columns: 1fr; }
+      .destacado-card { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <span style="font-size:1.3rem">🌿</span>
+      <span class="logo-text">En<span>Martinez</span>.com</span>
+    </a>
+    <a href="index.html" class="btn-volver">
+      ← Volver al directorio
+    </a>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Registra tu negocio en <span>EnMartinez.com</span></h1>
+  <p>Llena el formulario y en menos de 48 horas tu negocio estará visible para miles de personas en Martínez de la Torre.</p>
+</div>
+
+<div class="pasos">
+  <div class="paso">
+    <div class="paso-num">1</div>
+    <h4>Llena el formulario</h4>
+    <p>Completa la información de tu negocio. Mientras más detallada, mejor impresión causarás.</p>
+  </div>
+  <div class="paso">
+    <div class="paso-num">2</div>
+    <h4>Revisión del equipo</h4>
+    <p>Verificamos que la información sea correcta antes de publicarla. Esto toma hasta 48 horas.</p>
+  </div>
+  <div class="paso">
+    <div class="paso-num">3</div>
+    <h4>¡Listo para publicarse!</h4>
+    <p>Te avisamos por WhatsApp o correo cuando tu negocio esté visible en el directorio.</p>
+  </div>
+</div>
+
+<div class="form-wrap">
+  <div class="form-card">
+
+    <!-- ÉXITO -->
+    <div class="mensaje-exito" id="mensajeExito">
+      <div class="icon">✅</div>
+      <h2>¡Solicitud enviada!</h2>
+      <p>Recibimos la información de tu negocio. La revisaremos en las próximas 48 horas y te avisaremos por el medio de contacto que indicaste.</p>
+      <a href="index.html" class="btn-volver-home">Volver al directorio</a>
+    </div>
+
+    <form id="formRegistro" novalidate>
+
+      <!-- SECCIÓN 1: DATOS DEL NEGOCIO -->
+      <div class="form-section">
+        <div class="form-section-title">
+          🏪 Datos del negocio <span>Información pública</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group span2">
+            <label>Nombre del negocio <span class="req">*</span></label>
+            <input type="text" id="nombre" name="nombre" placeholder="Ej: Taquería Los Compadres" maxlength="80">
+          </div>
+          <div class="form-group">
+            <label>Categoría <span class="req">*</span></label>
+            <select id="categoria" name="categoria">
+              <option value="">— Selecciona una categoría —</option>
+              <option value="restaurantes">🍽️ Restaurantes y comida</option>
+              <option value="abarrotes">🛒 Abarrotes y súper</option>
+              <option value="salud">🏥 Salud y farmacias</option>
+              <option value="talleres">🔧 Talleres y refacciones</option>
+              <option value="belleza">💇 Belleza y estética</option>
+              <option value="hoteles">🏨 Hoteles y hospedaje</option>
+              <option value="construccion">🏗️ Construcción y ferretería</option>
+              <option value="veterinarias">🐾 Veterinarias y mascotas</option>
+              <option value="ropa">👗 Ropa y calzado</option>
+              <option value="servicios">⚡ Servicios Profesionales</option>
+              <option value="agro">🌿 Agro y viveros</option>
+              <option value="educacion">🏫 Educación</option>
+              <option value="tecnologia">💻 Tecnología</option>
+              <option value="eventos">🎉 Eventos</option>
+              <option value="transporte">🚕 Transporte</option>
+              <option value="panaderias">🥐 Panaderías y pastelerías</option>
+              <option value="bancos">🏦 Bancos y financieros</option>
+              <option value="profesionales">⚖️ Profesionales</option>
+              <option value="agroindustria">🍊 Agroindustria</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Dirección <span class="req">*</span></label>
+            <input type="text" id="direccion" name="direccion" placeholder="Calle, número, colonia">
+          </div>
+          <div class="form-group span2">
+            <label>Descripción del negocio <span class="req">*</span></label>
+            <textarea id="descripcion" name="descripcion" placeholder="¿Qué ofreces? ¿Qué te hace diferente? Menciona tu especialidad, años de experiencia, etc." maxlength="350"></textarea>
+            <p class="hint">Máximo 350 caracteres. Sé específico: es lo primero que los clientes leerán.</p>
+          </div>
+          <div class="form-group">
+            <label>Horario de atención <span class="req">*</span></label>
+            <input type="text" id="horario" name="horario" placeholder="Ej: Lun–Sáb 9:00–18:00">
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: CONTACTO -->
+      <div class="form-section">
+        <div class="form-section-title">📞 Contacto <span>Información pública</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Teléfono <span class="req">*</span></label>
+            <input type="tel" id="telefono" name="telefono" placeholder="232 000 0000">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp <span class="opt">(opcional)</span></label>
+            <input type="tel" id="whatsapp" name="whatsapp" placeholder="2320000000 (sin guiones ni espacios)">
+            <p class="hint">Solo números, sin código de país. Ej: 2321234567</p>
+          </div>
+          <div class="form-group">
+            <label>Facebook <span class="opt">(opcional)</span></label>
+            <input type="url" id="facebook" name="facebook" placeholder="https://facebook.com/tunegocio">
+          </div>
+          <div class="form-group">
+            <label>Sitio web <span class="opt">(opcional)</span></label>
+            <input type="url" id="web" name="web" placeholder="https://tunegocio.com">
+          </div>
+        </div>
+        <div class="email-box">
+          <span class="email-box-icon">📧</span>
+          <div class="email-box-text">
+            ¿Prefieres escribirnos directamente?
+            <strong>enmartinez1@outlook.com</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 3: SERVICIOS Y PAGO -->
+      <div class="form-section">
+        <div class="form-section-title">⚙️ Productos, Servicios y métodos de pago</div>
+        <div class="form-grid full">
+          <div class="form-group">
+            <label>Productos y servicios que ofreces <span class="opt">(opcional)</span></label>
+            <input type="text" id="servicios" name="servicios" placeholder="Ej: Tacos al pastor, Tortas, Para llevar, A domicilio">
+            <p class="hint">Separa cada servicio con una coma.</p>
+          </div>
+          <div class="form-group">
+            <label>Métodos de pago aceptados <span class="opt">(opcional)</span></label>
+            <div class="check-grid">
+              <label class="check-item">
+                <input type="checkbox" name="pago" value="Efectivo"> 💵 Efectivo
+              </label>
+              <label class="check-item">
+                <input type="checkbox" name="pago" value="Tarjeta"> 💳 Tarjeta
+              </label>
+              <label class="check-item">
+                <input type="checkbox" name="pago" value="Transferencia"> 📲 Transferencia
+              </label>
+              <label class="check-item">
+                <input type="checkbox" name="pago" value="Crédito"> 🤝 Crédito
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 4: DESTACADO -->
+      <div class="form-section">
+        <div class="form-section-title">⭐ ¿Quieres aparecer primero? <span>Opcional · De pago</span></div>
+        <div class="destacado-card">
+          <div class="destacado-icon">⭐</div>
+          <div class="destacado-info">
+            <h4>Ficha Destacada</h4>
+            <p>Tu negocio aparece al inicio de su categoría, con el badge "Destacado" visible. Más visibilidad, más clientes.</p>
+            <div class="destacado-benefits">
+              <span class="benefit-tag">Primero en tu categoría</span>
+              <span class="benefit-tag">Badge ⭐ Destacado</span>
+              <span class="benefit-tag">Mayor visibilidad</span>
+            </div>
+            <label class="destacado-check">
+              <input type="checkbox" id="solicitaDestacado" name="solicitaDestacado" value="sí">
+              Sí, me interesa ser Negocio Destacado
+            </label>
+            <p style="font-size:0.76rem;color:var(--texto-muted);margin-top:0.5rem">
+              Si marcas esta opción, te contactaremos para informarte el costo y proceso de activación.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 5: DATOS DEL PROPIETARIO (privados) -->
+      <div class="form-section">
+        <div class="form-section-title">👤 Tus datos de contacto <span>Solo para uso interno</span></div>
+        <div class="aviso-admin" style="margin-bottom:1.25rem">
+          <span class="aviso-icon">ℹ️</span>
+          Esta información es privada. Solo la usamos para contactarte cuando tu negocio sea revisado y aprobado. No se publica en el directorio.
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Tu nombre completo <span class="req">*</span></label>
+            <input type="text" id="propietario" name="propietario" placeholder="Nombre del dueño o encargado">
+          </div>
+          <div class="form-group">
+            <label>Correo electrónico <span class="req">*</span></label>
+            <input type="email" id="emailContacto" name="emailContacto" placeholder="tucorreo@ejemplo.com">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp para notificación <span class="req">*</span></label>
+            <input type="tel" id="celularContacto" name="celularContacto" placeholder="2320000000">
+            <p class="hint">Te avisaremos aquí cuando tu registro sea aprobado.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER DEL FORM -->
+      <div class="form-footer">
+        <p>Al enviar este formulario aceptas que la información sea revisada por el equipo de EnMartinez.com antes de ser publicada.</p>
+        <button type="submit" class="btn-submit" id="btnEnviar">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+          </svg>
+          Enviar solicitud
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<div class="email-box-standalone">
+  <div class="email-box">
+    <span class="email-box-icon">📧</span>
+    <div class="email-box-text">
+      ¿Tienes dudas o quieres contactarnos?
+      <strong>enmartinez1@outlook.com</strong>
+    </div>
+  </div>
+</div>
+
+<footer style="background:#0f2d1c;color:rgba(255,255,255,0.6);padding:1.5rem;text-align:center;font-size:0.82rem">
+  © 2026 EnMartinez.com — Martínez de la Torre, Veracruz
+</footer>
+
+<script>
+// ══════════════════════════════════════════
+//  VALIDACIÓN Y ENVÍO
+// ══════════════════════════════════════════
+const form = document.getElementById('formRegistro');
+const btnEnviar = document.getElementById('btnEnviar');
+
+const camposObligatorios = [
+  { id: 'nombre',         label: 'Nombre del negocio' },
+  { id: 'categoria',      label: 'Categoría' },
+  { id: 'direccion',      label: 'Dirección' },
+  { id: 'descripcion',    label: 'Descripción' },
+  { id: 'horario',        label: 'Horario' },
+  { id: 'telefono',       label: 'Teléfono' },
+  { id: 'propietario',    label: 'Nombre del propietario' },
+  { id: 'emailContacto',  label: 'Correo electrónico' },
+  { id: 'celularContacto',label: 'WhatsApp de notificación' },
+];
+
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  // Validar campos obligatorios
+  let valido = true;
+  camposObligatorios.forEach(c => {
+    const el = document.getElementById(c.id);
+    el.classList.remove('error');
+    if (!el.value.trim()) {
+      el.classList.add('error');
+      valido = false;
+    }
+  });
+
+  if (!valido) {
+    const primerError = document.querySelector('.error');
+    if (primerError) primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  // Recoger métodos de pago
+  const pagos = [...document.querySelectorAll('input[name="pago"]:checked')].map(c => c.value);
+
+  // Construir resumen para envío
+  const datos = {
+    // Negocio
+    nombre:            document.getElementById('nombre').value.trim(),
+    categoria:         document.getElementById('categoria').value,
+    direccion:         document.getElementById('direccion').value.trim(),
+    descripcion:       document.getElementById('descripcion').value.trim(),
+    horario:           document.getElementById('horario').value.trim(),
+    // Contacto público
+    telefono:          document.getElementById('telefono').value.trim(),
+    whatsapp:          document.getElementById('whatsapp').value.trim(),
+    facebook:          document.getElementById('facebook').value.trim(),
+    web:               document.getElementById('web').value.trim(),
+    // Servicios y pago
+    servicios:         document.getElementById('servicios').value.trim(),
+    metodospago:       pagos.join(', ') || 'No especificado',
+    // Destacado
+    solicitaDestacado: document.getElementById('solicitaDestacado').checked ? 'SÍ, interesado' : 'No',
+    // Propietario (privado)
+    propietario:       document.getElementById('propietario').value.trim(),
+    emailContacto:     document.getElementById('emailContacto').value.trim(),
+    celularContacto:   document.getElementById('celularContacto').value.trim(),
+  };
+
+  btnEnviar.disabled = true;
+  btnEnviar.innerHTML = '⏳ Enviando...';
+
+  // ─────────────────────────────────────────────
+  //  ENVÍO POR FORMSUBMIT.CO (sin cuenta requerida)
+  //  Solo cambia el correo en la línea CORREO_DESTINO.
+  //  La primera vez que alguien envíe el formulario,
+  //  llegará un correo de confirmación — solo haz clic en Confirm.
+  // ─────────────────────────────────────────────
+  const CORREO_DESTINO = 'enmartinez1@outlook.com';
+
+  fetch(`https://formsubmit.co/ajax/${CORREO_DESTINO}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      ...datos,
+      _subject: `📋 Nueva solicitud de negocio: ${datos.nombre}`,
+      _template: 'table',
+      _captcha: 'false',
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success === 'true' || data.success === true) {
+      mostrarExito();
+    } else {
+      throw new Error('Error en envío');
+    }
+  })
+  .catch(() => {
+    btnEnviar.disabled = false;
+    btnEnviar.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Enviar solicitud`;
+    alert('Hubo un problema al enviar el formulario. Verifica tu conexión e intenta de nuevo.');
+  });
+});
+
+function mostrarExito() {
+  form.style.display = 'none';
+  document.getElementById('mensajeExito').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Limpiar error al escribir
+document.querySelectorAll('input, select, textarea').forEach(el => {
+  el.addEventListener('input', () => el.classList.remove('error'));
+});
+</script>
+</body>
+</html>

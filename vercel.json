@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "name": "enmartinez-directorio",
+  "builds": [
+    { "src": "*.html", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/contacto", "dest": "/contacto.html" },
+    { "src": "/registro", "dest": "/registro.html" }
+  ]
+}

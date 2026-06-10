@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EnMartinez.com — Directorio de Negocios</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --verde: #1a6b3c;
+      --verde-claro: #22883f;
+      --verde-bg: #f0f7f2;
+      --naranja: #f97316;
+      --naranja-hover: #ea6c0a;
+      --texto: #1f2937;
+      --texto-muted: #6b7280;
+      --blanco: #ffffff;
+      --borde: #e5e7eb;
+      --sombra: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8faf8; color: var(--texto); }
+
+    /* Offset para header fijo al navegar por anclas */
+    #inicio, #categorias, #negocios, #mapa-section { scroll-margin-top: 68px; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--verde);
+      padding: 0 1.5rem;
+      position: sticky; top: 0; z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px; gap: 1rem;
+    }
+    .logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+    .logo-icon { font-size: 1.5rem; }
+    .logo-text { font-size: 1.25rem; font-weight: 800; color: var(--blanco); letter-spacing: -0.5px; }
+    .logo-text span { color: var(--naranja); }
+    nav { display: flex; gap: 0.25rem; }
+    nav a {
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      padding: 0.4rem 0.9rem; border-radius: 6px;
+      font-size: 0.9rem; font-weight: 500;
+      transition: background 0.2s, color 0.2s;
+    }
+    nav a:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    nav a.active { background: rgba(255,255,255,0.2); color: #fff; }
+    nav a.nav-registro {
+      background: var(--naranja); color: #fff !important;
+      font-weight: 700; margin-left: 0.5rem;
+    }
+    nav a.nav-registro:hover { background: var(--naranja-hover); }
+    .header-search {
+      display: flex; align-items: center; background: rgba(255,255,255,0.15);
+      border-radius: 8px; padding: 0.35rem 0.75rem; gap: 0.5rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      position: relative;
+    }
+    .header-search input {
+      background: transparent; border: none; outline: none;
+      color: #fff; font-size: 0.85rem; width: 160px;
+    }
+    .header-search input::placeholder { color: rgba(255,255,255,0.6); }
+    .header-search svg { color: rgba(255,255,255,0.7); flex-shrink: 0; }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--verde) 0%, #0f4d2b 100%);
+      padding: 3.5rem 1.5rem 4rem;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '🌿';
+      position: absolute; font-size: 12rem; opacity: 0.04;
+      top: -2rem; right: -2rem; transform: rotate(20deg);
+    }
+    .hero h1 { font-size: 2.2rem; font-weight: 900; color: #fff; line-height: 1.2; margin-bottom: 0.75rem; }
+    .hero h1 span { color: var(--naranja); }
+    .hero p { color: rgba(255,255,255,0.75); font-size: 1.05rem; margin-bottom: 2rem; }
+    .search-autocomplete-wrap {
+      position: relative;
+      max-width: 580px; margin: 0 auto;
+    }
+    .search-box {
+      display: flex; gap: 0; background: #fff;
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    /* ── AUTOCOMPLETE ── */
+    .mobile-search-inner { position: relative; flex: 1; display: flex; }
+    .mobile-search-inner input {
+      flex: 1; padding: 0.6rem 0.9rem;
+      border: none; border-radius: 8px 0 0 8px;
+      font-size: 0.9rem; outline: none; font-family: inherit;
+    }
+    .autocomplete-dropdown {
+      position: absolute;
+      top: calc(100% + 5px); left: 0; right: 0;
+      background: #fff; color: var(--texto);
+      border-radius: 10px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.16);
+      border: 1px solid var(--borde);
+      z-index: 3000;
+      max-height: 280px; overflow-y: auto;
+      display: none;
+    }
+    .autocomplete-dropdown.show { display: block; }
+    .autocomplete-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.65rem 1rem; cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.12s;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover, .autocomplete-item.ac-active { background: #fff5ed; }
+    .ac-icon { font-size: 1.1rem; width: 1.4rem; text-align: center; flex-shrink: 0; }
+    .ac-name { font-weight: 600; font-size: 0.9rem; line-height: 1.3; }
+    .ac-name mark { background: none; color: var(--naranja); font-weight: 800; font-style: normal; }
+    .ac-cat { font-size: 0.72rem; color: var(--texto-muted); }
+    .search-box input {
+      flex: 1; padding: 1rem 1.25rem; border: none; outline: none;
+      font-size: 1rem; color: var(--texto);
+    }
+    .search-box select {
+      border: none; border-left: 1px solid var(--borde); outline: none;
+      padding: 0 1rem; font-size: 0.9rem; color: var(--texto-muted);
+      background: #fff; cursor: pointer;
+    }
+    .search-box button {
+      background: var(--naranja); color: #fff; border: none;
+      padding: 0 1.5rem; cursor: pointer; font-size: 1rem; font-weight: 700;
+      transition: background 0.2s;
+    }
+    .search-box button:hover { background: var(--naranja-hover); }
+    .hero-stats {
+      display: flex; justify-content: center; gap: 2.5rem;
+      margin-top: 2rem; flex-wrap: wrap;
+    }
+    .hero-stat { color: rgba(255,255,255,0.8); text-align: center; }
+    .hero-stat strong { display: block; font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .hero-stat span { font-size: 0.82rem; }
+
+    /* ── SECCIONES ── */
+    .section { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    .section-title {
+      font-size: 1.35rem; font-weight: 800; color: var(--texto);
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 2px;
+      background: linear-gradient(to right, var(--borde), transparent);
+      margin-left: 0.75rem;
+    }
+
+    /* ── CATEGORÍAS ── */
+    .cats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.75rem;
+    }
+    .cat-card {
+      background: var(--blanco); border: 0.5px solid var(--borde);
+      border-radius: 14px; padding: 1.1rem 0.75rem 0.9rem;
+      text-align: center; cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s; text-decoration: none; color: var(--texto);
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      position: relative;
+    }
+    .cat-card:hover {
+      border-color: var(--verde);
+      box-shadow: 0 0 0 3px rgba(26,107,60,0.10);
+    }
+    .cat-card.active {
+      border-color: var(--verde);
+      background: var(--verde-bg);
+      box-shadow: 0 0 0 3px rgba(26,107,60,0.14);
+    }
+    .cat-card[data-count="0"] { opacity: 0.45; pointer-events: none; cursor: default; }
+    .cat-check {
+      position: absolute; top: 7px; right: 7px;
+      width: 18px; height: 18px; background: var(--verde);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #fff; line-height: 1;
+    }
+    .cat-icon {
+      font-size: 1.6rem;
+      width: 58px; height: 58px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 16px;
+    }
+    .cat-name { font-size: 0.78rem; font-weight: 500; line-height: 1.3; }
+    .cat-badge {
+      display: inline-flex; align-items: center;
+      font-size: 0.68rem; font-weight: 600;
+      padding: 2px 9px; border-radius: 20px;
+    }
+    .cat-badge.con { background: #e8f5ee; color: var(--verde); }
+    .cat-badge.sin { background: #f3f4f6; color: var(--texto-muted); }
+
+    /* ── NEGOCIOS ── */
+    .negocios-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+    }
+    .negocios-count { font-size: 0.88rem; color: var(--texto-muted); }
+    .btn-ver-mapa {
+      background: var(--verde); color: #fff; border: none;
+      padding: 0.5rem 1.1rem; border-radius: 8px; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;
+      transition: background 0.2s;
+    }
+    .btn-ver-mapa:hover { background: var(--verde-claro); }
+
+    /* Fichas más compactas */
+    .negocios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+    .negocio-card {
+      background: var(--blanco);
+      border: 1px solid var(--borde);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: all 0.22s ease;
+      cursor: pointer;
+      display: flex; flex-direction: column;
+    }
+    .negocio-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.11);
+      border-color: #b6d8c4;
+    }
+    .negocio-img {
+      height: 104px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; position: relative;
+    }
+    .destacado-ribbon {
+      position: absolute; top: 12px; right: 0;
+      background: var(--naranja); color: #fff;
+      font-size: 0.62rem; font-weight: 700;
+      padding: 0.22rem 0.65rem 0.22rem 0.55rem;
+      border-radius: 20px 0 0 20px;
+      letter-spacing: 0.02em;
+      box-shadow: -2px 2px 6px rgba(0,0,0,0.15);
+    }
+    .negocio-body {
+      padding: 1rem 1.1rem;
+      display: flex; flex-direction: column; flex: 1; gap: 0.25rem;
+    }
+    .negocio-cat {
+      display: inline-flex; align-items: center;
+      font-size: 0.73rem; font-weight: 700;
+      padding: 0.28rem 0.75rem; border-radius: 20px;
+      width: fit-content; letter-spacing: 0.02em; margin-bottom: 0.2rem;
+      border: 1.5px solid currentColor;
+      opacity: 0.92;
+    }
+    .negocio-nombre {
+      font-size: 0.97rem; font-weight: 800;
+      line-height: 1.3; color: var(--texto); margin-bottom: 0.35rem;
+    }
+    .negocio-info {
+      display: flex; flex-direction: column; gap: 0.28rem;
+      margin-bottom: 0.75rem;
+    }
+    .negocio-meta {
+      display: flex; align-items: flex-start; gap: 0.4rem;
+      font-size: 0.75rem; color: var(--texto-muted); line-height: 1.4;
+    }
+    .negocio-meta svg { flex-shrink: 0; margin-top: 2px; opacity: 0.7; }
+    /* alias legacy */
+    .negocio-dir {
+      display: flex; align-items: flex-start; gap: 0.4rem;
+      font-size: 0.75rem; color: var(--texto-muted); line-height: 1.4;
+    }
+    .negocio-dir svg { flex-shrink: 0; margin-top: 2px; }
+    .negocio-actions { display: flex; gap: 0.5rem; margin-top: auto; }
+    .btn-wsp {
+      flex: 1; background: #25D366; color: #fff; border: none;
+      padding: 0.55rem 0.5rem; border-radius: 9px; cursor: pointer;
+      font-size: 0.8rem; font-weight: 700; display: flex; align-items: center;
+      justify-content: center; gap: 0.4rem; transition: background 0.2s;
+    }
+    .btn-wsp:hover { background: #1ab554; }
+    .btn-detalle {
+      background: transparent; color: var(--verde);
+      border: 1.5px solid var(--verde);
+      padding: 0.55rem 0.8rem; border-radius: 9px; cursor: pointer;
+      font-size: 0.8rem; font-weight: 600; display: flex; align-items: center;
+      gap: 0.3rem; transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-detalle:hover { background: var(--verde); color: #fff; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(3px);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--blanco); border-radius: 18px; overflow: hidden;
+      width: 100%; max-width: 520px; max-height: 90vh;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      display: flex; flex-direction: column;
+      animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-header {
+      background: linear-gradient(135deg, var(--verde-bg), #d1fae5);
+      padding: 1.5rem 1.5rem 1rem;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+      position: relative;
+    }
+    .modal-icon { font-size: 3.5rem; line-height: 1; }
+    .modal-header-info { flex: 1; }
+    .modal-cat {
+      display: inline-block; font-size: 0.72rem; font-weight: 600;
+      color: var(--verde); background: rgba(26,107,60,0.12);
+      padding: 0.2rem 0.6rem; border-radius: 20px; margin-bottom: 0.4rem;
+    }
+    .modal-nombre { font-size: 1.2rem; font-weight: 900; line-height: 1.25; color: var(--texto); }
+    .modal-badge {
+      display: inline-block; background: var(--naranja); color: #fff;
+      padding: 0.15rem 0.5rem; border-radius: 20px;
+      font-size: 0.68rem; font-weight: 600; margin-top: 0.35rem;
+    }
+    .modal-close {
+      background: rgba(0,0,0,0.08); border: none; cursor: pointer;
+      width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    .modal-close:hover { background: rgba(0,0,0,0.15); }
+    .modal-body {
+      padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .modal-desc {
+      font-size: 0.92rem; color: var(--texto); line-height: 1.6;
+      background: #f9fafb; border-radius: 10px; padding: 0.9rem 1rem;
+      border-left: 3px solid var(--verde);
+    }
+    .modal-section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--texto-muted); margin-bottom: 0.5rem;
+    }
+    .modal-info-grid {
+      display: flex; flex-direction: column; gap: 0.6rem;
+    }
+    .modal-info-row {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      font-size: 0.88rem; color: var(--texto);
+    }
+    .modal-info-row a { color: var(--verde); text-decoration: none; }
+    .modal-info-row a:hover { text-decoration: underline; }
+    .modal-info-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 1rem;
+    }
+    .modal-info-icon.verde { background: var(--verde-bg); }
+    .modal-info-icon.azul  { background: #dbeafe; }
+    .modal-info-icon.naranja{ background: #ffedd5; }
+    .modal-info-icon.morado { background: #ede9fe; }
+    .modal-info-icon.gris  { background: #f3f4f6; }
+    .modal-info-text { line-height: 1.5; padding-top: 0.3rem; }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .modal-tag {
+      background: #f3f4f6; color: var(--texto); border-radius: 20px;
+      padding: 0.2rem 0.65rem; font-size: 0.78rem; font-weight: 500;
+    }
+    .modal-tag.verde { background: var(--verde-bg); color: var(--verde); }
+    .modal-footer {
+      padding: 1rem 1.5rem; border-top: 1px solid var(--borde);
+      display: flex; gap: 0.6rem;
+    }
+    .modal-btn-wsp {
+      flex: 1; background: #25D366; color: #fff; border: none;
+      padding: 0.75rem; border-radius: 10px; cursor: pointer;
+      font-size: 0.92rem; font-weight: 700; display: flex; align-items: center;
+      justify-content: center; gap: 0.5rem; transition: background 0.2s;
+    }
+    .modal-btn-wsp:hover { background: #1ab554; }
+    .modal-btn-mapa {
+      background: var(--verde-bg); color: var(--verde); border: 1px solid var(--verde);
+      padding: 0.75rem 1rem; border-radius: 10px; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; display: flex; align-items: center;
+      gap: 0.4rem; transition: all 0.2s;
+    }
+    .modal-btn-mapa:hover { background: var(--verde); color: #fff; }
+    .modal-btn-wsp.disabled {
+      background: #9ca3af; cursor: not-allowed;
+    }
+
+    /* ── MAPA ── */
+    #mapa-section { background: var(--verde-bg); }
+    #mapa { height: 450px; width: 100%; border-radius: 14px; overflow: hidden; box-shadow: var(--sombra); }
+    .leaflet-popup-content-wrapper { border-radius: 10px; }
+    .popup-content { padding: 0.25rem; }
+    .popup-nombre { font-weight: 700; font-size: 0.95rem; color: var(--texto); }
+    .popup-cat { font-size: 0.75rem; color: var(--verde); font-weight: 600; margin-bottom: 0.35rem; }
+    .popup-dir { font-size: 0.8rem; color: var(--texto-muted); }
+    /* ── TOOLTIP DE MAPA (hover) ── */
+    .mapa-tooltip {
+      background: rgba(255,255,255,0.82) !important;
+      border: 1px solid rgba(0,0,0,0.08) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.14) !important;
+      padding: 0.5rem 0.75rem !important;
+      white-space: normal !important;
+      min-width: 150px;
+      pointer-events: none;
+      backdrop-filter: blur(6px);
+    }
+    .mapa-tooltip.leaflet-tooltip-top::before { border-top-color: rgba(255,255,255,0.82) !important; }
+    .mapa-tooltip .popup-hint {
+      font-size: 0.7rem; color: var(--naranja); font-weight: 600;
+      margin-top: 0.4rem; display: flex; align-items: center; gap: 0.3rem;
+    }
+
+    /* ── LIMPIAR FILTRO ── */
+    .btn-limpiar {
+      background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;
+      padding: 0.3rem 0.75rem; border-radius: 20px; cursor: pointer;
+      font-size: 0.78rem; font-weight: 700; display: flex; align-items: center;
+      gap: 0.3rem; transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-limpiar:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+    /* ── FILTROS CHIPS ── */
+    .filtros-chips {
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      background: var(--blanco); border: 1px solid var(--borde);
+      border-radius: 20px; padding: 0.3rem 0.75rem;
+      font-size: 0.8rem; font-weight: 500; cursor: pointer;
+      color: var(--texto-muted); transition: all 0.18s; white-space: nowrap;
+      user-select: none;
+    }
+    .chip:hover { border-color: var(--verde); color: var(--verde); background: var(--verde-bg); }
+    .chip.active {
+      background: var(--verde); color: #fff; border-color: var(--verde);
+    }
+
+    /* ── VACÍO ── */
+    .empty {
+      grid-column: 1/-1; text-align: center;
+      padding: 3rem; color: var(--texto-muted);
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .empty h3 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0f2d1c; color: rgba(255,255,255,0.7);
+      padding: 2.5rem 1.5rem 1.5rem; margin-top: 3rem;
+    }
+    .footer-inner { max-width: 1100px; margin: 0 auto; }
+    .footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem; }
+    .footer-brand .logo-text { font-size: 1.3rem; }
+    .footer-brand p { margin-top: 0.5rem; font-size: 0.85rem; max-width: 260px; }
+    .footer-links h4 { color: #fff; font-size: 0.9rem; margin-bottom: 0.75rem; }
+    .footer-links a { display: block; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.85rem; margin-bottom: 0.4rem; }
+    .footer-links a:hover { color: var(--naranja); }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.25rem; font-size: 0.8rem; text-align: center; }
+
+    /* ── HAMBURGER / MENÚ MOBILE ── */
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer;
+      color: #fff; padding: 0.4rem; border-radius: 6px;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    .hamburger:hover { background: rgba(255,255,255,0.15); }
+    .mobile-menu {
+      display: none; flex-direction: column;
+      background: var(--verde);
+      border-top: 1px solid rgba(255,255,255,0.12);
+      position: sticky; top: 60px; z-index: 998;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-search-bar {
+      display: flex; padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1); gap: 0;
+    }
+    /* mobile input styles moved to .mobile-search-inner input */
+    .mobile-search-bar button {
+      background: var(--naranja); color: #fff; border: none;
+      padding: 0 1rem; border-radius: 0 8px 8px 0;
+      font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .mobile-search-bar button:hover { background: var(--naranja-hover); }
+    .mobile-menu a {
+      color: rgba(255,255,255,0.88); text-decoration: none;
+      padding: 0.9rem 1.25rem; font-size: 0.95rem; font-weight: 500;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: background 0.15s; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .mobile-menu a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu-registra {
+      background: var(--naranja) !important;
+      color: #fff !important; font-weight: 700 !important;
+      margin: 0.75rem 1rem 0.9rem !important;
+      border-radius: 10px !important; justify-content: center !important;
+      border-bottom: none !important;
+    }
+    .mobile-menu-registra:hover { background: var(--naranja-hover) !important; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.6rem; }
+      .search-box select { display: none; }
+      nav { display: none; }
+      .header-search { display: none; }
+      .hamburger { display: flex; align-items: center; }
+      .hero-stats { gap: 1.5rem; }
+      .negocios-grid { grid-template-columns: repeat(2, 1fr); }
+      .modal { max-height: 95vh; }
+    }
+    @media (max-width: 380px) {
+      .negocios-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="header-inner">
+    <a href="#" class="logo">
+      <span class="logo-icon">🌿</span>
+      <span class="logo-text">En<span>Martinez</span>.com</span>
+    </a>
+    <nav>
+      <a href="#inicio" onclick="scrollSeccion(event,'inicio')">Inicio</a>
+      <a href="#categorias" onclick="scrollSeccion(event,'categorias')">Categorías</a>
+      <a href="#negocios" onclick="scrollSeccion(event,'negocios')">Negocios</a>
+      <a href="#mapa-section" onclick="scrollSeccion(event,'mapa-section')">Mapa</a>
+      <a href="contacto.html">Contacto</a>
+      <a href="registro.html" class="nav-registro">＋ Registra tu negocio</a>
+    </nav>
+    <div class="header-search">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" placeholder="Buscar negocio..." id="headerSearch">
+      <div class="autocomplete-dropdown" id="headerAutocomplete"></div>
+    </div>
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Abrir menú">
+      <svg id="ham-icon" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- ═══ MENÚ MOBILE ═══ -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mobile-search-bar">
+    <div class="mobile-search-inner">
+      <input type="text" id="mobileSearch" placeholder="¿Qué estás buscando?">
+      <div class="autocomplete-dropdown" id="mobileAutocomplete"></div>
+    </div>
+    <button onclick="buscarMobile()">Buscar</button>
+  </div>
+  <a href="#inicio" onclick="cerrarMenu()">🏠 Inicio</a>
+  <a href="#categorias" onclick="cerrarMenu()">🗂️ Categorías</a>
+  <a href="#negocios" onclick="cerrarMenu()">🏪 Negocios</a>
+  <a href="#mapa-section" onclick="cerrarMenu()">📍 Mapa</a>
+  <a href="registro.html" class="mobile-menu-registra">➕ Registra tu negocio</a>
+</div>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="inicio">
+  <h1>Encuentra negocios en<br><span>Martínez de la Torre</span></h1>
+  <p>Restaurantes, talleres, farmacias, servicios y mucho más — todo en un solo lugar.</p>
+  <div class="search-autocomplete-wrap">
+  <div class="search-box">
+    <input type="text" placeholder="¿Qué estás buscando?" id="mainSearch">
+    <select id="catSelect">
+      <option value="">Todas las categorías</option>
+      <option value="restaurantes">🍽️ Restaurantes</option>
+      <option value="abarrotes">🛒 Abarrotes</option>
+      <option value="salud">🏥 Salud</option>
+      <option value="talleres">🔧 Talleres</option>
+      <option value="belleza">💇 Belleza</option>
+      <option value="hoteles">🏨 Hoteles</option>
+      <option value="construccion">🏗️ Construcción</option>
+      <option value="veterinarias">🐾 Veterinarias</option>
+      <option value="transporte">🚕 Transporte</option>
+      <option value="panaderias">🥐 Panaderías</option>
+      <option value="bancos">🏦 Bancos</option>
+      <option value="profesionales">⚖️ Profesionales</option>
+      <option value="agroindustria">🍊 Agroindustria</option>
+      <option value="oficios">🔩 Oficios y servicios del hogar</option>
+    </select>
+    <button onclick="buscar()">Buscar</button>
+  </div>
+  <div class="autocomplete-dropdown" id="mainAutocomplete"></div>
+  </div><!-- /search-autocomplete-wrap -->
+  <div class="hero-stats">
+    <div class="hero-stat"><strong id="total-negocios">13</strong><span>Negocios registrados</span></div>
+    <div class="hero-stat"><strong id="total-categorias">20</strong><span>Categorías</span></div>
+    <div class="hero-stat"><strong>MDT</strong><span>Martínez de la Torre, Ver.</span></div>
+  </div>
+</section>
+
+<!-- ═══ CATEGORÍAS ═══ -->
+<div id="categorias">
+  <div class="section">
+    <h2 class="section-title">🗂️ Categorías</h2>
+    <div class="cats-grid" id="catsGrid">
+      <!-- generado por JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NEGOCIOS ═══ -->
+<div id="negocios" class="section">
+  <div class="negocios-header">
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+      <h2 class="section-title" style="margin-bottom:0">🏪 Negocios</h2>
+      <button class="btn-limpiar" id="btn-limpiar-filtro" style="display:none" onclick="limpiarFiltro()">
+        ✕ Limpiar filtro
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <span class="negocios-count" id="negocios-count">Mostrando 13 negocios</span>
+      <button class="btn-ver-mapa" onclick="scrollMapa()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+        </svg>
+        Ver en mapa
+      </button>
+    </div>
+  </div>
+  <div class="filtros-chips" id="filtrosChips">
+    <!-- generado por JS -->
+  </div>
+  <div class="negocios-grid" id="negociosGrid">
+    <!-- generado por JS -->
+  </div>
+</div>
+
+<!-- ═══ MAPA ═══ -->
+<div id="mapa-section" style="padding: 0 0 2rem;">
+  <div class="section">
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
+      <h2 class="section-title" style="margin-bottom:0">📍 Mapa interactivo</h2>
+      <button class="btn-limpiar" id="btn-limpiar-mapa" style="display:none" onclick="limpiarFiltroMapa()">
+        ✕ Limpiar filtro
+      </button>
+    </div>
+    <div class="filtros-chips" id="filtrosChipsMapa">
+      <!-- generado por JS -->
+    </div>
+    <div id="mapa"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL NEGOCIO ═══ -->
+<div class="modal-overlay" id="modalOverlay" onclick="cerrarModalOverlay(event)">
+  <div class="modal" id="modalContenido">
+    <div class="modal-header">
+      <div>
+        <div class="modal-icon" id="m-icono"></div>
+      </div>
+      <div class="modal-header-info">
+        <div class="modal-cat" id="m-cat"></div>
+        <div class="modal-nombre" id="m-nombre"></div>
+        <div id="m-badge-wrap"></div>
+      </div>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-desc" id="m-desc"></div>
+
+      <div>
+        <div class="modal-section-title">Información de contacto</div>
+        <div class="modal-info-grid">
+          <div class="modal-info-row">
+            <div class="modal-info-icon verde">📍</div>
+            <div class="modal-info-text" id="m-dir"></div>
+          </div>
+          <div class="modal-info-row">
+            <div class="modal-info-icon azul">📞</div>
+            <div class="modal-info-text" id="m-tel"></div>
+          </div>
+          <div class="modal-info-row">
+            <div class="modal-info-icon naranja">🕐</div>
+            <div class="modal-info-text" id="m-horario"></div>
+          </div>
+          <div class="modal-info-row" id="m-web-row" style="display:none">
+            <div class="modal-info-icon morado">🌐</div>
+            <div class="modal-info-text" id="m-web"></div>
+          </div>
+          <div class="modal-info-row" id="m-fb-row" style="display:none">
+            <div class="modal-info-icon azul">👍</div>
+            <div class="modal-info-text" id="m-fb"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="m-servicios-wrap">
+        <div class="modal-section-title">Servicios</div>
+        <div class="modal-tags" id="m-servicios"></div>
+      </div>
+
+      <div id="m-pago-wrap">
+        <div class="modal-section-title">Métodos de pago</div>
+        <div class="modal-tags" id="m-pago"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn-wsp" id="m-btn-wsp">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+        WhatsApp
+      </button>
+      <button class="modal-btn-mapa" id="m-btn-mapa">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+        Ver en mapa
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<div style="background:#f8faf8;padding:0.85rem 1.5rem;text-align:center;border-top:1px solid #e5e7eb;">
+  <span style="font-size:0.78rem;color:#6b7280;">¿Dudas o comentarios? <a href="contacto.html" style="color:#1a6b3c;font-weight:700;text-decoration:none;">Escríbenos aquí →</a></span>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="logo">
+          <span class="logo-icon">🌿</span>
+          <span class="logo-text">En<span>Martinez</span>.com</span>
+        </div>
+        <p>El directorio digital de Martínez de la Torre, Veracruz. Encuentra todo lo que necesitas cerca de ti.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Explorar</h4>
+        <a href="#inicio" onclick="scrollSeccion(event,'inicio')">🔍 Búsqueda</a>
+        <a href="#categorias" onclick="scrollSeccion(event,'categorias')">Todas las categorías</a>
+        <a href="#negocios" onclick="scrollSeccion(event,'negocios')">Negocios destacados</a>
+        <a href="#mapa-section" onclick="scrollSeccion(event,'mapa-section')">Mapa de negocios</a>
+      </div>
+      <div class="footer-links">
+        <h4>¿Tienes un negocio?</h4>
+        <a href="registro.html">Registra tu negocio</a>
+        <a href="contacto.html">Contacto</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2026 EnMartinez.com — Martínez de la Torre, Veracruz · Hecho con 💚 para la comunidad
+      <span style="margin-left:1.5rem">·</span>
+      <a href="admin.html" style="color:rgba(255,255,255,0.25);font-size:0.75rem;margin-left:0.75rem;text-decoration:none;cursor:default">🔐</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+
+// ══════════════════════════════════════════
+//  BASE DE DATOS DE NEGOCIOS
+// ══════════════════════════════════════════
+const NEGOCIOS_FALLBACK = [
+  {
+    id: 1,
+    nombre: "Taquería El Buen Taco",
+    categoria: "restaurantes",
+    catLabel: "🍽️ Restaurantes",
+    icono: "🌮",
+    descripcion: "Los mejores tacos de canasta y al pastor de Martínez. Más de 20 años de tradición familiar sirviendo a la comunidad con sabores auténticos veracruzanos.",
+    direccion: "Av. Insurgentes 45, Centro",
+    telefono: "232 123 4567",
+    whatsapp: "2321234567",
+    horario: "Lun–Sáb 8:00–20:00",
+    servicios: ["Tacos al pastor", "Tacos de canasta", "Tortas", "Para llevar", "A domicilio"],
+    pago: ["Efectivo", "Transferencia"],
+    facebook: "https://facebook.com",
+    web: "",
+    destacado: true,
+    lat: 20.0731, lng: -97.0527
+  },
+  {
+    id: 2,
+    nombre: "Farmacia San Francisco",
+    categoria: "salud",
+    catLabel: "🏥 Salud",
+    icono: "💊",
+    descripcion: "Medicamentos de patente y genéricos, vitaminas, artículos de salud y cuidado personal. Contamos con médico de guardia sin costo y servicio a domicilio disponible.",
+    direccion: "Calle Hidalgo 12, Centro",
+    telefono: "232 234 5678",
+    whatsapp: "2322345678",
+    horario: "Lun–Dom 8:00–22:00",
+    servicios: ["Medicamentos genéricos", "Vitaminas", "Médico sin costo", "Inyecciones", "Servicio a domicilio"],
+    pago: ["Efectivo", "Tarjeta", "Transferencia"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0715, lng: -97.0510
+  },
+  {
+    id: 3,
+    nombre: "Abarrotes La Esperanza",
+    categoria: "abarrotes",
+    catLabel: "🛒 Abarrotes",
+    icono: "🛒",
+    descripcion: "Abarrotes completos, frutas, verduras y productos de limpieza. Manejamos precios de mayoreo para negocios y familias. Surtido fresco todos los días.",
+    direccion: "Blvd. Adolfo Ruiz Cortines 88",
+    telefono: "232 345 6789",
+    whatsapp: "2323456789",
+    horario: "Lun–Sáb 7:00–21:00",
+    servicios: ["Abarrotes", "Frutas y verduras", "Limpieza", "Precios mayoreo", "Refrescos y agua"],
+    pago: ["Efectivo", "Transferencia"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0725, lng: -97.0535
+  },
+  {
+    id: 4,
+    nombre: "Hotel Plaza Martínez",
+    categoria: "hoteles",
+    catLabel: "🏨 Hoteles",
+    icono: "🏨",
+    descripcion: "Hotel céntrico con 30 habitaciones equipadas, WiFi de alta velocidad, estacionamiento gratuito y aire acondicionado. Ideal para viajeros de negocios y turistas.",
+    direccion: "Calle 20 de Noviembre 5, Centro",
+    telefono: "232 456 7890",
+    whatsapp: "2324567890",
+    horario: "Recepción 24 hrs",
+    servicios: ["WiFi gratis", "Estacionamiento", "Aire acondicionado", "TV cable", "Desayuno incluido"],
+    pago: ["Efectivo", "Tarjeta", "Transferencia"],
+    facebook: "https://facebook.com",
+    web: "",
+    destacado: true,
+    lat: 20.0718, lng: -97.0520
+  },
+  {
+    id: 5,
+    nombre: "Taller Mecánico García",
+    categoria: "talleres",
+    catLabel: "🔧 Talleres",
+    icono: "🔧",
+    descripcion: "Servicio mecánico general para todo tipo de vehículos. Especialistas en frenos, suspensión, afinaciones y diagnóstico computarizado. 15 años de experiencia.",
+    direccion: "Carretera a Tlapacoyan km 2",
+    telefono: "232 567 8901",
+    whatsapp: "2325678901",
+    horario: "Lun–Sáb 8:00–18:00",
+    servicios: ["Afinación", "Frenos", "Suspensión", "Diagnóstico computarizado", "Cambio de aceite"],
+    pago: ["Efectivo", "Transferencia"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0735, lng: -97.0515
+  },
+  {
+    id: 6,
+    nombre: "Salón de Belleza Vanity",
+    categoria: "belleza",
+    catLabel: "💇 Belleza",
+    icono: "💇",
+    descripcion: "Salón de belleza profesional con tratamientos capilares, cortes modernos, tintes, manicure y pedicure. Trabajamos con cita previa para brindarte mejor atención.",
+    direccion: "Av. Veracruz 67, Col. Centro",
+    telefono: "232 678 9012",
+    whatsapp: "2326789012",
+    horario: "Mar–Sáb 9:00–19:00",
+    servicios: ["Corte y peinado", "Tintes", "Manicure", "Pedicure", "Tratamientos capilares"],
+    pago: ["Efectivo", "Transferencia"],
+    facebook: "https://facebook.com",
+    web: "",
+    destacado: false,
+    lat: 20.0722, lng: -97.0525
+  },
+  {
+    id: 7,
+    nombre: "Ferretería El Tornillo",
+    categoria: "construccion",
+    catLabel: "🏗️ Construcción",
+    icono: "🏗️",
+    descripcion: "Ferretería y materiales de construcción con el surtido más completo de la región. Herramientas, tornillería, pinturas, tablarroca y más. Asesoría personalizada.",
+    direccion: "Calle Morelos 34, Centro",
+    telefono: "232 789 0123",
+    whatsapp: "2327890123",
+    horario: "Lun–Sáb 8:00–19:00",
+    servicios: ["Materiales de construcción", "Herramientas", "Pinturas", "Tornillería", "Instalación eléctrica"],
+    pago: ["Efectivo", "Tarjeta", "Transferencia", "Crédito"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0710, lng: -97.0530
+  },
+  {
+    id: 8,
+    nombre: "Veterinaria Patitas",
+    categoria: "veterinarias",
+    catLabel: "🐾 Veterinarias",
+    icono: "🐾",
+    descripcion: "Clínica veterinaria con médico titulado para consultas, vacunas, cirugías y estética de mascotas. Atendemos perros, gatos y animales de granja. Urgencias disponibles.",
+    direccion: "Av. Juárez 101, Col. Centro",
+    telefono: "232 890 1234",
+    whatsapp: "2328901234",
+    horario: "Lun–Vie 9:00–18:00, Sáb 9:00–14:00",
+    servicios: ["Consultas", "Vacunación", "Cirugías", "Estética", "Urgencias"],
+    pago: ["Efectivo", "Tarjeta", "Transferencia"],
+    facebook: "https://facebook.com",
+    web: "",
+    destacado: false,
+    lat: 20.0740, lng: -97.0518
+  },
+  {
+    id: 9,
+    nombre: "Taxis Martínez Express",
+    categoria: "transporte",
+    catLabel: "🚕 Transporte",
+    icono: "🚕",
+    descripcion: "Servicio de taxi local y foráneo las 24 horas del día. Viajes seguros a Xalapa, Poza Rica, Tuxpan y aeropuerto. Unidades cómodas y choferes de confianza.",
+    direccion: "Base: Av. Independencia 23, Centro",
+    telefono: "232 901 2345",
+    whatsapp: "2329012345",
+    horario: "24 horas, los 365 días",
+    servicios: ["Taxi local", "Viajes foráneos", "Aeropuerto", "Xalapa / Poza Rica", "Grupos"],
+    pago: ["Efectivo", "Transferencia"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0728, lng: -97.0512
+  },
+  {
+    id: 10,
+    nombre: "Panadería El Trigal",
+    categoria: "panaderias",
+    catLabel: "🥐 Panaderías",
+    icono: "🥐",
+    descripcion: "Panadería artesanal con hornada fresca dos veces al día. Pan de dulce, teleras, bolillos, pasteles y repostería para eventos. Sabor casero de toda la vida.",
+    direccion: "Calle Zaragoza 78, Col. Centro",
+    telefono: "232 012 3456",
+    whatsapp: "2320123456",
+    horario: "Lun–Dom 7:00–21:00",
+    servicios: ["Pan de dulce", "Teleras y bolillos", "Pasteles", "Repostería", "Pedidos especiales"],
+    pago: ["Efectivo"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0720, lng: -97.0528
+  },
+  {
+    id: 11,
+    nombre: "Banco BBVA Martínez",
+    categoria: "bancos",
+    catLabel: "🏦 Bancos",
+    icono: "🏦",
+    descripcion: "Sucursal bancaria con cajeros automáticos, ventanilla de servicio, créditos personales y empresariales, y atención a empresas. Estacionamiento disponible.",
+    direccion: "Av. Insurgentes 10, Centro",
+    telefono: "800 226 2663",
+    whatsapp: "",
+    horario: "Lun–Vie 9:00–16:00",
+    servicios: ["Cajero automático", "Cuentas de ahorro", "Créditos", "Transferencias", "Atención empresarial"],
+    pago: ["N/A"],
+    facebook: "",
+    web: "https://bbva.mx",
+    destacado: false,
+    lat: 20.0717, lng: -97.0523
+  },
+  {
+    id: 12,
+    nombre: "Despacho Contable Ramírez",
+    categoria: "profesionales",
+    catLabel: "⚖️ Profesionales",
+    icono: "📋",
+    descripcion: "Despacho contable y fiscal con más de 10 años de experiencia. Declaraciones de impuestos, nómina, contabilidad mensual y asesoría para personas físicas y morales.",
+    direccion: "Calle Allende 56, Planta Alta",
+    telefono: "232 111 2233",
+    whatsapp: "2321112233",
+    horario: "Lun–Vie 9:00–18:00",
+    servicios: ["Declaraciones SAT", "Contabilidad", "Nómina", "Facturación CFDI", "Asesoría fiscal"],
+    pago: ["Efectivo", "Transferencia"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0724, lng: -97.0519
+  },
+  {
+    id: 13,
+    nombre: "Empacadora Cítricos del Norte",
+    categoria: "agroindustria",
+    catLabel: "🍊 Agroindustria",
+    icono: "🍊",
+    descripcion: "Empresa empacadora y distribuidora de cítricos de la región. Naranja, mandarina y limón en presentaciones para mayoristas, supermercados y exportación.",
+    direccion: "Carretera Nautla km 4.5",
+    telefono: "232 222 3344",
+    whatsapp: "2322223344",
+    horario: "Lun–Sáb 7:00–17:00",
+    servicios: ["Empaque de naranja", "Mandarina", "Limón", "Venta mayoreo", "Exportación"],
+    pago: ["Efectivo", "Transferencia", "Crédito"],
+    facebook: "",
+    web: "",
+    destacado: false,
+    lat: 20.0755, lng: -97.0500
+  }
+];
+
+// Carga desde localStorage (admin) o usa el fallback hardcoded
+function cargarNegociosIndex() {
+  try {
+    const s = localStorage.getItem('em_negocios');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(NEGOCIOS_FALLBACK));
+}
+
+const negocios = cargarNegociosIndex();
+
+// (verificados eliminado)
+
+// ══════════════════════════════════════════
+//  CATÁLOGO DE CATEGORÍAS
+// ══════════════════════════════════════════
+const categorias = [
+  { id: 'restaurantes', nombre: 'Restaurantes y comida',     icono: '🍽️', bg: '#fee2e2' },
+  { id: 'abarrotes',   nombre: 'Abarrotes y súper',          icono: '🛒', bg: '#fef9c3' },
+  { id: 'salud',       nombre: 'Salud y farmacias',          icono: '🏥', bg: '#dbeafe' },
+  { id: 'talleres',    nombre: 'Talleres y refacciones',     icono: '🔧', bg: '#e5e7eb' },
+  { id: 'belleza',     nombre: 'Belleza y estética',         icono: '💇', bg: '#fce7f3' },
+  { id: 'hoteles',     nombre: 'Hoteles y hospedaje',        icono: '🏨', bg: '#ede9fe' },
+  { id: 'construccion',nombre: 'Construcción y ferretería',  icono: '🏗️', bg: '#ffedd5' },
+  { id: 'veterinarias',nombre: 'Veterinarias y mascotas',    icono: '🐾', bg: '#d1fae5' },
+  { id: 'ropa',        nombre: 'Ropa y calzado',             icono: '👗', bg: '#fce7f3' },
+  { id: 'servicios',   nombre: 'Servicios Profesionales',     icono: '⚡', bg: '#fef9c3' },
+  { id: 'agro',        nombre: 'Agro y viveros',             icono: '🌿', bg: '#d1fae5' },
+  { id: 'educacion',   nombre: 'Educación',                  icono: '🏫', bg: '#dbeafe' },
+  { id: 'tecnologia',  nombre: 'Tecnología',                 icono: '💻', bg: '#e0e7ff' },
+  { id: 'eventos',     nombre: 'Eventos',                    icono: '🎉', bg: '#fef3c7' },
+  { id: 'transporte',  nombre: 'Transporte',                 icono: '🚕', bg: '#fef9c3' },
+  { id: 'panaderias',  nombre: 'Panaderías y pastelerías',   icono: '🥐', bg: '#ffedd5' },
+  { id: 'bancos',      nombre: 'Bancos y financieros',       icono: '🏦', bg: '#dbeafe' },
+  { id: 'profesionales',nombre: 'Profesionales',             icono: '⚖️', bg: '#f3f4f6' },
+  { id: 'agroindustria',nombre: 'Agroindustria',             icono: '🍊', bg: '#fef3c7' },
+  { id: 'oficios',     nombre: 'Oficios y servicios del hogar', icono: '🔩', bg: '#e0f2fe' },
+];
+
+function renderChips() {
+  const conteos = {};
+  negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
+  const conNegocios = categorias.filter(c => conteos[c.id]);
+  const wrap = document.getElementById('filtrosChips');
+  wrap.innerHTML = conNegocios.map(c => `
+    <span class="chip${filtroActivo === c.id ? ' active' : ''}" onclick="filtrarPorCat('${c.id}')">
+      ${c.icono} ${c.nombre}
+    </span>
+  `).join('');
+}
+
+function renderCategorias() {
+  const conteos = {};
+  negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
+  const grid = document.getElementById('catsGrid');
+  grid.innerHTML = categorias.map(cat => {
+    const count = conteos[cat.id] || 0;
+    const isActive = filtroActivo === cat.id;
+    const badgeHtml = count > 0
+      ? `<span class="cat-badge con">${count} negocio${count !== 1 ? 's' : ''}</span>`
+      : `<span class="cat-badge sin">Sin negocios</span>`;
+    const checkHtml = isActive ? '<span class="cat-check">&#10003;</span>' : '';
+    return `<div class="cat-card${isActive ? ' active' : ''}" onclick="filtrarPorCat('${cat.id}')" data-count="${count}">${checkHtml}<span class="cat-icon" style="background:${cat.bg}">${cat.icono}</span><span class="cat-name">${cat.nombre}</span>${badgeHtml}</div>`;
+  }).join('');
+  document.getElementById('total-categorias').textContent = categorias.length;
+}
+
+// ══════════════════════════════════════════
+//  RENDER NEGOCIOS (fichas compactas)
+// ══════════════════════════════════════════
+let filtroActivo = null;
+
+function renderNegocios(lista) {
+  const grid = document.getElementById('negociosGrid');
+  document.getElementById('negocios-count').textContent =
+    `Mostrando ${lista.length} negocio${lista.length !== 1 ? 's' : ''}`;
+  document.getElementById('total-negocios').textContent = negocios.length;
+  // Mostrar/ocultar botón limpiar filtro
+  document.getElementById('btn-limpiar-filtro').style.display = filtroActivo ? 'flex' : 'none';
+
+  if (lista.length === 0) {
+    grid.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <h3>No encontramos resultados</h3>
+        <p>Intenta con otras palabras o cambia la categoría.</p>
+      </div>`;
+    return;
+  }
+
+  const catBg = {};
+  categorias.forEach(c => { catBg[c.id] = c.bg; });
+
+  grid.innerHTML = lista.map(n => {
+    const bg = catBg[n.categoria] || '#f0f7f2';
+    const catColor = catColores[n.categoria] || '#1a6b3c';
+    return `
+    <div class="negocio-card" style="background:${bg}44;${n.destacado ? ' border-top:3px solid ' + catColor + ';' : ''}" onclick="abrirModal(${n.id})">
+      <div class="negocio-img" style="background:${bg}">
+        <span>${n.icono}</span>
+        ${n.destacado ? '<div class="destacado-ribbon">⭐ Destacado</div>' : ''}
+      </div>
+      <div class="negocio-body">
+        <div class="negocio-nombre">${n.nombre}</div>
+        <span class="negocio-cat" style="color:${catColor};background:${catColor}1a;">${n.catLabel}</span>
+        <div class="negocio-info">
+          <div class="negocio-meta">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            ${n.direccion}
+          </div>
+          <div class="negocio-meta">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            ${n.telefono}
+          </div>
+          <div class="negocio-meta">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            ${n.horario}
+          </div>
+        </div>
+        <div class="negocio-actions" onclick="event.stopPropagation()">
+          ${n.whatsapp
+            ? `<button class="btn-wsp" onclick="abrirWhatsApp('${n.whatsapp}', '${n.nombre}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+                WhatsApp
+              </button>`
+            : `<button class="btn-wsp" style="background:#9ca3af;cursor:default">
+                📞 ${n.telefono}
+              </button>`
+          }
+          <button class="btn-detalle" onclick="abrirModal(${n.id})">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Info
+          </button>
+        </div>
+      </div>
+    </div>
+  `}).join('');
+}
+
+// ══════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════
+function abrirModal(id) {
+  const n = negocios.find(x => x.id === id);
+  if (!n) return;
+
+  document.getElementById('m-icono').textContent = n.icono;
+  document.getElementById('m-cat').textContent = n.catLabel;
+  document.getElementById('m-nombre').textContent = n.nombre;
+  document.getElementById('m-desc').textContent = n.descripcion;
+
+  // Badge destacado
+  const badgeWrap = document.getElementById('m-badge-wrap');
+  badgeWrap.innerHTML = n.destacado ? '<span class="modal-badge">⭐ Destacado</span>' : '';
+
+  // Dirección con link a Google Maps
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(n.nombre + ' ' + n.direccion + ' Martínez de la Torre')}`;
+  document.getElementById('m-dir').innerHTML = `<a href="${mapsUrl}" target="_blank">${n.direccion}</a>`;
+
+  // Teléfono
+  document.getElementById('m-tel').innerHTML = `<a href="tel:${n.telefono.replace(/\s/g,'')}">${n.telefono}</a>`;
+
+  // Horario
+  document.getElementById('m-horario').textContent = n.horario;
+
+  // Web
+  const webRow = document.getElementById('m-web-row');
+  if (n.web) {
+    webRow.style.display = 'flex';
+    document.getElementById('m-web').innerHTML = `<a href="${n.web}" target="_blank">${n.web.replace('https://','')}</a>`;
+  } else {
+    webRow.style.display = 'none';
+  }
+
+  // Facebook
+  const fbRow = document.getElementById('m-fb-row');
+  if (n.facebook) {
+    fbRow.style.display = 'flex';
+    document.getElementById('m-fb').innerHTML = `<a href="${n.facebook}" target="_blank">Ver página en Facebook</a>`;
+  } else {
+    fbRow.style.display = 'none';
+  }
+
+  // Servicios
+  const serviciosWrap = document.getElementById('m-servicios-wrap');
+  if (n.servicios && n.servicios.length > 0) {
+    serviciosWrap.style.display = 'block';
+    document.getElementById('m-servicios').innerHTML = n.servicios
+      .map(s => `<span class="modal-tag verde">${s}</span>`).join('');
+  } else {
+    serviciosWrap.style.display = 'none';
+  }
+
+  // Métodos de pago
+  const pagoWrap = document.getElementById('m-pago-wrap');
+  if (n.pago && n.pago.length > 0 && n.pago[0] !== 'N/A') {
+    pagoWrap.style.display = 'block';
+    const pagoIconos = { 'Efectivo':'💵', 'Tarjeta':'💳', 'Transferencia':'📲', 'Crédito':'🤝' };
+    document.getElementById('m-pago').innerHTML = n.pago
+      .map(p => `<span class="modal-tag">${pagoIconos[p] || ''} ${p}</span>`).join('');
+  } else {
+    pagoWrap.style.display = 'none';
+  }
+
+  // Botones del footer
+  const waSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>`;
+  const btnWsp = document.getElementById('m-btn-wsp');
+  if (n.whatsapp) {
+    btnWsp.className = 'modal-btn-wsp';
+    btnWsp.innerHTML = waSvg + ' WhatsApp';
+    btnWsp.onclick = () => abrirWhatsApp(n.whatsapp, n.nombre);
+  } else {
+    btnWsp.className = 'modal-btn-wsp disabled';
+    btnWsp.onclick = null;
+    btnWsp.innerHTML = `📞 ${n.telefono}`;
+  }
+
+  document.getElementById('m-btn-mapa').onclick = () => {
+    cerrarModal();
+    verEnMapa(n.lat, n.lng, n.nombre);
+  };
+
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function cerrarModalOverlay(e) {
+  if (e.target === document.getElementById('modalOverlay')) cerrarModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
+
+// ══════════════════════════════════════════
+//  MAPA LEAFLET
+// ══════════════════════════════════════════
+const mapa = L.map('mapa').setView([20.0725, -97.0522], 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org">OpenStreetMap</a>'
+}).addTo(mapa);
+
+const marcadores = {};
+let clusterGroup;
+
+// Colores por categoría — tono medio, ni muy vivos ni muy apagados
+const catColores = {
+  'restaurantes':  '#c0524f',
+  'abarrotes':     '#a07c10',
+  'salud':         '#4a7ec0',
+  'talleres':      '#6e6e6e',
+  'belleza':       '#b8609a',
+  'hoteles':       '#7b5eb8',
+  'construccion':  '#c06b30',
+  'veterinarias':  '#3a9660',
+  'ropa':          '#b85070',
+  'servicios':     '#b08020',
+  'agro':          '#2e8a50',
+  'educacion':     '#3a6ab0',
+  'tecnologia':    '#5055c0',
+  'eventos':       '#b07020',
+  'transporte':    '#908010',
+  'panaderias':    '#b05c28',
+  'bancos':        '#2a52b0',
+  'profesionales': '#555555',
+  'agroindustria': '#b06820',
+  'oficios':       '#2a7a9a',
+};
+
+// Tamaño de destacados: lineal y acotado. En zoom 14 → 24px, +2px por nivel arriba, -3px por nivel abajo
+function sizeDestacado(zoom) {
+  const delta = zoom - 14;
+  const raw = delta >= 0
+    ? 20 + delta * 2        // zoom in: crece suavemente
+    : 20 + delta * 3;       // zoom out: se reduce más notablemente
+  return Math.round(Math.max(9, Math.min(26, raw)));
+}
+
+function crearIcono(emoji, tipo, categoria, zoom) {
+  const esDestacado = tipo === 'destacado';
+  const catColor    = catColores[categoria] || '#4a7a5a';
+  const zoomActual  = zoom !== undefined ? zoom : (typeof mapa !== 'undefined' ? mapa.getZoom() : DEST_BASE_ZOOM);
+
+  const bg      = esDestacado ? catColor   : '#7c8c96';
+  const shadow  = esDestacado ? `0 2px 8px ${catColor}70` : '0 1px 4px rgba(0,0,0,0.18)';
+  const size    = esDestacado ? sizeDestacado(zoomActual) : 22;
+  const fs      = esDestacado ? Math.round(size * 0.47) : 10;
+  const opacity = esDestacado ? 0.85 : 0.68;
+  const tip     = Math.round(size / 4);   // tamaño de la punta del pin
+
+  return L.divIcon({
+    html: `<div style="position:relative;opacity:${opacity};width:${size}px;">
+      <div style="
+        background:${bg};
+        width:${size}px;height:${size}px;
+        border-radius:6px;
+        border:2px solid rgba(255,255,255,0.85);
+        box-shadow:${shadow};
+        display:flex;align-items:center;justify-content:center;
+        font-size:${fs}px;line-height:1;
+      ">${emoji}</div>
+      <div style="
+        position:absolute;bottom:-${tip}px;left:50%;transform:translateX(-50%);
+        width:0;height:0;
+        border-left:${tip}px solid transparent;
+        border-right:${tip}px solid transparent;
+        border-top:${tip}px solid ${bg};
+      "></div>
+    </div>`,
+    iconSize: [size, size + tip],
+    iconAnchor: [size / 2, size + tip],
+    popupAnchor: [0, -(size + tip + 4)],
+    className: ''
+  });
+}
+
+// Destacados: capa directa en el mapa, nunca se agrupan
+const destacadosLayer = L.layerGroup().addTo(mapa);
+
+// Normales: agrupados por proximidad
+clusterGroup = L.markerClusterGroup({
+  maxClusterRadius: 45,
+  showCoverageOnHover: false,
+  iconCreateFunction: function(cluster) {
+    const count = cluster.getChildCount();
+    return L.divIcon({
+      html: `<div style="
+        background:#1a6b3c;color:#fff;
+        border-radius:50%;width:34px;height:34px;
+        display:flex;align-items:center;justify-content:center;
+        font-size:0.8rem;font-weight:700;
+        border:2px solid #fff;
+        box-shadow:0 2px 8px rgba(26,107,60,0.4);
+      ">${count}</div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+      className: ''
+    });
+  }
+});
+clusterGroup.addTo(mapa);
+
+negocios.forEach(n => {
+  const tipo = n.destacado ? 'destacado' : 'normal';
+  const marker = L.marker([n.lat, n.lng], { icon: crearIcono(n.icono, tipo, n.categoria, mapa.getZoom()) })
+    .bindTooltip(`
+      <div class="popup-content">
+        <div class="popup-nombre">${n.nombre}</div>
+        <div class="popup-dir">📞 ${n.telefono}</div>
+        <div class="popup-hint">👆 Clic para ver más</div>
+      </div>
+    `, { direction: 'top', className: 'mapa-tooltip', offset: [0, -6], opacity: 1 })
+    .on('click', () => abrirModal(n.id));
+  marcadores[n.id] = marker;
+});
+
+// Actualizar tamaño de íconos destacados al cambiar el zoom
+mapa.on('zoomend', function() {
+  const zoom = mapa.getZoom();
+  negocios.forEach(n => {
+    if (!n.destacado || !marcadores[n.id]) return;
+    marcadores[n.id].setIcon(crearIcono(n.icono, 'destacado', n.categoria, zoom));
+  });
+});
+
+function actualizarMarcadores(lista, ajustarVista = false) {
+  clusterGroup.clearLayers();
+  destacadosLayer.clearLayers();
+  lista.forEach(n => {
+    if (n.destacado) {
+      destacadosLayer.addLayer(marcadores[n.id]);
+    } else {
+      clusterGroup.addLayer(marcadores[n.id]);
+    }
+  });
+  if (ajustarVista) {
+    if (lista.length > 0) {
+      const grupo = L.featureGroup(lista.map(n => marcadores[n.id]));
+      mapa.fitBounds(grupo.getBounds().pad(0.25));
+    } else {
+      mapa.setView([20.0725, -97.0522], 14);
+    }
+  }
+}
+
+function verEnMapa(lat, lng, nombre) {
+  document.getElementById('mapa-section').scrollIntoView({ behavior: 'smooth' });
+  setTimeout(() => {
+    const n = negocios.find(x => x.lat === lat && x.lng === lng);
+    if (!n) return;
+    if (n.destacado) {
+      // Siempre visible, solo hacer zoom
+      if (!destacadosLayer.hasLayer(marcadores[n.id])) {
+        destacadosLayer.addLayer(marcadores[n.id]);
+      }
+      mapa.setView([n.lat, n.lng], 17);
+      marcadores[n.id].openTooltip();
+    } else {
+      if (!clusterGroup.hasLayer(marcadores[n.id])) {
+        clusterGroup.addLayer(marcadores[n.id]);
+      }
+      clusterGroup.zoomToShowLayer(marcadores[n.id], () => {
+        marcadores[n.id].openTooltip();
+      });
+    }
+  }, 400);
+}
+
+function scrollMapa() {
+  document.getElementById('mapa-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function scrollSeccion(e, id) {
+  if (e) e.preventDefault();
+  const el = document.getElementById(id);
+  if (!el) return;
+  const headerH = document.querySelector('header')?.offsetHeight || 60;
+  const top = el.getBoundingClientRect().top + window.scrollY - headerH - 8;
+  window.scrollTo({ top, behavior: 'smooth' });
+  // Marcar link activo en el nav
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  const activeLink = document.querySelector(`nav a[href="#${id}"]`);
+  if (activeLink) activeLink.classList.add('active');
+  // Si es inicio, enfocar el buscador principal
+  if (id === 'inicio') {
+    setTimeout(() => {
+      const inp = el.querySelector('input[type=text], input:not([type])');
+      if (inp) inp.focus();
+    }, 500);
+  }
+}
+
+// ══════════════════════════════════════════
+//  WHATSAPP
+// ══════════════════════════════════════════
+function abrirWhatsApp(numero, nombre) {
+  const msg = encodeURIComponent(`Hola, vi su negocio "${nombre}" en EnMartinez.com y me gustaría más información.`);
+  window.open(`https://wa.me/52${numero}?text=${msg}`, '_blank');
+}
+
+// ══════════════════════════════════════════
+//  BÚSQUEDA Y FILTROS
+// ══════════════════════════════════════════
+function buscar() {
+  const texto = (document.getElementById('mainSearch').value || document.getElementById('headerSearch').value).toLowerCase().trim();
+  const cat = document.getElementById('catSelect').value;
+  let lista = negocios;
+  if (cat) lista = lista.filter(n => n.categoria === cat);
+  if (texto) lista = lista.filter(n =>
+    n.nombre.toLowerCase().includes(texto) ||
+    n.descripcion.toLowerCase().includes(texto) ||
+    n.direccion.toLowerCase().includes(texto)
+  );
+  renderNegocios(lista);
+  actualizarMarcadores(lista);
+  const seccionBuscar = document.getElementById('negociosGrid').closest('.section');
+  const offsetBuscar = seccionBuscar.getBoundingClientRect().top + window.scrollY - 72;
+  window.scrollTo({ top: offsetBuscar, behavior: 'smooth' });
+}
+
+function filtrarPorCat(cat) {
+  if (filtroActivo === cat) {
+    limpiarFiltro();
+  } else {
+    filtroActivo = cat;
+    renderCategorias();
+    renderChips();
+    const listaFiltrada = negocios.filter(n => n.categoria === cat);
+    renderNegocios(listaFiltrada);
+    actualizarMarcadores(listaFiltrada);
+    document.getElementById('negocios').scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function limpiarFiltro() {
+  filtroActivo = null;
+  renderCategorias();
+  renderChips();
+  renderNegocios(negocios);
+  actualizarMarcadores(negocios);
+}
+
+document.getElementById('mainSearch').addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+document.getElementById('headerSearch').addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+document.getElementById('headerSearch').addEventListener('input', e => {
+  const texto = e.target.value.toLowerCase().trim();
+  renderNegocios(texto ? negocios.filter(n =>
+    n.nombre.toLowerCase().includes(texto) ||
+    n.descripcion.toLowerCase().includes(texto) ||
+    n.direccion.toLowerCase().includes(texto)
+  ) : negocios);
+});
+
+// ══════════════════════════════════════════
+//  MENÚ MOBILE
+// ══════════════════════════════════════════
+function toggleMenu() {
+  const menu = document.getElementById('mobileMenu');
+  const isOpen = menu.classList.toggle('open');
+  // Cambiar icono: ☰ ↔ ✕
+  document.getElementById('ham-icon').innerHTML = isOpen
+    ? '<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>'
+    : '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>';
+}
+function cerrarMenu() {
+  document.getElementById('mobileMenu').classList.remove('open');
+  document.getElementById('ham-icon').innerHTML =
+    '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>';
+}
+function buscarMobile() {
+  const texto = document.getElementById('mobileSearch').value;
+  document.getElementById('mainSearch').value = texto;
+  cerrarMenu();
+  buscar();
+}
+document.getElementById('mobileSearch').addEventListener('keydown', e => {
+  if (e.key === 'Enter') buscarMobile();
+});
+// Cerrar menú al tocar fuera
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('header') && !e.target.closest('#mobileMenu')) {
+    cerrarMenu();
+  }
+});
+
+// ══════════════════════════════════════════
+//  AUTOCOMPLETE
+// ══════════════════════════════════════════
+function highlightMatch(text, query) {
+  if (!query) return text;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return text.slice(0, idx)
+    + '<mark>' + text.slice(idx, idx + query.length) + '</mark>'
+    + text.slice(idx + query.length);
+}
+
+function setupAutocomplete(inputId, dropdownId, onSelectFn) {
+  const input    = document.getElementById(inputId);
+  const dropdown = document.getElementById(dropdownId);
+  let activeIdx  = -1;
+
+  // Mapa rápido de categorías para obtener icono/nombre
+  const catMap = {};
+  categorias.forEach(c => { catMap[c.id] = c; });
+
+  function getMatches(q) {
+    if (!q) return [];
+    const ql = q.toLowerCase();
+    return negocios.filter(n =>
+      n.nombre.toLowerCase().includes(ql) ||
+      n.descripcion.toLowerCase().includes(ql)
+    ).slice(0, 8);
+  }
+
+  function render(q) {
+    const matches = getMatches(q);
+    if (!matches.length) { close(); return; }
+    activeIdx = -1;
+    dropdown._matches = matches;
+    dropdown.innerHTML = matches.map((n, i) => {
+      const cat = catMap[n.categoria] || {};
+      return `<div class="autocomplete-item" data-i="${i}">
+        <span class="ac-icon">${cat.icono || '🏪'}</span>
+        <span style="display:flex;flex-direction:column">
+          <span class="ac-name">${highlightMatch(n.nombre, q)}</span>
+          <span class="ac-cat">${cat.nombre || n.categoria}</span>
+        </span>
+      </div>`;
+    }).join('');
+    dropdown.classList.add('show');
+    // Click en un item
+    dropdown.querySelectorAll('.autocomplete-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault(); // evita blur antes de click
+        const n = dropdown._matches[+el.dataset.i];
+        if (n) { input.value = n.nombre; close(); onSelectFn(n); }
+      });
+    });
+  }
+
+  function close() {
+    dropdown.classList.remove('show');
+    dropdown.innerHTML = '';
+    activeIdx = -1;
+  }
+
+  function highlightItem(idx) {
+    dropdown.querySelectorAll('.autocomplete-item').forEach((el, i) =>
+      el.classList.toggle('ac-active', i === idx)
+    );
+  }
+
+  input.addEventListener('input', e => render(e.target.value.trim()));
+
+  input.addEventListener('keydown', e => {
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    if (!dropdown.classList.contains('show') || !items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, items.length - 1);
+      highlightItem(activeIdx);
+      if (dropdown._matches[activeIdx]) input.value = dropdown._matches[activeIdx].nombre;
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, -1);
+      highlightItem(activeIdx);
+      if (activeIdx >= 0 && dropdown._matches[activeIdx]) input.value = dropdown._matches[activeIdx].nombre;
+    } else if (e.key === 'Escape') {
+      close();
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.preventDefault();
+      const n = dropdown._matches[activeIdx];
+      if (n) { input.value = n.nombre; close(); onSelectFn(n); }
+    }
+  });
+
+  input.addEventListener('blur', () => { setTimeout(close, 150); });
+}
+
+// Wiring
+setupAutocomplete('mainSearch', 'mainAutocomplete', () => buscar());
+setupAutocomplete('headerSearch', 'headerAutocomplete', (n) => {
+  document.getElementById('mainSearch').value = n.nombre;
+  buscar();
+});
+setupAutocomplete('mobileSearch', 'mobileAutocomplete', () => buscarMobile());
+
+// ══════════════════════════════════════════
+//  FILTROS INDEPENDIENTES DEL MAPA
+// ══════════════════════════════════════════
+let filtroMapaActivo = null;
+
+function renderChipsMapa() {
+  const conteos = {};
+  negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
+  const conNegocios = categorias.filter(c => conteos[c.id]);
+  const wrap = document.getElementById('filtrosChipsMapa');
+  wrap.innerHTML = conNegocios.map(c => `
+    <span class="chip${filtroMapaActivo === c.id ? ' active' : ''}" onclick="filtrarMapaPorCat('${c.id}')">
+      ${c.icono} ${c.nombre}
+    </span>
+  `).join('');
+}
+
+function filtrarMapaPorCat(cat) {
+  if (filtroMapaActivo === cat) {
+    limpiarFiltroMapa();
+  } else {
+    filtroMapaActivo = cat;
+    renderChipsMapa();
+    document.getElementById('btn-limpiar-mapa').style.display = 'flex';
+    const lista = negocios.filter(n => n.categoria === cat);
+    actualizarMarcadores(lista, true);
+  }
+}
+
+function limpiarFiltroMapa() {
+  filtroMapaActivo = null;
+  renderChipsMapa();
+  document.getElementById('btn-limpiar-mapa').style.display = 'none';
+  actualizarMarcadores(negocios);
+  mapa.setView([20.0725, -97.0522], 14);
+}
+
+// Init
+renderCategorias();
+renderChips();
+renderChipsMapa();
+renderNegocios(negocios);
+actualizarMarcadores(negocios, true);
+</script>
+</body>
+</html>
