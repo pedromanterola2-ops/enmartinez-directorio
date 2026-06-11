@@ -300,7 +300,10 @@
     <div class="login-logo">🌿</div>
     <h2 id="loginTitulo">Panel de Administrador</h2>
     <p id="loginSubtitulo">EnMartinez.com — Acceso restringido</p>
-    <input type="password" id="passInput" placeholder="Contraseña"
+    <input type="email" id="emailInput" placeholder="Correo electrónico" autocomplete="username"
+      style="width:100%;padding:0.7rem 0.9rem;border:1.5px solid var(--borde);border-radius:8px;font-size:0.9rem;margin-bottom:0.6rem;outline:none"
+      onkeydown="if(event.key==='Enter')intentarLogin()">
+    <input type="password" id="passInput" placeholder="Contraseña" autocomplete="current-password"
       onkeydown="if(event.key==='Enter')intentarLogin()">
     <button class="btn-login" id="btnLogin" onclick="intentarLogin()">Entrar</button>
     <p class="login-error" id="loginError">Contraseña incorrecta</p>
@@ -617,6 +620,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ══════════════════════════════════════
 //  CONSTANTES Y CLAVES
@@ -628,10 +632,39 @@ function esc(v) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-const NEGOCIOS_KEY  = 'em_negocios';
-const PASS_KEY      = 'em_admin_pass';
-// Nota: ya no hay contraseña por defecto en el código (era visible públicamente).
-// La primera vez que se abre el panel en un navegador, se pide CREAR una contraseña.
+// ── Conexión a Supabase (base de datos + login real) ──
+const SUPABASE_URL  = 'https://ygeuqlohycckwngcmmxl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZXVxbG9oeWNja3duZ2NtbXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDE1MTksImV4cCI6MjA5NTgxNzUxOX0.fuFaUcYKaTjBpunDqIc-xMIGm3gA17r5Cn_E_JxFR_Q';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Fila de BD → formato del panel
+function dbANegocio(r) {
+  return {
+    id: r.id, nombre: r.nombre || '', categoria: r.categoria || '',
+    catLabel: r.cat_label || '', icono: r.icono || '🏪',
+    descripcion: r.descripcion || '', direccion: r.direccion || '',
+    telefono: r.telefono || '', whatsapp: r.whatsapp || '',
+    horario: r.horario || '',
+    servicios: Array.isArray(r.servicios) ? r.servicios : [],
+    pago: Array.isArray(r.pago) ? r.pago : [],
+    facebook: r.facebook || '', web: r.web || '',
+    destacado: !!r.destacado, lat: r.lat, lng: r.lng
+  };
+}
+
+// Formato del panel → fila de BD
+function negocioADb(n) {
+  return {
+    nombre: n.nombre, categoria: n.categoria, cat_label: n.catLabel,
+    icono: n.icono, descripcion: n.descripcion, direccion: n.direccion,
+    telefono: n.telefono, whatsapp: n.whatsapp, horario: n.horario,
+    servicios: n.servicios || [], pago: n.pago || [],
+    facebook: n.facebook || '', web: n.web || '',
+    destacado: !!n.destacado,
+    lat: (typeof n.lat === 'number' && isFinite(n.lat)) ? n.lat : null,
+    lng: (typeof n.lng === 'number' && isFinite(n.lng)) ? n.lng : null
+  };
+}
 
 const CAT_LABELS = {
   restaurantes:'🍽️ Restaurantes', abarrotes:'🛒 Abarrotes', salud:'🏥 Salud',
@@ -662,76 +695,71 @@ const NEGOCIOS_DEFAULT = [
 ];
 
 // ══════════════════════════════════════
-//  PERSISTENCIA
+//  PERSISTENCIA (Supabase)
 // ══════════════════════════════════════
-function cargarNegocios() {
-  try {
-    const s = localStorage.getItem(NEGOCIOS_KEY);
-    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(NEGOCIOS_DEFAULT));
-  } catch(e) {
-    return JSON.parse(JSON.stringify(NEGOCIOS_DEFAULT));
-  }
-}
+let negocios = [];
+let solicitudes = [];
+let editandoId = null;
 
-function guardarNegocios() {
-  localStorage.setItem(NEGOCIOS_KEY, JSON.stringify(negocios));
+async function recargarNegocios() {
+  const { data, error } = await sb.from('negocios').select('*').order('id', { ascending: true });
+  if (error) { mostrarToast('❌ Error al cargar negocios: ' + error.message, 'error'); return; }
+  negocios = (data || []).map(dbANegocio);
   actualizarBadge();
 }
 
-function getPassword() {
-  return localStorage.getItem(PASS_KEY) || null;
+async function recargarSolicitudes() {
+  const { data, error } = await sb.from('solicitudes').select('*').order('id', { ascending: false });
+  if (error) { mostrarToast('❌ Error al cargar solicitudes: ' + error.message, 'error'); return; }
+  solicitudes = data || [];
+  actualizarBadgeSolicitudes();
 }
-
-let negocios = cargarNegocios();
-let editandoId = null;
 
 // ══════════════════════════════════════
 //  LOGIN
 // ══════════════════════════════════════
-function entrarAlPanel() {
+async function entrarAlPanel() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('adminApp').style.display = 'block';
+  await Promise.all([recargarNegocios(), recargarSolicitudes()]);
   renderLista();
   poblarFiltroCategoria();
-  actualizarBadgeSolicitudes();
+  renderSolicitudes();
 }
 
-function intentarLogin() {
-  const pass = document.getElementById('passInput').value;
-  const guardada = getPassword();
+function mostrarErrorLogin(msg) {
+  document.getElementById('loginError').textContent = msg;
+  document.getElementById('loginError').style.display = 'block';
+  document.getElementById('passInput').classList.add('error');
+}
 
-  // Primera vez en este navegador: la contraseña escrita queda registrada
-  if (!guardada) {
-    if (!pass || pass.length < 6) {
-      document.getElementById('loginError').textContent = 'La contraseña debe tener al menos 6 caracteres';
-      document.getElementById('loginError').style.display = 'block';
-      document.getElementById('passInput').classList.add('error');
-      return;
-    }
-    localStorage.setItem(PASS_KEY, pass);
-    entrarAlPanel();
+async function intentarLogin() {
+  const email = document.getElementById('emailInput').value.trim();
+  const pass  = document.getElementById('passInput').value;
+  if (!email || !pass) { mostrarErrorLogin('Escribe tu correo y contraseña'); return; }
+
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.textContent = '⏳ Entrando...';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if (error) {
+    mostrarErrorLogin('Correo o contraseña incorrectos');
+    document.getElementById('passInput').value = '';
     return;
   }
-
-  if (pass === guardada) {
-    entrarAlPanel();
-  } else {
-    document.getElementById('loginError').textContent = 'Contraseña incorrecta';
-    document.getElementById('loginError').style.display = 'block';
-    document.getElementById('passInput').classList.add('error');
-    document.getElementById('passInput').value = '';
-  }
+  document.getElementById('loginError').style.display = 'none';
+  entrarAlPanel();
 }
 
-// Modo "crear contraseña" si es la primera vez en este navegador
-if (!localStorage.getItem(PASS_KEY)) {
-  document.getElementById('loginTitulo').textContent = 'Configura tu acceso';
-  document.getElementById('loginSubtitulo').textContent = 'Primera vez en este navegador: crea la contraseña del panel (mínimo 6 caracteres).';
-  document.getElementById('passInput').placeholder = 'Crea una contraseña';
-  document.getElementById('btnLogin').textContent = 'Crear y entrar';
-}
+// Si ya hay sesión activa (volviste a abrir la página), entrar directo
+sb.auth.getSession().then(({ data }) => {
+  if (data && data.session) entrarAlPanel();
+});
 
-function cerrarSesion() {
+async function cerrarSesion() {
+  await sb.auth.signOut();
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminApp').style.display = 'none';
   document.getElementById('passInput').value = '';
@@ -810,13 +838,15 @@ function renderLista() {
 // ══════════════════════════════════════
 //  CRUD — DESTACADO
 // ══════════════════════════════════════
-function toggleDestacado(id) {
+async function toggleDestacado(id) {
   const n = negocios.find(x => x.id === id);
   if (!n) return;
-  n.destacado = !n.destacado;
-  guardarNegocios();
+  const nuevo = !n.destacado;
+  const { error } = await sb.from('negocios').update({ destacado: nuevo }).eq('id', id);
+  if (error) { mostrarToast('❌ No se pudo actualizar: ' + error.message, 'error'); return; }
+  n.destacado = nuevo;
   renderLista();
-  mostrarToast(n.destacado ? '⭐ Marcado como Destacado' : '— Quitado de Destacados', 'exito');
+  mostrarToast(nuevo ? '⭐ Marcado como Destacado' : '— Quitado de Destacados', 'exito');
 }
 
 // ══════════════════════════════════════
@@ -889,6 +919,9 @@ function guardarFormulario() {
     return;
   }
 
+  const latVal = parseFloat(document.getElementById('a-lat').value);
+  const lngVal = parseFloat(document.getElementById('a-lng').value);
+
   const data = {
     nombre, categoria: cat, catLabel: CAT_LABELS[cat] || cat, icono,
     descripcion: desc, direccion, telefono,
@@ -899,29 +932,33 @@ function guardarFormulario() {
     servicios: document.getElementById('a-servicios').value.trim()
                .split(',').map(s => s.trim()).filter(Boolean),
     pago: [...document.querySelectorAll('input[name="a-pago"]:checked')].map(c => c.value),
-    lat: parseFloat(document.getElementById('a-lat').value) || 20.0725,
-    lng: parseFloat(document.getElementById('a-lng').value) || -97.0522,
+    // Sin coordenadas → null: el negocio no sale en el mapa pero sí en listas
+    lat: isFinite(latVal) ? latVal : null,
+    lng: isFinite(lngVal) ? lngVal : null,
     destacado: document.getElementById('a-destacado').checked
   };
   if (!data.pago.length) data.pago = ['Efectivo'];
 
-  if (editandoId !== null) {
-    // Editar existente
-    const idx = negocios.findIndex(x => x.id === editandoId);
-    if (idx !== -1) {
-      negocios[idx] = { ...negocios[idx], ...data };
-      mostrarToast('✅ Negocio actualizado correctamente', 'exito');
-    }
-  } else {
-    // Nuevo
-    const newId = negocios.length ? Math.max(...negocios.map(n => n.id)) + 1 : 1;
-    negocios.push({ id: newId, ...data });
-    mostrarToast('✅ Negocio agregado al directorio', 'exito');
-  }
+  guardarEnBD(data);
+}
 
-  guardarNegocios();
+async function guardarEnBD(data) {
+  const fila = negocioADb(data);
+  let error;
+  if (editandoId !== null) {
+    ({ error } = await sb.from('negocios').update(fila).eq('id', editandoId));
+  } else {
+    ({ error } = await sb.from('negocios').insert(fila));
+  }
+  if (error) {
+    mostrarToast('❌ No se pudo guardar: ' + error.message, 'error');
+    return;
+  }
+  mostrarToast(editandoId !== null ? '✅ Negocio actualizado correctamente' : '✅ Negocio agregado al directorio', 'exito');
+  await recargarNegocios();
   poblarFiltroCategoria();
   renderLista();
+  limpiarForm();
   document.getElementById('tab-form').textContent = '➕ Nuevo negocio';
   cambiarTab('negocios');
 }
@@ -948,9 +985,10 @@ function pedirEliminar(id) {
   document.getElementById('modalConfirm').classList.add('open');
 }
 
-function confirmarEliminar() {
-  negocios = negocios.filter(x => x.id !== pendingDeleteId);
-  guardarNegocios();
+async function confirmarEliminar() {
+  const { error } = await sb.from('negocios').delete().eq('id', pendingDeleteId);
+  if (error) { mostrarToast('❌ No se pudo eliminar: ' + error.message, 'error'); cerrarModal(); return; }
+  await recargarNegocios();
   poblarFiltroCategoria();
   renderLista();
   cerrarModal();
@@ -980,13 +1018,14 @@ function actualizarPreview() {
 // ══════════════════════════════════════
 //  CONFIGURACIÓN
 // ══════════════════════════════════════
-function cambiarPassword() {
+async function cambiarPassword() {
   const p1 = document.getElementById('cfg-pass1').value;
   const p2 = document.getElementById('cfg-pass2').value;
   if (!p1) { mostrarToast('Escribe una contraseña','error'); return; }
   if (p1 !== p2) { mostrarToast('Las contraseñas no coinciden','error'); return; }
   if (p1.length < 6) { mostrarToast('Mínimo 6 caracteres','error'); return; }
-  localStorage.setItem(PASS_KEY, p1);
+  const { error } = await sb.auth.updateUser({ password: p1 });
+  if (error) { mostrarToast('❌ ' + error.message, 'error'); return; }
   document.getElementById('cfg-pass1').value = '';
   document.getElementById('cfg-pass2').value = '';
   mostrarToast('🔐 Contraseña actualizada', 'exito');
@@ -1029,14 +1068,29 @@ function importarJSON() {
 
 let pendingImportData = null;
 
-function confirmarImport() {
-  negocios = pendingImportData;
-  guardarNegocios();
+async function reemplazarTodosEnBD(lista, msgExito) {
+  // Borra todos los negocios y carga la lista nueva
+  const { error: errDel } = await sb.from('negocios').delete().gte('id', 0);
+  if (errDel) { mostrarToast('❌ Error al limpiar: ' + errDel.message, 'error'); return; }
+  const filas = lista.map(n => negocioADb({
+    ...n,
+    catLabel: n.catLabel || CAT_LABELS[n.categoria] || n.categoria,
+    lat: typeof n.lat === 'number' ? n.lat : parseFloat(n.lat),
+    lng: typeof n.lng === 'number' ? n.lng : parseFloat(n.lng),
+  }));
+  const { error: errIns } = await sb.from('negocios').insert(filas);
+  if (errIns) { mostrarToast('❌ Error al insertar: ' + errIns.message, 'error'); return; }
+  await recargarNegocios();
   poblarFiltroCategoria();
   renderLista();
+  mostrarToast(msgExito, 'exito');
+}
+
+async function confirmarImport() {
+  const data = pendingImportData;
   cerrarModal();
   document.getElementById('importBox').value = '';
-  mostrarToast(`✅ ${negocios.length} negocios importados`, 'exito');
+  await reemplazarTodosEnBD(data, `✅ ${data.length} negocios importados`);
 }
 
 function confirmarReset() {
@@ -1047,13 +1101,12 @@ function confirmarReset() {
   document.getElementById('modalConfirm').classList.add('open');
 }
 
-function ejecutarReset() {
-  negocios = JSON.parse(JSON.stringify(NEGOCIOS_DEFAULT));
-  guardarNegocios();
-  poblarFiltroCategoria();
-  renderLista();
+async function ejecutarReset() {
   cerrarModal();
-  mostrarToast('♻️ Datos restaurados al original', 'exito');
+  await reemplazarTodosEnBD(
+    JSON.parse(JSON.stringify(NEGOCIOS_DEFAULT)),
+    '♻️ Datos restaurados al original'
+  );
 }
 
 // ══════════════════════════════════════
@@ -1076,7 +1129,6 @@ document.getElementById('modalConfirm').addEventListener('click', e => {
 // ══════════════════════════════════════
 //  SOLICITUDES
 // ══════════════════════════════════════
-const SOL_KEY = 'em_solicitudes';
 let filtroSolActivo = 'todas';
 let pendingRechazarId = null;
 
@@ -1088,17 +1140,8 @@ const CAT_ICONS = {
   bancos:'🏦', profesionales:'⚖️', agroindustria:'🍊', oficios:'🔩'
 };
 
-function cargarSolicitudes() {
-  try { return JSON.parse(localStorage.getItem(SOL_KEY) || '[]'); }
-  catch(e) { return []; }
-}
-
-function guardarSolicitudes(sols) {
-  localStorage.setItem(SOL_KEY, JSON.stringify(sols));
-}
-
 function actualizarBadgeSolicitudes() {
-  const pendientes = cargarSolicitudes().filter(s => s.estado === 'pendiente').length;
+  const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
   const badge = document.getElementById('badge-solicitudes');
   if (!badge) return;
   badge.textContent = pendientes;
@@ -1130,9 +1173,8 @@ function toggleDetalleSol(id) {
 }
 
 function renderSolicitudes() {
-  const sols = cargarSolicitudes();
-  const lista = filtroSolActivo === 'todas' ? sols
-    : sols.filter(s => s.estado === filtroSolActivo);
+  const lista = filtroSolActivo === 'todas' ? solicitudes
+    : solicitudes.filter(s => s.estado === filtroSolActivo);
 
   const container = document.getElementById('listaSolicitudes');
   if (!container) return;
@@ -1157,7 +1199,7 @@ function renderSolicitudes() {
     const estadoTxt = estadoCls === 'pendiente' ? '⏳ Pendiente'
                     : estadoCls === 'aprobado'  ? '✅ Aprobada'
                     : '❌ Rechazada';
-    const esDest   = s.solicitaDestacado === 'SÍ, interesado';
+    const esDest   = !!s.solicita_destacado;
     const acciones = estadoCls === 'pendiente' ? `
       <button class="btn-edit" onclick="event.stopPropagation();aprobarSolicitud(${s.id})">✅ Aprobar</button>
       <button class="btn-del"  onclick="event.stopPropagation();pedirRechazar(${s.id})">✗ Rechazar</button>
@@ -1171,7 +1213,7 @@ function renderSolicitudes() {
             <div class="sol-nombre">${esc(s.nombre) || '(sin nombre)'}</div>
             <div class="sol-meta">
               <span class="neg-cat-pill">${esc(catLabel)}</span>
-              ${fmtFecha(s.fecha)}
+              ${fmtFecha(s.creado_en)}
               ${s.propietario ? `· ${esc(s.propietario)}` : ''}
             </div>
           </div>
@@ -1184,8 +1226,8 @@ function renderSolicitudes() {
           <div class="sol-propietario">
             <strong>📋 Datos del propietario (solo uso interno)</strong>
             ${esc(s.propietario) || '—'} &nbsp;·&nbsp;
-            ${esc(s.emailContacto) || '—'} &nbsp;·&nbsp;
-            WhatsApp: ${esc(s.celularContacto) || '—'}
+            ${esc(s.email_contacto) || '—'} &nbsp;·&nbsp;
+            WhatsApp: ${esc(s.celular_contacto) || '—'}
           </div>
           <dl class="sol-grid">
             <div><dt>Nombre del negocio</dt><dd>${esc(s.nombre) || '—'}</dd></div>
@@ -1212,15 +1254,11 @@ function renderSolicitudes() {
   }).join('');
 }
 
-function aprobarSolicitud(id) {
-  const sols = cargarSolicitudes();
-  const idx  = sols.findIndex(s => s.id === id);
-  if (idx === -1) return;
-  const s = sols[idx];
+async function aprobarSolicitud(id) {
+  const s = solicitudes.find(x => x.id === id);
+  if (!s) return;
 
-  const newId = negocios.length ? Math.max(...negocios.map(n => n.id)) + 1 : 1;
-  negocios.push({
-    id: newId,
+  const nuevo = negocioADb({
     nombre:      s.nombre      || '',
     categoria:   s.categoria   || 'servicios',
     catLabel:    CAT_LABELS[s.categoria] || s.categoria,
@@ -1235,23 +1273,26 @@ function aprobarSolicitud(id) {
     servicios:   (s.servicios || '').split(',').map(x => x.trim()).filter(Boolean),
     pago:        (s.metodospago || 'Efectivo').split(',').map(x => x.trim())
                    .filter(x => x && x !== 'No especificado'),
-    lat: 20.0725, lng: -97.0522,
-    destacado: s.solicitaDestacado === 'SÍ, interesado'
+    lat: null, lng: null,   // coordenadas se agregan después editando el negocio
+    destacado: !!s.solicita_destacado
   });
-  guardarNegocios();
+
+  const { error: errIns } = await sb.from('negocios').insert(nuevo);
+  if (errIns) { mostrarToast('❌ No se pudo publicar: ' + errIns.message, 'error'); return; }
+
+  const { error: errUpd } = await sb.from('solicitudes').update({ estado: 'aprobado' }).eq('id', id);
+  if (errUpd) mostrarToast('⚠️ Publicado, pero no se actualizó la solicitud: ' + errUpd.message, 'error');
+
+  await Promise.all([recargarNegocios(), recargarSolicitudes()]);
   poblarFiltroCategoria();
   renderLista();
-
-  sols[idx].estado = 'aprobado';
-  guardarSolicitudes(sols);
-  actualizarBadgeSolicitudes();
   renderSolicitudes();
 
-  mostrarToast(`✅ "${s.nombre}" publicado en el directorio`, 'exito');
+  mostrarToast(`✅ "${s.nombre}" publicado en el directorio. Edítalo para agregar coordenadas al mapa.`, 'exito');
 }
 
 function pedirRechazar(id) {
-  const s = cargarSolicitudes().find(x => x.id === id);
+  const s = solicitudes.find(x => x.id === id);
   if (!s) return;
   pendingRechazarId = id;
   document.getElementById('modal-titulo').textContent = 'Rechazar solicitud';
@@ -1261,17 +1302,15 @@ function pedirRechazar(id) {
   document.getElementById('modalConfirm').classList.add('open');
 }
 
-function confirmarRechazar() {
-  const sols = cargarSolicitudes();
-  const idx  = sols.findIndex(s => s.id === pendingRechazarId);
-  if (idx !== -1) {
-    sols[idx].estado = 'rechazado';
-    guardarSolicitudes(sols);
-    actualizarBadgeSolicitudes();
-    renderSolicitudes();
-    mostrarToast('❌ Solicitud rechazada', '');
-  }
+async function confirmarRechazar() {
+  const id = pendingRechazarId;
   cerrarModal();
+  if (id == null) return;
+  const { error } = await sb.from('solicitudes').update({ estado: 'rechazado' }).eq('id', id);
+  if (error) { mostrarToast('❌ No se pudo rechazar: ' + error.message, 'error'); return; }
+  await recargarSolicitudes();
+  renderSolicitudes();
+  mostrarToast('❌ Solicitud rechazada', '');
 }
 
 let toastTimer;

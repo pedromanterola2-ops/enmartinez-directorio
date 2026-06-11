@@ -1051,16 +1051,49 @@ function tieneCoords(n) {
   return typeof n.lat === 'number' && typeof n.lng === 'number' && isFinite(n.lat) && isFinite(n.lng);
 }
 
-// Carga desde localStorage (admin) o usa el fallback hardcoded
-function cargarNegociosIndex() {
+// ══════════════════════════════════════════
+//  CONEXIÓN A SUPABASE (base de datos)
+// ══════════════════════════════════════════
+const SUPABASE_URL  = 'https://ygeuqlohycckwngcmmxl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZXVxbG9oeWNja3duZ2NtbXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDE1MTksImV4cCI6MjA5NTgxNzUxOX0.fuFaUcYKaTjBpunDqIc-xMIGm3gA17r5Cn_E_JxFR_Q';
+
+// Convierte una fila de la BD al formato que usa la página
+function mapearNegocio(r) {
+  return {
+    id: r.id,
+    nombre: r.nombre || '',
+    categoria: r.categoria || '',
+    catLabel: r.cat_label || '',
+    icono: r.icono || '🏪',
+    descripcion: r.descripcion || '',
+    direccion: r.direccion || '',
+    telefono: r.telefono || '',
+    whatsapp: r.whatsapp || '',
+    horario: r.horario || '',
+    servicios: Array.isArray(r.servicios) ? r.servicios : [],
+    pago: Array.isArray(r.pago) ? r.pago : [],
+    facebook: r.facebook || '',
+    web: r.web || '',
+    destacado: !!r.destacado,
+    lat: r.lat, lng: r.lng
+  };
+}
+
+// Carga desde Supabase; si la BD no responde usa el respaldo local
+async function cargarNegociosIndex() {
   try {
-    const s = localStorage.getItem('em_negocios');
-    if (s) return JSON.parse(s);
-  } catch(e) {}
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/negocios?select=*&order=destacado.desc,nombre.asc`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (Array.isArray(rows) && rows.length) return rows.map(mapearNegocio);
+  } catch(e) { console.warn('Supabase no disponible, usando respaldo local:', e.message); }
   return JSON.parse(JSON.stringify(NEGOCIOS_FALLBACK));
 }
 
-const negocios = cargarNegociosIndex();
+let negocios = [];
 
 // (verificados eliminado)
 
@@ -1410,20 +1443,23 @@ clusterGroup = L.markerClusterGroup({
 });
 clusterGroup.addTo(mapa);
 
-negocios.forEach(n => {
-  if (!tieneCoords(n)) return; // sin coordenadas → no aparece en el mapa, pero sí en listas
-  const tipo = n.destacado ? 'destacado' : 'normal';
-  const marker = L.marker([n.lat, n.lng], { icon: crearIcono(n.icono, tipo, n.categoria, mapa.getZoom()) })
-    .bindTooltip(`
-      <div class="popup-content">
-        <div class="popup-nombre">${esc(n.nombre)}</div>
-        <div class="popup-dir">📞 ${esc(n.telefono)}</div>
-        <div class="popup-hint">👆 Clic para ver más</div>
-      </div>
-    `, { direction: 'top', className: 'mapa-tooltip', offset: [0, -6], opacity: 1 })
-    .on('click', () => abrirModal(n.id));
-  marcadores[n.id] = marker;
-});
+function crearMarcadores() {
+  Object.keys(marcadores).forEach(k => delete marcadores[k]);
+  negocios.forEach(n => {
+    if (!tieneCoords(n)) return; // sin coordenadas → no aparece en el mapa, pero sí en listas
+    const tipo = n.destacado ? 'destacado' : 'normal';
+    const marker = L.marker([n.lat, n.lng], { icon: crearIcono(n.icono, tipo, n.categoria, mapa.getZoom()) })
+      .bindTooltip(`
+        <div class="popup-content">
+          <div class="popup-nombre">${esc(n.nombre)}</div>
+          <div class="popup-dir">📞 ${esc(n.telefono)}</div>
+          <div class="popup-hint">👆 Clic para ver más</div>
+        </div>
+      `, { direction: 'top', className: 'mapa-tooltip', offset: [0, -6], opacity: 1 })
+      .on('click', () => abrirModal(n.id));
+    marcadores[n.id] = marker;
+  });
+}
 
 // Actualizar tamaño de íconos destacados al cambiar el zoom
 mapa.on('zoomend', function() {
@@ -1789,13 +1825,18 @@ function inyectarJsonLd() {
   } catch (e) { /* SEO opcional: nunca debe romper la página */ }
 }
 
-// Init
-renderCategorias();
-renderChips();
-renderChipsMapa();
-renderNegocios(negocios);
-actualizarMarcadores(negocios, true);
-inyectarJsonLd();
+// Init: carga los negocios desde la base de datos y arranca la página
+async function init() {
+  negocios = await cargarNegociosIndex();
+  crearMarcadores();
+  renderCategorias();
+  renderChips();
+  renderChipsMapa();
+  renderNegocios(negocios);
+  actualizarMarcadores(negocios, true);
+  inyectarJsonLd();
+}
+init();
 </script>
 </body>
 </html>

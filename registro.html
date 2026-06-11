@@ -539,28 +539,47 @@ form.addEventListener('submit', function(e) {
   btnEnviar.innerHTML = '⏳ Enviando...';
 
   // ─────────────────────────────────────────────
-  //  GUARDAR EN LOCALSTORAGE (panel admin + backup)
+  //  1) GUARDAR EN LA BASE DE DATOS (Supabase)
+  //     Así la solicitud llega directo al panel admin.
   // ─────────────────────────────────────────────
-  const solicitudLocal = {
-    id:     Date.now(),
-    fecha:  new Date().toISOString(),
-    estado: 'pendiente',
-    ...datos
+  const SUPABASE_URL  = 'https://ygeuqlohycckwngcmmxl.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZXVxbG9oeWNja3duZ2NtbXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDE1MTksImV4cCI6MjA5NTgxNzUxOX0.fuFaUcYKaTjBpunDqIc-xMIGm3gA17r5Cn_E_JxFR_Q';
+
+  const fila = {
+    nombre:             datos.nombre,
+    categoria:          datos.categoria,
+    direccion:          datos.direccion,
+    descripcion:        datos.descripcion,
+    horario:            datos.horario,
+    telefono:           datos.telefono,
+    whatsapp:           datos.whatsapp,
+    facebook:           datos.facebook,
+    web:                datos.web,
+    servicios:          datos.servicios,
+    metodospago:        datos.metodospago,
+    solicita_destacado: datos.solicitaDestacado === 'SÍ, interesado',
+    propietario:        datos.propietario,
+    email_contacto:     datos.emailContacto,
+    celular_contacto:   datos.celularContacto,
   };
-  try {
-    const previas = JSON.parse(localStorage.getItem('em_solicitudes') || '[]');
-    previas.push(solicitudLocal);
-    localStorage.setItem('em_solicitudes', JSON.stringify(previas));
-  } catch(e) { /* continuar aunque falle */ }
+
+  const guardarEnBD = fetch(`${SUPABASE_URL}/rest/v1/solicitudes`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON,
+      Authorization: 'Bearer ' + SUPABASE_ANON,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    },
+    body: JSON.stringify(fila)
+  }).then(res => { if (!res.ok) throw new Error('BD: HTTP ' + res.status); return true; });
 
   // ─────────────────────────────────────────────
-  //  NOTIFICACIÓN POR EMAIL (FormSubmit.co)
-  //  La primera vez llegará un correo de confirmación
-  //  a enmartinez1@outlook.com — haz clic en Confirm.
+  //  2) NOTIFICACIÓN POR EMAIL (FormSubmit.co)
+  //     Aviso secundario — no bloquea el éxito.
   // ─────────────────────────────────────────────
   const CORREO_DESTINO = 'enmartinez1@outlook.com';
-
-  fetch(`https://formsubmit.co/ajax/${CORREO_DESTINO}`, {
+  const avisarPorCorreo = fetch(`https://formsubmit.co/ajax/${CORREO_DESTINO}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({
@@ -570,19 +589,17 @@ form.addEventListener('submit', function(e) {
       _captcha: 'false',           // el endpoint AJAX no puede mostrar captcha
       _honey: document.getElementById('sitioWeb2').value, // honeypot anti-bots
     })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error('Respuesta no válida');
-    return res.json();
-  })
-  .then(data => {
-    if (data && (data.success === 'true' || data.success === true)) {
-      mostrarExito();
-    } else {
-      throw new Error('Envío rechazado');
-    }
-  })
-  .catch(() => mostrarErrorEnvio());
+  }).then(res => { if (!res.ok) throw new Error('correo'); return res.json(); });
+
+  // Éxito si se guardó en la BD; el correo es solo respaldo.
+  // Si la BD falla pero el correo sale, también lo damos por recibido.
+  guardarEnBD
+    .then(() => { avisarPorCorreo.catch(() => {}); mostrarExito(); })
+    .catch(() =>
+      avisarPorCorreo
+        .then(() => mostrarExito())
+        .catch(() => mostrarErrorEnvio())
+    );
 });
 
 function mostrarErrorEnvio() {
