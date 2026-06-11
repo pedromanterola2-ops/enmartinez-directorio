@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>Admin — EnMartinez.com</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -296,11 +298,11 @@
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-logo">🌿</div>
-    <h2>Panel de Administrador</h2>
-    <p>EnMartinez.com — Acceso restringido</p>
+    <h2 id="loginTitulo">Panel de Administrador</h2>
+    <p id="loginSubtitulo">EnMartinez.com — Acceso restringido</p>
     <input type="password" id="passInput" placeholder="Contraseña"
       onkeydown="if(event.key==='Enter')intentarLogin()">
-    <button class="btn-login" onclick="intentarLogin()">Entrar</button>
+    <button class="btn-login" id="btnLogin" onclick="intentarLogin()">Entrar</button>
     <p class="login-error" id="loginError">Contraseña incorrecta</p>
   </div>
 </div>
@@ -619,9 +621,17 @@
 // ══════════════════════════════════════
 //  CONSTANTES Y CLAVES
 // ══════════════════════════════════════
+// Escapa texto para insertarlo de forma segura en HTML
+function esc(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 const NEGOCIOS_KEY  = 'em_negocios';
 const PASS_KEY      = 'em_admin_pass';
-const PASS_DEFAULT  = 'enmartinez2026';
+// Nota: ya no hay contraseña por defecto en el código (era visible públicamente).
+// La primera vez que se abre el panel en un navegador, se pide CREAR una contraseña.
 
 const CAT_LABELS = {
   restaurantes:'🍽️ Restaurantes', abarrotes:'🛒 Abarrotes', salud:'🏥 Salud',
@@ -669,7 +679,7 @@ function guardarNegocios() {
 }
 
 function getPassword() {
-  return localStorage.getItem(PASS_KEY) || PASS_DEFAULT;
+  return localStorage.getItem(PASS_KEY) || null;
 }
 
 let negocios = cargarNegocios();
@@ -678,19 +688,47 @@ let editandoId = null;
 // ══════════════════════════════════════
 //  LOGIN
 // ══════════════════════════════════════
+function entrarAlPanel() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+  renderLista();
+  poblarFiltroCategoria();
+  actualizarBadgeSolicitudes();
+}
+
 function intentarLogin() {
   const pass = document.getElementById('passInput').value;
-  if (pass === getPassword()) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    renderLista();
-    poblarFiltroCategoria();
-    actualizarBadgeSolicitudes();
+  const guardada = getPassword();
+
+  // Primera vez en este navegador: la contraseña escrita queda registrada
+  if (!guardada) {
+    if (!pass || pass.length < 6) {
+      document.getElementById('loginError').textContent = 'La contraseña debe tener al menos 6 caracteres';
+      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('passInput').classList.add('error');
+      return;
+    }
+    localStorage.setItem(PASS_KEY, pass);
+    entrarAlPanel();
+    return;
+  }
+
+  if (pass === guardada) {
+    entrarAlPanel();
   } else {
+    document.getElementById('loginError').textContent = 'Contraseña incorrecta';
     document.getElementById('loginError').style.display = 'block';
     document.getElementById('passInput').classList.add('error');
     document.getElementById('passInput').value = '';
   }
+}
+
+// Modo "crear contraseña" si es la primera vez en este navegador
+if (!localStorage.getItem(PASS_KEY)) {
+  document.getElementById('loginTitulo').textContent = 'Configura tu acceso';
+  document.getElementById('loginSubtitulo').textContent = 'Primera vez en este navegador: crea la contraseña del panel (mínimo 6 caracteres).';
+  document.getElementById('passInput').placeholder = 'Crea una contraseña';
+  document.getElementById('btnLogin').textContent = 'Crear y entrar';
 }
 
 function cerrarSesion() {
@@ -750,12 +788,12 @@ function renderLista() {
 
   container.innerHTML = lista.map(n => `
     <div class="neg-row">
-      <div class="neg-icon">${n.icono}</div>
+      <div class="neg-icon">${esc(n.icono)}</div>
       <div class="neg-info">
-        <div class="neg-nombre">${n.nombre}</div>
+        <div class="neg-nombre">${esc(n.nombre)}</div>
         <div class="neg-meta">
-          <span class="neg-cat-pill">${CAT_LABELS[n.categoria] || n.categoria}</span>
-          ${n.direccion}
+          <span class="neg-cat-pill">${esc(CAT_LABELS[n.categoria] || n.categoria)}</span>
+          ${esc(n.direccion)}
         </div>
       </div>
       <span class="dest-pill ${n.destacado ? 'on' : 'off'}" onclick="toggleDestacado(${n.id})">
@@ -1130,11 +1168,11 @@ function renderSolicitudes() {
         <div class="sol-header" onclick="toggleDetalleSol(${s.id})">
           <div class="sol-icon">${icon}</div>
           <div class="sol-info">
-            <div class="sol-nombre">${s.nombre || '(sin nombre)'}</div>
+            <div class="sol-nombre">${esc(s.nombre) || '(sin nombre)'}</div>
             <div class="sol-meta">
-              <span class="neg-cat-pill">${catLabel}</span>
+              <span class="neg-cat-pill">${esc(catLabel)}</span>
               ${fmtFecha(s.fecha)}
-              ${s.propietario ? `· ${s.propietario}` : ''}
+              ${s.propietario ? `· ${esc(s.propietario)}` : ''}
             </div>
           </div>
           ${esDest ? `<span class="dest-tag">⭐ Interesado en Destacado</span>` : ''}
@@ -1145,22 +1183,22 @@ function renderSolicitudes() {
         <div class="sol-detail" id="sol-detail-${s.id}">
           <div class="sol-propietario">
             <strong>📋 Datos del propietario (solo uso interno)</strong>
-            ${s.propietario || '—'} &nbsp;·&nbsp;
-            ${s.emailContacto || '—'} &nbsp;·&nbsp;
-            WhatsApp: ${s.celularContacto || '—'}
+            ${esc(s.propietario) || '—'} &nbsp;·&nbsp;
+            ${esc(s.emailContacto) || '—'} &nbsp;·&nbsp;
+            WhatsApp: ${esc(s.celularContacto) || '—'}
           </div>
           <dl class="sol-grid">
-            <div><dt>Nombre del negocio</dt><dd>${s.nombre || '—'}</dd></div>
-            <div><dt>Categoría</dt><dd>${catLabel}</dd></div>
-            <div><dt>Dirección</dt><dd>${s.direccion || '—'}</dd></div>
-            <div><dt>Horario</dt><dd>${s.horario || '—'}</dd></div>
-            <div><dt>Teléfono</dt><dd>${s.telefono || '—'}</dd></div>
-            <div><dt>WhatsApp público</dt><dd>${s.whatsapp || '—'}</dd></div>
-            <div><dt>Facebook</dt><dd>${s.facebook ? `<a href="${s.facebook}" target="_blank" style="color:var(--verde)">${s.facebook}</a>` : '—'}</dd></div>
-            <div><dt>Sitio web</dt><dd>${s.web ? `<a href="${s.web}" target="_blank" style="color:var(--verde)">${s.web}</a>` : '—'}</dd></div>
-            <div style="grid-column:span 2"><dt>Descripción</dt><dd>${s.descripcion || '—'}</dd></div>
-            <div><dt>Servicios</dt><dd>${s.servicios || '—'}</dd></div>
-            <div><dt>Métodos de pago</dt><dd>${s.metodospago || '—'}</dd></div>
+            <div><dt>Nombre del negocio</dt><dd>${esc(s.nombre) || '—'}</dd></div>
+            <div><dt>Categoría</dt><dd>${esc(catLabel)}</dd></div>
+            <div><dt>Dirección</dt><dd>${esc(s.direccion) || '—'}</dd></div>
+            <div><dt>Horario</dt><dd>${esc(s.horario) || '—'}</dd></div>
+            <div><dt>Teléfono</dt><dd>${esc(s.telefono) || '—'}</dd></div>
+            <div><dt>WhatsApp público</dt><dd>${esc(s.whatsapp) || '—'}</dd></div>
+            <div><dt>Facebook</dt><dd>${s.facebook ? `<a href="${esc(s.facebook)}" target="_blank" rel="noopener" style="color:var(--verde)">${esc(s.facebook)}</a>` : '—'}</dd></div>
+            <div><dt>Sitio web</dt><dd>${s.web ? `<a href="${esc(s.web)}" target="_blank" rel="noopener" style="color:var(--verde)">${esc(s.web)}</a>` : '—'}</dd></div>
+            <div style="grid-column:span 2"><dt>Descripción</dt><dd>${esc(s.descripcion) || '—'}</dd></div>
+            <div><dt>Servicios</dt><dd>${esc(s.servicios) || '—'}</dd></div>
+            <div><dt>Métodos de pago</dt><dd>${esc(s.metodospago) || '—'}</dd></div>
             <div><dt>Destacado solicitado</dt><dd>${esDest ? '⭐ Sí, interesado' : 'No'}</dd></div>
           </dl>
           ${estadoCls === 'pendiente' ? `

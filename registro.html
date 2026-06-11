@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registra tu negocio — EnMartinez.com</title>
+  <meta name="description" content="Registra gratis tu negocio en el directorio de Martínez de la Torre, Veracruz. Llena el formulario y aparece en EnMartinez.com en menos de 48 horas.">
+  <link rel="canonical" href="https://enmartinez-directorio.vercel.app/registro">
+  <meta name="theme-color" content="#1a6b3c">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EnMartinez.com">
+  <meta property="og:title" content="Registra tu negocio en EnMartinez.com">
+  <meta property="og:description" content="Aparece en el directorio de negocios de Martínez de la Torre, Veracruz. Registro gratuito.">
+  <meta property="og:url" content="https://enmartinez-directorio.vercel.app/registro">
+  <meta property="og:locale" content="es_MX">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -263,6 +273,10 @@
 
     <form id="formRegistro" novalidate>
 
+      <!-- Honeypot anti-spam: invisible para humanos; los bots lo llenan -->
+      <input type="text" id="sitioWeb2" name="sitioWeb2" tabindex="-1" autocomplete="off"
+             style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true">
+
       <!-- SECCIÓN 1: DATOS DEL NEGOCIO -->
       <div class="form-section">
         <div class="form-section-title">
@@ -474,6 +488,9 @@ const camposObligatorios = [
 form.addEventListener('submit', function(e) {
   e.preventDefault();
 
+  // Si el honeypot tiene contenido es un bot: simular éxito sin enviar nada
+  if (document.getElementById('sitioWeb2').value) { mostrarExito(); return; }
+
   // Validar campos obligatorios
   let valido = true;
   camposObligatorios.forEach(c => {
@@ -550,16 +567,38 @@ form.addEventListener('submit', function(e) {
       ...datos,
       _subject: `📋 Nueva solicitud de negocio: ${datos.nombre}`,
       _template: 'table',
-      _captcha: 'false',
+      _captcha: 'false',           // el endpoint AJAX no puede mostrar captcha
+      _honey: document.getElementById('sitioWeb2').value, // honeypot anti-bots
     })
   })
-  .then(res => res.json())
-  .then(() => mostrarExito())
-  .catch(() => {
-    // La solicitud ya quedó guardada en localStorage — mostrar éxito igual
-    mostrarExito();
-  });
+  .then(res => {
+    if (!res.ok) throw new Error('Respuesta no válida');
+    return res.json();
+  })
+  .then(data => {
+    if (data && (data.success === 'true' || data.success === true)) {
+      mostrarExito();
+    } else {
+      throw new Error('Envío rechazado');
+    }
+  })
+  .catch(() => mostrarErrorEnvio());
 });
+
+function mostrarErrorEnvio() {
+  btnEnviar.disabled = false;
+  btnEnviar.innerHTML = '🔁 Reintentar envío';
+  let aviso = document.getElementById('avisoErrorEnvio');
+  if (!aviso) {
+    aviso = document.createElement('div');
+    aviso.id = 'avisoErrorEnvio';
+    aviso.style.cssText = 'background:#fef2f2;border:1.5px solid #fca5a5;color:#b91c1c;border-radius:10px;padding:0.9rem 1.1rem;font-size:0.85rem;line-height:1.5;margin:1rem 2rem 0;';
+    aviso.innerHTML = '⚠️ <strong>No pudimos enviar tu solicitud.</strong> Revisa tu conexión a internet e intenta de nuevo. Si el problema continúa, escríbenos directamente a <strong>enmartinez1@outlook.com</strong>.';
+    const footer = document.querySelector('.form-footer');
+    footer.parentNode.insertBefore(aviso, footer);
+  }
+  if (aviso.scrollIntoView) aviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 function mostrarExito() {
   form.style.display = 'none';
