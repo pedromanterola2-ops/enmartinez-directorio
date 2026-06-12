@@ -547,9 +547,22 @@
       .hero-stats { gap: 1.5rem; }
       .negocios-grid { grid-template-columns: repeat(2, 1fr); }
       .modal { max-height: 95vh; }
+      /* Cards en 2 columnas: padding compacto y botones apilados */
+      .negocio-body { padding: 0.7rem 0.8rem; }
+      .negocio-nombre { font-size: 0.88rem; }
+      .negocio-meta, .negocio-dir { font-size: 0.7rem; }
+      .negocio-actions { flex-direction: column; gap: 0.35rem; }
+      .btn-wsp, .btn-detalle { width: 100%; justify-content: center; font-size: 0.75rem; padding: 0.45rem 0.4rem; }
     }
-    @media (max-width: 380px) {
+    /* Teléfonos típicos: 1 sola columna para que las fichas tengan espacio */
+    @media (max-width: 480px) {
       .negocios-grid { grid-template-columns: 1fr; }
+      /* Restaurar layout horizontal de botones con 1 columna */
+      .negocio-body { padding: 0.9rem 1rem; }
+      .negocio-nombre { font-size: 0.97rem; }
+      .negocio-meta, .negocio-dir { font-size: 0.75rem; }
+      .negocio-actions { flex-direction: row; gap: 0.5rem; }
+      .btn-wsp, .btn-detalle { width: auto; font-size: 0.8rem; padding: 0.55rem 0.5rem; }
     }
   </style>
 </head>
