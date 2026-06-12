@@ -575,31 +575,16 @@ form.addEventListener('submit', function(e) {
   }).then(res => { if (!res.ok) throw new Error('BD: HTTP ' + res.status); return true; });
 
   // ─────────────────────────────────────────────
-  //  2) NOTIFICACIÓN POR EMAIL (FormSubmit.co)
-  //     Aviso secundario — no bloquea el éxito.
+  //  2) NOTIFICACIÓN POR EMAIL
+  //     La maneja automáticamente el Database Webhook de Supabase
+  //     → Edge Function notify-nueva-solicitud → Resend API
+  //     No se hace nada aquí en el frontend.
   // ─────────────────────────────────────────────
-  const CORREO_DESTINO = 'enmartinez1@outlook.com';
-  const avisarPorCorreo = fetch(`https://formsubmit.co/ajax/${CORREO_DESTINO}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      ...datos,
-      _subject: `📋 Nueva solicitud de negocio: ${datos.nombre}`,
-      _template: 'table',
-      _captcha: 'false',           // el endpoint AJAX no puede mostrar captcha
-      _honey: document.getElementById('sitioWeb2').value, // honeypot anti-bots
-    })
-  }).then(res => { if (!res.ok) throw new Error('correo'); return res.json(); });
 
-  // Éxito si se guardó en la BD; el correo es solo respaldo.
-  // Si la BD falla pero el correo sale, también lo damos por recibido.
+  // Éxito si se guardó en la BD.
   guardarEnBD
-    .then(() => { avisarPorCorreo.catch(() => {}); mostrarExito(); })
-    .catch(() =>
-      avisarPorCorreo
-        .then(() => mostrarExito())
-        .catch(() => mostrarErrorEnvio())
-    );
+    .then(() => mostrarExito())
+    .catch(() => mostrarErrorEnvio());
 });
 
 function mostrarErrorEnvio() {
