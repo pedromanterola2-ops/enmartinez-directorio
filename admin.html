@@ -1218,10 +1218,10 @@ function renderSolicitudes() {
                     : estadoCls === 'aprobado'  ? '✅ Aprobada'
                     : '❌ Rechazada';
     const esDest   = !!s.solicita_destacado;
-    const acciones = estadoCls === 'pendiente' ? `
+    const acciones = (estadoCls === 'pendiente' ? `
       <button class="btn-edit" onclick="event.stopPropagation();aprobarSolicitud(${s.id})">✅ Aprobar</button>
       <button class="btn-del"  onclick="event.stopPropagation();pedirRechazar(${s.id})">✗ Rechazar</button>
-    ` : '';
+    ` : '') + `<button class="btn-del" style="margin-left:0.2rem" onclick="event.stopPropagation();pedirEliminarSolicitud(${s.id})" title="Eliminar solicitud">🗑️</button>`;
 
     return `
       <div class="sol-card">
@@ -1329,6 +1329,30 @@ async function confirmarRechazar() {
   await recargarSolicitudes();
   renderSolicitudes();
   mostrarToast('❌ Solicitud rechazada', '');
+}
+
+let pendingEliminarSolId = null;
+
+function pedirEliminarSolicitud(id) {
+  const s = solicitudes.find(x => x.id === id);
+  if (!s) return;
+  pendingEliminarSolId = id;
+  document.getElementById('modal-titulo').textContent = 'Eliminar solicitud';
+  document.getElementById('modal-msg').textContent    =
+    `¿Eliminar definitivamente la solicitud de "${s.nombre}"? Esta acción no se puede deshacer.`;
+  document.getElementById('modal-btn-ok').onclick = confirmarEliminarSolicitud;
+  document.getElementById('modalConfirm').classList.add('open');
+}
+
+async function confirmarEliminarSolicitud() {
+  const id = pendingEliminarSolId;
+  cerrarModal();
+  if (id == null) return;
+  const { error } = await sb.from('solicitudes').delete().eq('id', id);
+  if (error) { mostrarToast('❌ No se pudo eliminar: ' + error.message, 'error'); return; }
+  await recargarSolicitudes();
+  renderSolicitudes();
+  mostrarToast('🗑️ Solicitud eliminada', '');
 }
 
 let toastTimer;
