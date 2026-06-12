@@ -1182,7 +1182,7 @@ function renderNegocios(lista) {
     const bg = catBg[n.categoria] || '#f0f7f2';
     const catColor = catColores[n.categoria] || '#1a6b3c';
     return `
-    <div class="negocio-card" style="background:${bg}44;${n.destacado ? ' border-top:3px solid ' + catColor + ';' : ''}" onclick="abrirModal(${n.id})">
+    <div class="negocio-card" style="background:${bg}66; border-top:4px solid ${catColor};" onclick="abrirModal(${n.id})">
       <div class="negocio-img" style="background:${bg}">
         <span>${n.icono}</span>
         ${n.destacado ? '<div class="destacado-ribbon">⭐ Destacado</div>' : ''}
