@@ -1752,7 +1752,7 @@ function filtrarMapaPorCat(cat) {
     renderChipsMapa();
     document.getElementById('btn-limpiar-mapa').style.display = 'flex';
     const lista = negocios.filter(n => n.categoria === cat);
-    actualizarMarcadores(lista, true);
+    actualizarMarcadores(lista, false);
   }
 }
 
@@ -1760,8 +1760,7 @@ function limpiarFiltroMapa() {
   filtroMapaActivo = null;
   renderChipsMapa();
   document.getElementById('btn-limpiar-mapa').style.display = 'none';
-  actualizarMarcadores(negocios);
-  mapa.setView([20.0725, -97.0522], 14);
+  actualizarMarcadores(negocios, false);
 }
 
 // ══════════════════════════════════════════
