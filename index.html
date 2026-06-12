@@ -1100,26 +1100,26 @@ let negocios = [];
 //  CATÁLOGO DE CATEGORÍAS
 // ══════════════════════════════════════════
 const categorias = [
-  { id: 'restaurantes', nombre: 'Restaurantes y comida',     icono: '🍽️', bg: '#fee2e2' },
-  { id: 'abarrotes',   nombre: 'Abarrotes y súper',          icono: '🛒', bg: '#fef9c3' },
-  { id: 'salud',       nombre: 'Salud y farmacias',          icono: '🏥', bg: '#dbeafe' },
-  { id: 'talleres',    nombre: 'Talleres y refacciones',     icono: '🔧', bg: '#e5e7eb' },
-  { id: 'belleza',     nombre: 'Belleza y estética',         icono: '💇', bg: '#fce7f3' },
-  { id: 'hoteles',     nombre: 'Hoteles y hospedaje',        icono: '🏨', bg: '#ede9fe' },
-  { id: 'construccion',nombre: 'Construcción y ferretería',  icono: '🏗️', bg: '#ffedd5' },
-  { id: 'veterinarias',nombre: 'Veterinarias y mascotas',    icono: '🐾', bg: '#d1fae5' },
-  { id: 'ropa',        nombre: 'Ropa y calzado',             icono: '👗', bg: '#fce7f3' },
-  { id: 'servicios',   nombre: 'Servicios Profesionales',     icono: '⚡', bg: '#fef9c3' },
-  { id: 'agro',        nombre: 'Agro y viveros',             icono: '🌿', bg: '#d1fae5' },
-  { id: 'educacion',   nombre: 'Educación',                  icono: '🏫', bg: '#dbeafe' },
-  { id: 'tecnologia',  nombre: 'Tecnología',                 icono: '💻', bg: '#e0e7ff' },
-  { id: 'eventos',     nombre: 'Eventos',                    icono: '🎉', bg: '#fef3c7' },
-  { id: 'transporte',  nombre: 'Transporte',                 icono: '🚕', bg: '#fef9c3' },
-  { id: 'panaderias',  nombre: 'Panaderías y pastelerías',   icono: '🥐', bg: '#ffedd5' },
-  { id: 'bancos',      nombre: 'Bancos y financieros',       icono: '🏦', bg: '#dbeafe' },
-  { id: 'profesionales',nombre: 'Profesionales',             icono: '⚖️', bg: '#f3f4f6' },
-  { id: 'agroindustria',nombre: 'Agroindustria',             icono: '🍊', bg: '#fef3c7' },
-  { id: 'oficios',     nombre: 'Oficios y servicios del hogar', icono: '🔩', bg: '#e0f2fe' },
+  { id: 'restaurantes',  nombre: 'Restaurantes y comida',        icono: '🍽️', bg: '#fde8e8' },
+  { id: 'abarrotes',     nombre: 'Abarrotes y súper',            icono: '🛒', bg: '#eef5cc' },
+  { id: 'salud',         nombre: 'Salud y farmacias',            icono: '🏥', bg: '#d4ecf8' },
+  { id: 'talleres',      nombre: 'Talleres y refacciones',       icono: '🔧', bg: '#dce8ef' },
+  { id: 'belleza',       nombre: 'Belleza y estética',           icono: '💇', bg: '#f0d8f8' },
+  { id: 'hoteles',       nombre: 'Hoteles y hospedaje',          icono: '🏨', bg: '#ece0fa' },
+  { id: 'construccion',  nombre: 'Construcción y ferretería',    icono: '🏗️', bg: '#fde8da' },
+  { id: 'veterinarias',  nombre: 'Veterinarias y mascotas',      icono: '🐾', bg: '#d0f5ea' },
+  { id: 'ropa',          nombre: 'Ropa y calzado',               icono: '👗', bg: '#f8d5f0' },
+  { id: 'servicios',     nombre: 'Servicios Profesionales',      icono: '⚡', bg: '#fef8d0' },
+  { id: 'agro',          nombre: 'Agro y viveros',               icono: '🌿', bg: '#d8f5e0' },
+  { id: 'educacion',     nombre: 'Educación',                    icono: '🏫', bg: '#dde4fa' },
+  { id: 'tecnologia',    nombre: 'Tecnología',                   icono: '💻', bg: '#d0edf8' },
+  { id: 'eventos',       nombre: 'Eventos',                      icono: '🎉', bg: '#fad5e8' },
+  { id: 'transporte',    nombre: 'Transporte',                   icono: '🚕', bg: '#f0e2d0' },
+  { id: 'panaderias',    nombre: 'Panaderías y pastelerías',     icono: '🥐', bg: '#fef0e0' },
+  { id: 'bancos',        nombre: 'Bancos y financieros',         icono: '🏦', bg: '#d8ddf5' },
+  { id: 'profesionales', nombre: 'Profesionales',                icono: '⚖️', bg: '#dde0e8' },
+  { id: 'agroindustria', nombre: 'Agroindustria',                icono: '🍊', bg: '#fdf0d8' },
+  { id: 'oficios',       nombre: 'Oficios y servicios del hogar',icono: '🔩', bg: '#d0f2f2' },
 ];
 
 function renderChips() {
@@ -1328,28 +1328,28 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 const marcadores = {};
 let clusterGroup;
 
-// Colores por categoría — tono medio, ni muy vivos ni muy apagados
+// Colores por categoría — 20 colores únicos sin repetición
 const catColores = {
-  'restaurantes':  '#c0524f',
-  'abarrotes':     '#a07c10',
-  'salud':         '#4a7ec0',
-  'talleres':      '#6e6e6e',
-  'belleza':       '#b8609a',
-  'hoteles':       '#7b5eb8',
-  'construccion':  '#c06b30',
-  'veterinarias':  '#3a9660',
-  'ropa':          '#b85070',
-  'servicios':     '#b08020',
-  'agro':          '#2e8a50',
-  'educacion':     '#3a6ab0',
-  'tecnologia':    '#5055c0',
-  'eventos':       '#b07020',
-  'transporte':    '#908010',
-  'panaderias':    '#b05c28',
-  'bancos':        '#2a52b0',
-  'profesionales': '#555555',
-  'agroindustria': '#b06820',
-  'oficios':       '#2a7a9a',
+  'restaurantes':   '#c42424',  // rojo
+  'panaderias':     '#c07828',  // caramelo
+  'construccion':   '#e05c08',  // naranja vivo
+  'agroindustria':  '#b87000',  // ámbar dorado
+  'servicios':      '#c8b000',  // amarillo
+  'abarrotes':      '#7a8c00',  // olivo
+  'agro':           '#18a030',  // verde vivo
+  'veterinarias':   '#009868',  // esmeralda
+  'oficios':        '#009090',  // teal
+  'tecnologia':     '#0080bc',  // cian-azul
+  'salud':          '#2890d0',  // azul cielo
+  'educacion':      '#1830c0',  // índigo
+  'bancos':         '#08186a',  // marino oscuro
+  'hoteles':        '#5818b0',  // morado
+  'belleza':        '#9810b0',  // violeta
+  'ropa':           '#c01090',  // magenta
+  'eventos':        '#c81060',  // rosa fuerte
+  'transporte':     '#785018',  // marrón
+  'talleres':       '#486070',  // gris azulado
+  'profesionales':  '#303848',  // pizarra
 };
 
 // Tamaño de destacados: lineal y acotado. En zoom 14 → 24px, +2px por nivel arriba, -3px por nivel abajo
