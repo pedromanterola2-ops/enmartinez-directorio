@@ -758,6 +758,21 @@ sb.auth.getSession().then(({ data }) => {
   if (data && data.session) entrarAlPanel();
 });
 
+// Manejo del evento PASSWORD_RECOVERY (link de restablecimiento de contraseña)
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    // Entrar al panel y abrir directamente la pestaña de configuración
+    await entrarAlPanel();
+    cambiarTab('config');
+    mostrarToast('🔐 Escribe tu nueva contraseña abajo', 'exito');
+    // Hacer scroll al formulario de contraseña
+    setTimeout(() => {
+      document.getElementById('cfg-pass1')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('cfg-pass1')?.focus();
+    }, 400);
+  }
+});
+
 async function cerrarSesion() {
   await sb.auth.signOut();
   document.getElementById('loginScreen').style.display = 'flex';
