@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Admin — EnMartinez.com</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -283,12 +284,71 @@
     .sol-empty { padding:2.5rem; text-align:center; color:var(--texto-muted); font-size:0.88rem; }
     .dest-tag { font-size:0.7rem; color:#c2410c; font-weight:600; white-space:nowrap; flex-shrink:0; }
 
+    /* ── MAPA ── */
+    .mapa-layout {
+      display: flex; height: calc(100vh - 210px); min-height: 520px; overflow: hidden;
+    }
+    .mapa-sidebar {
+      width: 280px; flex-shrink: 0; overflow-y: auto;
+      border-right: 1px solid var(--borde); background: #fff;
+    }
+    .mapa-sidebar-head {
+      padding: 0.75rem 1rem; border-bottom: 1px solid var(--borde);
+      background: #f9fafb; position: sticky; top: 0; z-index: 1;
+    }
+    .mapa-sidebar-head input {
+      width: 100%; padding: 0.42rem 0.7rem; border: 1px solid var(--borde);
+      border-radius: 8px; font-size: 0.82rem; outline: none; font-family: inherit;
+    }
+    .mapa-stats {
+      display: flex; gap: 0.75rem; margin-top: 0.55rem;
+      font-size: 0.75rem; color: var(--texto-muted);
+    }
+    .neg-mapa-row {
+      padding: 0.65rem 1rem; border-bottom: 1px solid var(--borde);
+      cursor: pointer; display: flex; align-items: center; gap: 0.6rem;
+      transition: background 0.15s;
+    }
+    .neg-mapa-row:hover { background: #f9fafb; }
+    .neg-mapa-row.seleccionado { background: var(--verde-bg); border-left: 3px solid var(--verde); padding-left: calc(1rem - 3px); }
+    .dot-ub { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .dot-ub.con { background: #22c55e; }
+    .dot-ub.sin { background: #ef4444; }
+    .mapa-neg-nombre { font-size: 0.84rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mapa-neg-meta { font-size: 0.71rem; color: var(--texto-muted); margin-top: 0.1rem; }
+    .mapa-contenedor { flex: 1; position: relative; }
+    #mapaLeaflet { height: 100%; width: 100%; z-index: 0; }
+    .mapa-geocode-bar {
+      position: absolute; top: 0.75rem; left: 50%; transform: translateX(-50%);
+      z-index: 400; display: flex; gap: 0.4rem; width: min(360px, 80%);
+    }
+    .mapa-geocode-bar input {
+      flex: 1; padding: 0.5rem 0.75rem; border: none; border-radius: 8px;
+      font-size: 0.85rem; font-family: inherit; outline: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    .mapa-geocode-bar button {
+      background: var(--verde); color: #fff; border: none; border-radius: 8px;
+      padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25); white-space: nowrap;
+    }
+    .mapa-geocode-bar button:hover { background: var(--verde-claro); }
+    .mapa-tip {
+      position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+      z-index: 400; background: rgba(15,23,42,0.82); color: #fff;
+      padding: 0.45rem 1rem; border-radius: 20px; font-size: 0.78rem;
+      pointer-events: none; white-space: nowrap;
+    }
+
     /* ── RESPONSIVE ── */
     @media(max-width:640px){
       .form-grid2,.form-grid3 { grid-template-columns: 1fr; }
       .form-group.span2,.form-group.span3 { grid-column: span 1; }
       .neg-row { flex-wrap: wrap; }
       .neg-actions { width: 100%; }
+      .mapa-layout { flex-direction: column; height: auto; }
+      .mapa-sidebar { width: 100%; height: 220px; border-right: none; border-bottom: 1px solid var(--borde); }
+      .mapa-contenedor { height: 380px; }
     }
   </style>
 </head>
@@ -342,6 +402,9 @@
       </button>
       <button class="tab" onclick="cambiarTab('solicitudes')" id="tab-solicitudes">
         📋 Solicitudes <span class="tab-badge" id="badge-solicitudes" style="display:none;background:#ef4444">0</span>
+      </button>
+      <button class="tab" onclick="cambiarTab('mapa')" id="tab-mapa">
+        🗺️ Ubicaciones <span class="tab-badge" id="badge-sin-coords" style="display:none;background:#ef4444">0</span>
       </button>
     </div>
   </div>
@@ -584,6 +647,49 @@
       </div>
     </div>
 
+    <!-- ════ TAB: MAPA ════ -->
+    <div class="tab-content" id="content-mapa">
+      <div class="panel-card" style="overflow:hidden">
+        <div class="panel-card-header" style="flex-wrap:wrap;gap:0.5rem">
+          <span>🗺️ Gestión de ubicaciones</span>
+          <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <span id="mapa-estado-txt" style="font-size:0.8rem;font-weight:400;color:var(--texto-muted)">
+              Selecciona un negocio para colocar o ajustar su pin
+            </span>
+            <button class="btn btn-primary" id="btn-guardar-ub" onclick="guardarUbicacion()"
+              style="display:none;padding:0.38rem 0.85rem;font-size:0.8rem">💾 Guardar</button>
+            <button class="btn btn-gris" id="btn-cancelar-ub" onclick="cancelarSeleccionMapa()"
+              style="display:none;padding:0.38rem 0.85rem;font-size:0.8rem">✕ Cancelar</button>
+          </div>
+        </div>
+        <div class="mapa-layout">
+          <!-- Sidebar lista de negocios -->
+          <div class="mapa-sidebar" id="mapaSidebar">
+            <div class="mapa-sidebar-head">
+              <input type="text" id="mapaFiltro" placeholder="Buscar negocio…" oninput="renderListaMapa()">
+              <div class="mapa-stats">
+                <span>🟢 <strong id="cnt-con-ub">0</strong> ubicados</span>
+                <span>🔴 <strong id="cnt-sin-ub">0</strong> sin ubicar</span>
+              </div>
+            </div>
+            <div id="listaNegMapa"></div>
+          </div>
+          <!-- Mapa -->
+          <div class="mapa-contenedor">
+            <div id="mapaLeaflet"></div>
+            <div class="mapa-geocode-bar">
+              <input type="text" id="geocodeInput" placeholder="🔍 Buscar dirección en el mapa…"
+                onkeydown="if(event.key==='Enter')geocodificar()">
+              <button onclick="geocodificar()">Buscar</button>
+            </div>
+            <div class="mapa-tip" id="mapaTip" style="display:none">
+              📍 Haz clic en el mapa para colocar el pin — arrástralo para ajustar
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ════ TAB: SOLICITUDES ════ -->
     <div class="tab-content" id="content-solicitudes">
       <div class="panel-card">
@@ -706,6 +812,7 @@ async function recargarNegocios() {
   if (error) { mostrarToast('❌ Error al cargar negocios: ' + error.message, 'error'); return; }
   negocios = (data || []).map(dbANegocio);
   actualizarBadge();
+  actualizarBadgeMapa();
 }
 
 async function recargarSolicitudes() {
@@ -796,6 +903,10 @@ function cambiarTab(id) {
   document.getElementById('content-' + id)?.classList.add('active');
   if (id === 'solicitudes') {
     recargarSolicitudes().then(() => renderSolicitudes());
+  }
+  if (id === 'mapa') {
+    // setTimeout asegura que el contenedor ya es visible antes de inicializar Leaflet
+    setTimeout(initMapaAdmin, 50);
   }
 }
 
@@ -1364,6 +1475,254 @@ function mostrarToast(msg, tipo = '') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
 }
+
+// ══════════════════════════════════════
+//  MAPA — GESTIÓN DE UBICACIONES
+// ══════════════════════════════════════
+let mapaAdmin       = null;   // instancia Leaflet
+let mapaIdSel       = null;   // id del negocio seleccionado
+let mapaMarkers     = {};     // { id: L.Marker }
+let mapaPendiente   = null;   // { lat, lng } pendiente de guardar
+
+const MDT_CENTER = [20.0731, -97.0527]; // Martínez de la Torre, Ver.
+
+function crearIconoPin(icono, activo = false, pendiente = false) {
+  const bg = pendiente ? '#f97316' : activo ? '#1a6b3c' : '#4b7a5f';
+  const borde = activo || pendiente ? '2px solid #fff' : '1.5px solid rgba(255,255,255,0.7)';
+  return L.divIcon({
+    html: `<div style="
+      background:${bg};border-radius:50% 50% 50% 0;
+      width:34px;height:34px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.05rem;transform:rotate(-45deg);
+      border:${borde};
+      box-shadow:0 2px 8px rgba(0,0,0,0.35);
+    "><span style="transform:rotate(45deg);line-height:1">${icono}</span></div>`,
+    iconSize:    [34, 34],
+    iconAnchor:  [17, 34],
+    popupAnchor: [0, -36],
+    className:   ''
+  });
+}
+
+function actualizarBadgeMapa() {
+  const sin = negocios.filter(n => !(n.lat && n.lng)).length;
+  const badge = document.getElementById('badge-sin-coords');
+  if (!badge) return;
+  if (sin > 0) { badge.textContent = sin; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+function initMapaAdmin() {
+  if (mapaAdmin) {
+    mapaAdmin.invalidateSize();
+    renderListaMapa();
+    refrescarMarkers();
+    return;
+  }
+
+  mapaAdmin = L.map('mapaLeaflet', { zoomControl: true }).setView(MDT_CENTER, 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(mapaAdmin);
+
+  mapaAdmin.on('click', (e) => {
+    if (!mapaIdSel) return;
+    colocarPinTemporal(e.latlng.lat, e.latlng.lng);
+  });
+
+  renderListaMapa();
+  refrescarMarkers();
+}
+
+function renderListaMapa() {
+  const q = (document.getElementById('mapaFiltro')?.value || '').toLowerCase().trim();
+  const lista = negocios.filter(n => !q || n.nombre.toLowerCase().includes(q) ||
+    (n.direccion || '').toLowerCase().includes(q));
+
+  const con = negocios.filter(n => n.lat && n.lng).length;
+  const sin = negocios.length - con;
+  const elCon = document.getElementById('cnt-con-ub');
+  const elSin = document.getElementById('cnt-sin-ub');
+  if (elCon) elCon.textContent = con;
+  if (elSin) elSin.textContent = sin;
+
+  const container = document.getElementById('listaNegMapa');
+  if (!container) return;
+
+  if (!lista.length) {
+    container.innerHTML = '<div style="padding:1.5rem;text-align:center;font-size:0.85rem;color:var(--texto-muted)">Sin resultados</div>';
+    return;
+  }
+
+  // Ordenar: sin coords primero
+  const sorted = [...lista].sort((a, b) => {
+    const aTiene = !!(a.lat && a.lng);
+    const bTiene = !!(b.lat && b.lng);
+    return aTiene - bTiene;
+  });
+
+  container.innerHTML = sorted.map(n => {
+    const tieneCoords = !!(n.lat && n.lng);
+    const sel = n.id === mapaIdSel;
+    const coordTxt = tieneCoords
+      ? `${Number(n.lat).toFixed(4)}, ${Number(n.lng).toFixed(4)}`
+      : 'Sin ubicación';
+    return `
+      <div class="neg-mapa-row${sel ? ' seleccionado' : ''}" onclick="seleccionarNegMapa(${n.id})">
+        <div class="dot-ub ${tieneCoords ? 'con' : 'sin'}"></div>
+        <div style="min-width:0;flex:1">
+          <div class="mapa-neg-nombre">${esc(n.icono)} ${esc(n.nombre)}</div>
+          <div class="mapa-neg-meta">📍 ${coordTxt}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function refrescarMarkers() {
+  if (!mapaAdmin) return;
+  // Limpiar todos los markers
+  Object.values(mapaMarkers).forEach(m => m.remove());
+  mapaMarkers = {};
+
+  negocios.forEach(n => {
+    if (!(n.lat && n.lng)) return;
+    const activo  = n.id === mapaIdSel;
+    const marker  = L.marker([n.lat, n.lng], {
+      icon: crearIconoPin(n.icono, activo, false),
+      draggable: activo
+    }).addTo(mapaAdmin);
+
+    marker.bindPopup(`<strong>${esc(n.icono)} ${esc(n.nombre)}</strong><br>
+      <small style="color:#6b7280">${esc(n.direccion)}</small>`);
+
+    if (activo) {
+      marker.on('dragend', (e) => {
+        const pos = e.target.getLatLng();
+        mapaPendiente = { lat: pos.lat, lng: pos.lng };
+        actualizarEstadoMapa(`📍 ${esc(n.nombre)} — ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`);
+      });
+    } else {
+      marker.on('click', () => seleccionarNegMapa(n.id));
+    }
+
+    mapaMarkers[n.id] = marker;
+  });
+}
+
+function seleccionarNegMapa(id) {
+  mapaIdSel    = id;
+  mapaPendiente = null;
+  const n = negocios.find(x => x.id === id);
+  if (!n) return;
+
+  document.getElementById('btn-guardar-ub').style.display   = '';
+  document.getElementById('btn-cancelar-ub').style.display  = '';
+  document.getElementById('mapaTip').style.display          = '';
+
+  actualizarEstadoMapa(`Editando: ${n.nombre}`);
+
+  renderListaMapa();
+  refrescarMarkers();
+
+  if (n.lat && n.lng) {
+    mapaAdmin.setView([n.lat, n.lng], 17);
+    mapaMarkers[n.id]?.openPopup();
+  } else {
+    mapaAdmin.setView(MDT_CENTER, 15);
+  }
+}
+
+function colocarPinTemporal(lat, lng) {
+  if (!mapaIdSel) return;
+  const n = negocios.find(x => x.id === mapaIdSel);
+  if (!n) return;
+
+  mapaPendiente = { lat, lng };
+
+  // Quitar marker anterior si existe
+  if (mapaMarkers[n.id]) { mapaMarkers[n.id].remove(); delete mapaMarkers[n.id]; }
+
+  const marker = L.marker([lat, lng], {
+    icon: crearIconoPin(n.icono, false, true), // naranja = pendiente
+    draggable: true
+  }).addTo(mapaAdmin);
+
+  marker.bindPopup(`<strong>${esc(n.icono)} ${esc(n.nombre)}</strong><br>
+    <small style="color:#f97316">⏳ Pendiente de guardar</small>`).openPopup();
+
+  marker.on('dragend', (e) => {
+    const pos = e.target.getLatLng();
+    mapaPendiente = { lat: pos.lat, lng: pos.lng };
+    actualizarEstadoMapa(`📍 ${esc(n.nombre)} — ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`);
+  });
+
+  mapaMarkers[n.id] = marker;
+  actualizarEstadoMapa(`📍 ${n.nombre} — ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+}
+
+function actualizarEstadoMapa(txt) {
+  const el = document.getElementById('mapa-estado-txt');
+  if (el) el.textContent = txt;
+}
+
+async function guardarUbicacion() {
+  if (!mapaIdSel) return;
+  if (!mapaPendiente) {
+    mostrarToast('⚠️ Mueve el pin o haz clic en el mapa para establecer una posición', 'error');
+    return;
+  }
+
+  const { lat, lng } = mapaPendiente;
+  const { error } = await sb.from('negocios').update({ lat, lng }).eq('id', mapaIdSel);
+  if (error) { mostrarToast('❌ No se pudo guardar: ' + error.message, 'error'); return; }
+
+  // Actualizar localmente
+  const n = negocios.find(x => x.id === mapaIdSel);
+  if (n) { n.lat = lat; n.lng = lng; }
+
+  mapaPendiente = null;
+  mostrarToast('✅ Ubicación guardada', 'exito');
+  actualizarBadgeMapa();
+  renderListaMapa();
+  refrescarMarkers();
+  actualizarEstadoMapa(`✅ ${n?.nombre} — ubicación guardada`);
+
+  // Actualizar marker a verde (ya no pendiente)
+  if (mapaMarkers[mapaIdSel]) {
+    mapaMarkers[mapaIdSel].setIcon(crearIconoPin(n?.icono || '🏪', true, false));
+    mapaMarkers[mapaIdSel].setDraggable(true);
+  }
+}
+
+function cancelarSeleccionMapa() {
+  mapaIdSel    = null;
+  mapaPendiente = null;
+  document.getElementById('btn-guardar-ub').style.display  = 'none';
+  document.getElementById('btn-cancelar-ub').style.display = 'none';
+  document.getElementById('mapaTip').style.display         = 'none';
+  actualizarEstadoMapa('Selecciona un negocio para colocar o ajustar su pin');
+  renderListaMapa();
+  refrescarMarkers();
+}
+
+async function geocodificar() {
+  const q = document.getElementById('geocodeInput')?.value?.trim();
+  if (!q) return;
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', Martínez de la Torre, Veracruz, México')}&format=json&limit=1`;
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    if (!data.length) { mostrarToast('📍 No se encontró esa dirección', 'error'); return; }
+    const { lat, lon } = data[0];
+    mapaAdmin.setView([parseFloat(lat), parseFloat(lon)], 18);
+  } catch(e) {
+    mostrarToast('❌ Error al buscar: ' + e.message, 'error');
+  }
+}
 </script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
