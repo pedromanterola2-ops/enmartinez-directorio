@@ -1565,7 +1565,9 @@ function filtrarPorCat(cat) {
     const listaFiltrada = negocios.filter(n => n.categoria === cat);
     renderNegocios(listaFiltrada);
     actualizarMarcadores(listaFiltrada);
-    document.getElementById('negocios').scrollIntoView({ behavior: 'smooth' });
+    const grid = document.getElementById('negociosGrid');
+    const top = grid.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top, behavior: 'smooth' });
   }
 }
 
