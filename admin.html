@@ -440,6 +440,7 @@
           <button class="btn btn-gris" style="margin-left:auto;padding:0.35rem 0.75rem;font-size:0.8rem"
             onclick="cancelarForm()">✕ Cancelar</button>
         </div>
+        <div id="form-slug-link" style="display:none;padding:0.5rem 1.25rem;font-size:0.8rem;color:#6b7280;background:#f0f7f2;"></div>
         <div class="panel-card-body">
 
           <div class="form-grid2" style="margin-bottom:0.85rem">
@@ -756,7 +757,8 @@ function dbANegocio(r) {
     servicios: Array.isArray(r.servicios) ? r.servicios : [],
     pago: Array.isArray(r.pago) ? r.pago : [],
     facebook: r.facebook || '', web: r.web || '',
-    destacado: !!r.destacado, lat: r.lat, lng: r.lng
+    destacado: !!r.destacado, lat: r.lat, lng: r.lng,
+    slug: r.slug || ''
   };
 }
 
@@ -959,6 +961,7 @@ function renderLista() {
         ${n.destacado ? '⭐ Destacado' : '— Normal'}
       </span>
       <div class="neg-actions">
+        ${n.slug ? `<a class="btn-edit" style="text-decoration:none" href="https://enmartinez-directorio.vercel.app/negocio/${esc(n.slug)}" target="_blank" rel="noopener" title="Ver página pública">🔗</a>` : ''}
         <button class="btn-edit" onclick="abrirFormularioEditar(${n.id})">✏️ Editar</button>
         <button class="btn-del"  onclick="pedirEliminar(${n.id})">🗑️</button>
       </div>
@@ -999,6 +1002,9 @@ function abrirFormularioNuevo() {
   editandoId = null;
   document.getElementById('form-titulo').textContent = '➕ Nuevo negocio';
   document.getElementById('tab-form').textContent = '➕ Nuevo negocio';
+  const slugBox = document.getElementById('form-slug-link');
+  slugBox.style.display = 'none';
+  slugBox.innerHTML = '';
   cambiarTab('form');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1031,6 +1037,17 @@ function abrirFormularioEditar(id) {
 
   document.getElementById('form-titulo').textContent = `✏️ Editando: ${n.nombre}`;
   document.getElementById('tab-form').textContent = '✏️ Editar negocio';
+
+  const slugBox = document.getElementById('form-slug-link');
+  if (n.slug) {
+    const url = `https://enmartinez-directorio.vercel.app/negocio/${n.slug}`;
+    slugBox.style.display = 'block';
+    slugBox.innerHTML = `🔗 Página pública: <a href="${url}" target="_blank" rel="noopener" style="color:#1a6b3c;font-weight:600">${url}</a>`;
+  } else {
+    slugBox.style.display = 'none';
+    slugBox.innerHTML = '';
+  }
+
   actualizarPreview();
   cambiarTab('form');
   window.scrollTo({ top: 0, behavior: 'smooth' });

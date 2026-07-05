@@ -758,6 +758,9 @@
         Ver en mapa
       </button>
     </div>
+    <div id="m-link-wrap" style="padding:0 1.5rem 0.9rem;margin-top:-0.6rem;text-align:right;display:none">
+      <a id="m-link-pagina" href="#" target="_blank" rel="noopener" style="color:var(--verde);text-decoration:none;font-weight:600;font-size:0.82rem">🔗 Ver página / compartir</a>
+    </div>
   </div>
 </div>
 
@@ -1075,7 +1078,8 @@ function mapearNegocio(r) {
     facebook: r.facebook || '',
     web: r.web || '',
     destacado: !!r.destacado,
-    lat: r.lat, lng: r.lng
+    lat: r.lat, lng: r.lng,
+    slug: r.slug || ''
   };
 }
 
@@ -1301,6 +1305,15 @@ function abrirModal(id) {
   } else {
     btnMapa.style.display = 'none';
     btnMapa.onclick = null;
+  }
+
+  // Link a la página individual del negocio (si ya tiene slug)
+  const linkWrap = document.getElementById('m-link-wrap');
+  if (n.slug) {
+    linkWrap.style.display = 'block';
+    document.getElementById('m-link-pagina').href = '/negocio/' + encodeURIComponent(n.slug);
+  } else {
+    linkWrap.style.display = 'none';
   }
 
   document.getElementById('modalOverlay').classList.add('open');
