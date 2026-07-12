@@ -21,8 +21,8 @@
   <!-- Preconexiones para acelerar la primera carga -->
   <link rel="preconnect" href="https://ygeuqlohycckwngcmmxl.supabase.co" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin>
-  <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com">
+  <link rel="preconnect" href="https://a.tile.openstreetmap.org">
+  <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
@@ -1340,12 +1340,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(
 //  MAPA LEAFLET
 // ══════════════════════════════════════════
 const mapa = L.map('mapa').setView([20.0725, -97.0522], 14);
-// Capa base: CARTO Voyager (mapa de calles limpio, rápido desde CDN)
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  maxZoom: 20,
-  subdomains: 'abcd',
-  detectRetina: true,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org">OpenStreetMap</a>'
 }).addTo(mapa);
 
 const marcadores = {};
