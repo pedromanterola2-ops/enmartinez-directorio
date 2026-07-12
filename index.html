@@ -18,6 +18,11 @@
   <meta property="og:url" content="https://enmartinez-directorio.vercel.app/">
   <meta property="og:locale" content="es_MX">
   <meta name="twitter:card" content="summary">
+  <!-- Preconexiones para acelerar la primera carga -->
+  <link rel="preconnect" href="https://ygeuqlohycckwngcmmxl.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://server.arcgisonline.com">
+  <link rel="dns-prefetch" href="https://server.arcgisonline.com">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
@@ -1335,8 +1340,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(
 //  MAPA LEAFLET
 // ══════════════════════════════════════════
 const mapa = L.map('mapa').setView([20.0725, -97.0522], 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org">OpenStreetMap</a>'
+// Capa base: imagen satelital de Esri (World Imagery)
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19,
+  attribution: 'Imagen satelital © <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics'
+}).addTo(mapa);
+// Sobrecapas de referencia para que el satélite sea legible: calles y nombres de lugares
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19
+}).addTo(mapa);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19
 }).addTo(mapa);
 
 const marcadores = {};
@@ -1824,11 +1838,18 @@ function inyectarJsonLd() {
 
 // Init: carga los negocios desde la base de datos y arranca la página
 async function init() {
+  // 1) Pinta de inmediato la estructura estática (no espera a la base de datos)
+  renderCategorias();
+  renderChips();
+  renderChipsMapa();
+  document.getElementById('negociosGrid').innerHTML =
+    '<div class="empty"><div class="empty-icon">⏳</div><p>Cargando negocios…</p></div>';
+
+  // 2) Trae los negocios y actualiza conteos, lista y mapa cuando lleguen
   negocios = await cargarNegociosIndex();
   crearMarcadores();
   renderCategorias();
   renderChips();
-  renderChipsMapa();
   renderNegocios(negocios);
   actualizarMarcadores(negocios, true);
   inyectarJsonLd();
