@@ -476,17 +476,70 @@
 const form = document.getElementById('formRegistro');
 const btnEnviar = document.getElementById('btnEnviar');
 
+// ── Reglas de validación ──────────────────────────────────────────
+// Cada campo obligatorio puede traer una regla de formato. Si la regla
+// devuelve un texto, ese texto se muestra como error debajo del campo.
+const soloDigitos = v => v.replace(/\D/g, '');
+
 const camposObligatorios = [
-  { id: 'nombre',         label: 'Nombre del negocio' },
-  { id: 'categoria',      label: 'Categoría' },
-  { id: 'direccion',      label: 'Dirección' },
-  { id: 'descripcion',    label: 'Descripción' },
-  { id: 'horario',        label: 'Horario' },
-  { id: 'telefono',       label: 'Teléfono' },
-  { id: 'propietario',    label: 'Nombre del propietario' },
-  { id: 'emailContacto',  label: 'Correo electrónico' },
-  { id: 'celularContacto',label: 'WhatsApp de notificación' },
+  { id: 'nombre',      label: 'Nombre del negocio',
+    regla: v => v.trim().length < 3 ? 'Escribe el nombre completo del negocio.' : null },
+  { id: 'categoria',   label: 'Categoría' },
+  { id: 'direccion',   label: 'Dirección',
+    regla: v => v.trim().length < 8 ? 'Incluye calle y número o colonia para que te encuentren.' : null },
+  { id: 'descripcion', label: 'Descripción',
+    regla: v => v.trim().length < 30 ? 'Describe tu negocio con al menos 30 caracteres — es lo primero que leen tus clientes.' : null },
+  { id: 'horario',     label: 'Horario' },
+  { id: 'telefono',    label: 'Teléfono',
+    regla: v => soloDigitos(v).length !== 10 ? 'El teléfono debe tener 10 dígitos. Ej: 232 000 0000' : null },
+  { id: 'propietario', label: 'Nombre del propietario',
+    regla: v => v.trim().length < 3 ? 'Escribe tu nombre.' : null },
+  { id: 'emailContacto', label: 'Correo electrónico',
+    regla: v => !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? 'Revisa el correo, parece incompleto. Ej: nombre@gmail.com' : null },
+  { id: 'celularContacto', label: 'WhatsApp de notificación',
+    regla: v => soloDigitos(v).length !== 10 ? 'El WhatsApp debe tener 10 dígitos, sin código de país.' : null },
 ];
+
+// Campos opcionales: solo se validan si el usuario escribió algo.
+const camposOpcionales = [
+  { id: 'whatsapp',
+    regla: v => soloDigitos(v).length !== 10 ? 'El WhatsApp debe tener 10 dígitos, sin código de país.' : null },
+  { id: 'facebook',
+    regla: v => !/^https?:\/\/.+\..+/.test(v.trim()) ? 'Pega el enlace completo, empezando con https://' : null },
+  { id: 'web',
+    regla: v => !/^https?:\/\/.+\..+/.test(v.trim()) ? 'Pega el enlace completo, empezando con https://' : null },
+];
+
+// Muestra u oculta el mensaje de error debajo de un campo.
+function marcarError(el, mensaje) {
+  el.classList.toggle('error', !!mensaje);
+  const grupo = el.closest('.form-group') || el.parentNode;
+  let aviso = grupo.querySelector('.msg-error');
+  if (!mensaje) { if (aviso) aviso.remove(); return; }
+  if (!aviso) {
+    aviso = document.createElement('p');
+    aviso.className = 'msg-error';
+    aviso.style.cssText = 'color:#b91c1c;font-size:0.78rem;line-height:1.4;margin-top:0.3rem;font-weight:600;';
+    grupo.appendChild(aviso);
+  }
+  aviso.textContent = '⚠️ ' + mensaje;
+}
+
+// Valida un campo. Devuelve true si está bien.
+function validarCampo(campo, obligatorio) {
+  const el = document.getElementById(campo.id);
+  if (!el) return true;
+  const valor = el.value;
+
+  if (!valor.trim()) {
+    // Vacío: solo es error si el campo es obligatorio.
+    marcarError(el, obligatorio ? 'Este campo es obligatorio.' : null);
+    return !obligatorio;
+  }
+  const problema = campo.regla ? campo.regla(valor) : null;
+  marcarError(el, problema);
+  return !problema;
+}
 
 form.addEventListener('submit', function(e) {
   e.preventDefault();
@@ -494,20 +547,17 @@ form.addEventListener('submit', function(e) {
   // Si el honeypot tiene contenido es un bot: simular éxito sin enviar nada
   if (document.getElementById('sitioWeb2').value) { mostrarExito(); return; }
 
-  // Validar campos obligatorios
+  // Validar obligatorios y opcionales
   let valido = true;
-  camposObligatorios.forEach(c => {
-    const el = document.getElementById(c.id);
-    el.classList.remove('error');
-    if (!el.value.trim()) {
-      el.classList.add('error');
-      valido = false;
-    }
-  });
+  camposObligatorios.forEach(c => { if (!validarCampo(c, true))  valido = false; });
+  camposOpcionales .forEach(c => { if (!validarCampo(c, false)) valido = false; });
 
   if (!valido) {
     const primerError = document.querySelector('.error');
-    if (primerError) primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (primerError) {
+      primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      primerError.focus({ preventScroll: true });
+    }
     return;
   }
 
@@ -524,7 +574,8 @@ form.addEventListener('submit', function(e) {
     horario:           document.getElementById('horario').value.trim(),
     // Contacto público
     telefono:          document.getElementById('telefono').value.trim(),
-    whatsapp:          document.getElementById('whatsapp').value.trim(),
+    // Se guardan solo dígitos: así los enlaces de WhatsApp funcionan siempre
+    whatsapp:          soloDigitos(document.getElementById('whatsapp').value),
     facebook:          document.getElementById('facebook').value.trim(),
     web:               document.getElementById('web').value.trim(),
     // Servicios y pago
@@ -535,7 +586,7 @@ form.addEventListener('submit', function(e) {
     // Propietario (privado)
     propietario:       document.getElementById('propietario').value.trim(),
     emailContacto:     document.getElementById('emailContacto').value.trim(),
-    celularContacto:   document.getElementById('celularContacto').value.trim(),
+    celularContacto:   soloDigitos(document.getElementById('celularContacto').value),
   };
 
   btnEnviar.disabled = true;
@@ -611,9 +662,19 @@ function mostrarExito() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Limpiar error al escribir
+// Limpiar el error en cuanto el usuario corrige, y revalidar al salir del campo
+const todasLasReglas = [...camposObligatorios, ...camposOpcionales];
+
 document.querySelectorAll('input, select, textarea').forEach(el => {
-  el.addEventListener('input', () => el.classList.remove('error'));
+  el.addEventListener('input', () => marcarError(el, null));
+
+  el.addEventListener('blur', () => {
+    const campo = todasLasReglas.find(c => c.id === el.id);
+    if (!campo) return;
+    // Al salir del campo solo avisamos si escribió algo: no regañamos
+    // por campos que todavía no ha tocado.
+    if (el.value.trim()) validarCampo(campo, false);
+  });
 });
 </script>
 </body>

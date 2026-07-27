@@ -1,13 +1,26 @@
 // Supabase Edge Function — notify-nueva-solicitud
 // Se dispara via Database Webhook cuando llega un INSERT en la tabla `solicitudes`.
-// Envía un correo HTML a enmartinez1@outlook.com usando la API de Resend.
+// Envía un correo HTML de aviso usando la API de Resend (ver CORREO_DESTINO abajo).
 //
 // Requiere el secret: RESEND_API_KEY (agregar en Supabase → Settings → Edge Functions → Secrets)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const CORREO_DESTINO = "enmartinez1@outlook.com";
-const CORREO_ORIGEN  = "EnMartinez <onboarding@resend.dev>"; // cambiar luego si se verifica un dominio propio
+// IMPORTANTE: mientras Resend esté en modo prueba (sin dominio verificado)
+// SOLO permite enviar al correo dueño de la cuenta de Resend. Si pones otro,
+// la API responde 403 y la notificación se pierde en silencio.
+// Cuando verifiques un dominio propio en resend.com/domains podrás cambiar
+// este destino a enmartinez1@outlook.com y el origen a notificaciones@tudominio.
+const CORREO_DESTINO = "pedromanterola2@gmail.com";
+const CORREO_ORIGEN  = "EnMartinez <onboarding@resend.dev>";
+
+// Escapa el contenido antes de meterlo en el HTML del correo:
+// los datos vienen de un formulario público, así que no son de fiar.
+function esc(v: unknown): string {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
 serve(async (req: Request) => {
   // Verificación de método
@@ -66,25 +79,25 @@ serve(async (req: Request) => {
 
   <div class="section">🏪 Datos del negocio</div>
   <table>
-    <tr><td>Nombre</td><td>${r.nombre ?? "—"}</td></tr>
-    <tr><td>Categoría</td><td>${r.categoria ?? "—"}</td></tr>
-    <tr><td>Dirección</td><td>${r.direccion ?? "—"}</td></tr>
-    <tr><td>Horario</td><td>${r.horario ?? "—"}</td></tr>
-    <tr><td>Descripción</td><td>${r.descripcion ?? "—"}</td></tr>
+    <tr><td>Nombre</td><td>${esc(r.nombre) || "—"}</td></tr>
+    <tr><td>Categoría</td><td>${esc(r.categoria) || "—"}</td></tr>
+    <tr><td>Dirección</td><td>${esc(r.direccion) || "—"}</td></tr>
+    <tr><td>Horario</td><td>${esc(r.horario) || "—"}</td></tr>
+    <tr><td>Descripción</td><td>${esc(r.descripcion) || "—"}</td></tr>
   </table>
 
   <div class="section">📞 Contacto público</div>
   <table>
-    <tr><td>Teléfono</td><td>${r.telefono ?? "—"}</td></tr>
-    <tr><td>WhatsApp</td><td>${r.whatsapp || "No proporcionado"}</td></tr>
-    <tr><td>Facebook</td><td>${r.facebook || "No proporcionado"}</td></tr>
-    <tr><td>Sitio web</td><td>${r.web || "No proporcionado"}</td></tr>
+    <tr><td>Teléfono</td><td>${esc(r.telefono) || "—"}</td></tr>
+    <tr><td>WhatsApp</td><td>${esc(r.whatsapp) || "No proporcionado"}</td></tr>
+    <tr><td>Facebook</td><td>${esc(r.facebook) || "No proporcionado"}</td></tr>
+    <tr><td>Sitio web</td><td>${esc(r.web) || "No proporcionado"}</td></tr>
   </table>
 
   <div class="section">⚙️ Servicios y pago</div>
   <table>
-    <tr><td>Servicios</td><td>${r.servicios || "No especificado"}</td></tr>
-    <tr><td>Métodos de pago</td><td>${r.metodospago ?? "—"}</td></tr>
+    <tr><td>Servicios</td><td>${esc(r.servicios) || "No especificado"}</td></tr>
+    <tr><td>Métodos de pago</td><td>${esc(r.metodospago) || "—"}</td></tr>
   </table>
 
   <div class="section">⭐ Destacado</div>
@@ -94,9 +107,9 @@ serve(async (req: Request) => {
 
   <div class="section">👤 Propietario (privado)</div>
   <table>
-    <tr><td>Nombre</td><td>${r.propietario ?? "—"}</td></tr>
-    <tr><td>Correo</td><td>${r.email_contacto ?? "—"}</td></tr>
-    <tr><td>Celular</td><td>${r.celular_contacto ?? "—"}</td></tr>
+    <tr><td>Nombre</td><td>${esc(r.propietario) || "—"}</td></tr>
+    <tr><td>Correo</td><td>${esc(r.email_contacto) || "—"}</td></tr>
+    <tr><td>Celular</td><td>${esc(r.celular_contacto) || "—"}</td></tr>
   </table>
 
   <a class="btn" href="https://enmartinez-directorio.vercel.app/admin.html">Ir al panel admin →</a>
@@ -116,7 +129,7 @@ serve(async (req: Request) => {
     body: JSON.stringify({
       from:    CORREO_ORIGEN,
       to:      [CORREO_DESTINO],
-      subject: `📋 Nueva solicitud: ${r.nombre ?? "sin nombre"}`,
+      subject: `📋 Nueva solicitud: ${String(r.nombre ?? "sin nombre")}`,
       html:    htmlBody,
     }),
   });

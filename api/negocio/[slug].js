@@ -125,6 +125,18 @@ module.exports = async (req, res) => {
 
   const destacadoBadge = n.destacado ? '<span class="badge">⭐ Destacado</span>' : '';
 
+  // Foto de fachada: se muestra arriba de la ficha y se usa como imagen
+  // de vista previa al compartir por WhatsApp o Facebook.
+  const foto = typeof n.foto === 'string' && /^https:\/\//.test(n.foto) ? n.foto : '';
+  const fotoHtml = foto
+    ? `<img class="foto" src="${esc(foto)}" alt="Fachada de ${esc(nombre)}" loading="eager" decoding="async">`
+    : '';
+  const ogImageTags = foto
+    ? `<meta property="og:image" content="${esc(foto)}">
+<meta property="og:image:alt" content="Fachada de ${esc(nombre)}">
+<meta name="twitter:card" content="summary_large_image">`
+    : `<meta name="twitter:card" content="summary">`;
+
   const catKey = n.categoria || '';
   const schemaTipo = SCHEMA_TIPO[catKey] || 'LocalBusiness';
   const jsonLd = {
@@ -143,8 +155,17 @@ module.exports = async (req, res) => {
         addressCountry: 'MX'
       }
     } : {}),
-    ...(tieneCoords ? { geo: { '@type': 'GeoCoordinates', latitude: n.lat, longitude: n.lng } } : {})
+    ...(tieneCoords ? { geo: { '@type': 'GeoCoordinates', latitude: n.lat, longitude: n.lng } } : {}),
+    ...(typeof n.foto === 'string' && /^https:\/\//.test(n.foto) ? { image: n.foto } : {})
   };
+
+  // El JSON-LD va dentro de un <script>: si el nombre o la descripción
+  // contienen "</script>" romperían la página. Escapamos < y > como
+  // secuencias unicode, que JSON entiende igual pero el HTML ya no corta.
+  const jsonLdSeguro = JSON.stringify(jsonLd)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
 
   const catSlugParaBreadcrumb = esc(catLabel.replace(/^\S+\s/, ''));
 
@@ -162,12 +183,12 @@ module.exports = async (req, res) => {
 <meta property="og:url" content="${esc(url)}">
 <meta property="og:locale" content="es_MX">
 <meta property="og:site_name" content="EnMartinez.com">
-<meta name="twitter:card" content="summary">
+${ogImageTags}
 <meta name="theme-color" content="#1a6b3c">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+<script type="application/ld+json">${jsonLdSeguro}</script>
 <style>
 :root{--verde:#1a6b3c;--verde-bg:#f0f7f2;--naranja:#f97316;--texto:#1f2937;--texto-muted:#6b7280;--borde:#e5e7eb}
 *{box-sizing:border-box}
@@ -183,6 +204,8 @@ nav a.reg{background:var(--naranja);color:#fff;font-weight:700;margin-left:0.5re
 .breadcrumb a{color:var(--verde);text-decoration:none}
 .ficha{max-width:800px;margin:1rem auto 3rem;padding:0 1.5rem}
 .card{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.foto{display:block;width:100%;height:280px;object-fit:cover;background:#e5e7eb}
+@media (max-width:620px){.foto{height:200px}}
 .card-header{background:linear-gradient(135deg,var(--verde-bg),#d1fae5);padding:2rem 1.75rem 1.5rem;display:flex;gap:1.25rem}
 .card-icon{font-size:4rem;line-height:1}
 .cat{display:inline-block;font-size:0.75rem;font-weight:600;color:var(--verde);background:rgba(26,107,60,0.12);padding:0.25rem 0.7rem;border-radius:20px;margin-bottom:0.5rem}
@@ -227,6 +250,7 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
 
 <div class="ficha">
   <div class="card">
+    ${fotoHtml}
     <div class="card-header">
       <div class="card-icon">${icono}</div>
       <div>

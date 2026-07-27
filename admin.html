@@ -518,6 +518,33 @@
             </div>
           </div>
 
+          <!-- ── FOTO DE FACHADA ── -->
+          <div class="form-group" style="margin-bottom:0.85rem">
+            <label class="fl">📷 Foto de fachada
+              <span style="font-size:0.72rem;color:var(--texto-muted)">(JPG, PNG o WebP · máx. 3 MB)</span>
+            </label>
+            <div style="display:flex;gap:0.9rem;align-items:flex-start;flex-wrap:wrap">
+              <div id="a-foto-preview"
+                   style="width:132px;height:99px;border-radius:10px;border:1.5px dashed #d1d5db;background:#f9fafb;
+                          display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#9ca3af;
+                          flex-shrink:0;overflow:hidden;background-size:cover;background-position:center">📷</div>
+              <div style="flex:1;min-width:220px">
+                <input type="file" id="a-foto-archivo" accept="image/jpeg,image/png,image/webp"
+                       onchange="subirFoto(this)"
+                       style="font-size:0.82rem;width:100%">
+                <p id="a-foto-estado" style="font-size:0.78rem;color:var(--texto-muted);margin-top:0.4rem;line-height:1.45">
+                  Toma la foto de frente, con el letrero visible. Se sube sola al elegirla.
+                </p>
+                <input type="hidden" id="a-foto">
+                <button type="button" id="a-foto-quitar" onclick="quitarFoto()"
+                        style="display:none;margin-top:0.4rem;background:none;border:none;color:#b91c1c;
+                               font-size:0.78rem;font-weight:600;cursor:pointer;padding:0">
+                  ✕ Quitar foto
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group" style="margin-bottom:0.85rem">
             <label class="fl">Métodos de pago</label>
             <div class="check-row">
@@ -758,7 +785,7 @@ function dbANegocio(r) {
     pago: Array.isArray(r.pago) ? r.pago : [],
     facebook: r.facebook || '', web: r.web || '',
     destacado: !!r.destacado, lat: r.lat, lng: r.lng,
-    slug: r.slug || ''
+    slug: r.slug || '', foto: r.foto || ''
   };
 }
 
@@ -772,7 +799,8 @@ function negocioADb(n) {
     facebook: n.facebook || '', web: n.web || '',
     destacado: !!n.destacado,
     lat: (typeof n.lat === 'number' && isFinite(n.lat)) ? n.lat : null,
-    lng: (typeof n.lng === 'number' && isFinite(n.lng)) ? n.lng : null
+    lng: (typeof n.lng === 'number' && isFinite(n.lng)) ? n.lng : null,
+    foto: n.foto || null
   };
 }
 
@@ -988,12 +1016,18 @@ async function toggleDestacado(id) {
 // ══════════════════════════════════════
 function limpiarForm() {
   ['a-nombre','a-icono','a-direccion','a-telefono','a-whatsapp',
-   'a-facebook','a-web','a-descripcion','a-servicios','a-horario','a-lat','a-lng']
+   'a-facebook','a-web','a-descripcion','a-servicios','a-horario','a-lat','a-lng','a-foto']
     .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('a-categoria').value = '';
   document.getElementById('a-destacado').checked = false;
   document.querySelectorAll('input[name="a-pago"]').forEach(c => c.checked = false);
   document.getElementById('previewArea').style.display = 'none';
+  pintarFotoPreview('');
+  const estadoFoto = document.getElementById('a-foto-estado');
+  if (estadoFoto) {
+    estadoFoto.style.color = 'var(--texto-muted)';
+    estadoFoto.textContent = 'Toma la foto de frente, con el letrero visible. Se sube sola al elegirla.';
+  }
   editandoId = null;
 }
 
@@ -1029,6 +1063,8 @@ function abrirFormularioEditar(id) {
   document.getElementById('a-lng').value        = n.lng         || '';
   document.getElementById('a-categoria').value  = n.categoria   || '';
   document.getElementById('a-destacado').checked= !!n.destacado;
+  document.getElementById('a-foto').value       = n.foto        || '';
+  pintarFotoPreview(n.foto || '');
 
   (n.pago || []).forEach(p => {
     const cb = document.querySelector(`input[name="a-pago"][value="${p}"]`);
@@ -1051,6 +1087,96 @@ function abrirFormularioEditar(id) {
   actualizarPreview();
   cambiarTab('form');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ══════════════════════════════════════
+//  FOTO DE FACHADA (Supabase Storage)
+// ══════════════════════════════════════
+
+// Reduce la foto antes de subirla. Las fotos de celular pesan 4–8 MB;
+// así quedan en ~200 KB, entran en el límite del bucket y el sitio carga rápido.
+function comprimirImagen(file, maxLado = 1200, calidad = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+      const lienzo = document.createElement('canvas');
+      lienzo.width  = Math.round(img.width  * escala);
+      lienzo.height = Math.round(img.height * escala);
+      lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+      lienzo.toBlob(
+        b => b ? resolve(b) : reject(new Error('No se pudo procesar la imagen')),
+        'image/jpeg',
+        calidad
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Archivo de imagen inválido')); };
+    img.src = url;
+  });
+}
+
+function pintarFotoPreview(url) {
+  const caja   = document.getElementById('a-foto-preview');
+  const quitar = document.getElementById('a-foto-quitar');
+  if (url) {
+    caja.style.backgroundImage = `url("${url}")`;
+    caja.textContent = '';
+    caja.style.border = '1.5px solid var(--borde, #e5e7eb)';
+    quitar.style.display = 'block';
+  } else {
+    caja.style.backgroundImage = '';
+    caja.textContent = '📷';
+    caja.style.border = '1.5px dashed #d1d5db';
+    quitar.style.display = 'none';
+  }
+}
+
+async function subirFoto(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  const estado = document.getElementById('a-foto-estado');
+  estado.style.color = 'var(--texto-muted)';
+  estado.textContent = '⏳ Procesando y subiendo la foto…';
+
+  try {
+    const blob = await comprimirImagen(file);
+
+    // Nombre único: evita que dos negocios se pisen la foto.
+    const base = (document.getElementById('a-nombre').value.trim() || 'negocio')
+      .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'negocio';
+    const ruta = `${base}-${Date.now()}.jpg`;
+
+    const { error } = await sb.storage.from('negocios')
+      .upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+
+    const { data } = sb.storage.from('negocios').getPublicUrl(ruta);
+    document.getElementById('a-foto').value = data.publicUrl;
+    pintarFotoPreview(data.publicUrl);
+    actualizarPreview();
+
+    const kb = Math.round(blob.size / 1024);
+    estado.style.color = '#15803d';
+    estado.textContent = `✅ Foto lista (${kb} KB). Se guarda al presionar "Guardar negocio".`;
+    input.value = '';
+  } catch (e) {
+    estado.style.color = '#b91c1c';
+    estado.textContent = '❌ No se pudo subir: ' + (e.message || 'error desconocido');
+    input.value = '';
+  }
+}
+
+function quitarFoto() {
+  document.getElementById('a-foto').value = '';
+  pintarFotoPreview('');
+  actualizarPreview();
+  const estado = document.getElementById('a-foto-estado');
+  estado.style.color = 'var(--texto-muted)';
+  estado.textContent = 'Foto quitada. Se aplica al presionar "Guardar negocio".';
 }
 
 function guardarFormulario() {
@@ -1083,7 +1209,8 @@ function guardarFormulario() {
     // Sin coordenadas → null: el negocio no sale en el mapa pero sí en listas
     lat: isFinite(latVal) ? latVal : null,
     lng: isFinite(lngVal) ? lngVal : null,
-    destacado: document.getElementById('a-destacado').checked
+    destacado: document.getElementById('a-destacado').checked,
+    foto: document.getElementById('a-foto').value.trim()
   };
   if (!data.pago.length) data.pago = ['Efectivo'];
 
@@ -1161,6 +1288,21 @@ function actualizarPreview() {
   document.getElementById('prev-dir').textContent      = '📍 ' + dir;
   document.getElementById('prev-tel').textContent      = '📞 ' + tel;
   document.getElementById('prev-badge').style.display  = dest ? 'block' : 'none';
+
+  // Si hay foto, la vista previa la muestra tal como se verá en el directorio
+  const fotoEl = document.getElementById('a-foto');
+  const cajaImg = document.querySelector('.preview-img');
+  if (fotoEl && cajaImg) {
+    if (fotoEl.value.trim()) {
+      cajaImg.style.backgroundImage    = `url("${fotoEl.value.trim()}")`;
+      cajaImg.style.backgroundSize     = 'cover';
+      cajaImg.style.backgroundPosition = 'center';
+      document.getElementById('prev-icono').style.display = 'none';
+    } else {
+      cajaImg.style.backgroundImage = '';
+      document.getElementById('prev-icono').style.display = '';
+    }
+  }
 }
 
 // ══════════════════════════════════════
