@@ -238,55 +238,73 @@
     }
     .btn-ver-mapa:hover { background: var(--verde-claro); }
 
-    /* Fichas más compactas */
+    /* Fichas: rejilla con dirección y horario */
     .negocios-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.9rem;
     }
     .negocio-card {
       background: var(--blanco);
       border: 1px solid var(--borde);
-      border-radius: 14px; overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      transition: all 0.22s ease;
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
       cursor: pointer;
       display: flex; flex-direction: column;
     }
     .negocio-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 22px rgba(0,0,0,0.13);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+      border-color: #d5dad5;
     }
-    .negocio-img {
-      height: 80px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2.8rem; position: relative;
-    }
-    .destacado-ribbon {
-      position: absolute; top: 8px; right: 0;
-      background: var(--naranja); color: #fff;
-      font-size: 0.58rem; font-weight: 700;
-      padding: 0.18rem 0.55rem 0.18rem 0.45rem;
-      border-radius: 20px 0 0 20px;
-      letter-spacing: 0.02em;
-      box-shadow: -2px 2px 6px rgba(0,0,0,0.15);
+    /* Acento de categoría: línea fina superior */
+    .negocio-cat-bar { height: 5px; flex-shrink: 0; }
+    /* Foto: solo si el negocio tiene una cargada */
+    .negocio-foto {
+      height: 120px; background: #eef1ee;
+      background-size: cover; background-position: center;
+      flex-shrink: 0;
     }
     .negocio-body {
-      padding: 0.65rem 0.75rem 0.75rem;
-      display: flex; flex-direction: column; flex: 1; gap: 0.3rem;
+      padding: 0.9rem;
+      display: flex; flex-direction: column; flex: 1;
+    }
+    .negocio-head {
+      display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 0.7rem;
+    }
+    .negocio-icono {
+      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; line-height: 1;
+    }
+    .negocio-titulo { min-width: 0; flex: 1; }
+    .negocio-nombre {
+      font-size: 0.98rem; font-weight: 800;
+      line-height: 1.25; color: var(--texto);
+      overflow-wrap: anywhere;
     }
     .negocio-cat {
-      display: inline-flex; align-items: center;
-      font-size: 0.65rem; font-weight: 700;
-      padding: 0.18rem 0.55rem; border-radius: 20px;
-      width: fit-content; letter-spacing: 0.02em;
-      border: 1.5px solid currentColor;
-      opacity: 0.9;
+      display: block; font-size: 0.72rem; font-weight: 700;
+      margin-top: 0.15rem;
     }
-    .negocio-nombre {
-      font-size: 0.88rem; font-weight: 800;
-      line-height: 1.3; color: var(--texto);
+    .badge-destacado {
+      background: var(--naranja); color: #fff;
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
+      padding: 0.2rem 0.5rem; border-radius: 6px;
+      flex-shrink: 0; align-self: flex-start; white-space: nowrap;
     }
+    .negocio-datos {
+      display: flex; flex-direction: column; gap: 0.28rem; margin-bottom: 0.85rem;
+    }
+    .negocio-dato {
+      display: flex; align-items: flex-start; gap: 0.45rem;
+      font-size: 0.78rem; color: var(--texto-muted); line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .negocio-dato svg { flex-shrink: 0; margin-top: 1px; opacity: 0.65; }
+    .negocio-dato.horario { color: var(--verde); }
+    .negocio-dato.vacio { color: #b0b6b0; font-style: italic; }
     /* Estilos legacy (usados en modal, no en card) */
     .negocio-info { display: flex; flex-direction: column; gap: 0.28rem; }
     .negocio-meta {
@@ -299,20 +317,24 @@
       font-size: 0.75rem; color: var(--texto-muted); line-height: 1.4;
     }
     .negocio-dir svg { flex-shrink: 0; margin-top: 2px; }
-    .negocio-actions { display: flex; flex-direction: column; gap: 0.3rem; margin-top: auto; padding-top: 0.4rem; }
-    .btn-wsp {
-      width: 100%; background: #25D366; color: #fff; border: none;
-      padding: 0.45rem 0.5rem; border-radius: 8px; cursor: pointer;
-      font-size: 0.76rem; font-weight: 700; display: flex; align-items: center;
-      justify-content: center; gap: 0.35rem; transition: background 0.2s;
+    .negocio-actions { display: flex; gap: 0.45rem; margin-top: auto; }
+    .btn-wsp, .btn-tel, .btn-detalle {
+      flex: 1; border-radius: 8px; padding: 0.5rem 0.4rem;
+      font-size: 0.78rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; text-align: center;
+      display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+      transition: all 0.18s ease;
     }
+    .btn-wsp { background: #25D366; color: #fff; border: none; }
     .btn-wsp:hover { background: #1ab554; }
+    .btn-tel {
+      background: #fff; color: #4b5563; border: 1px solid var(--borde);
+      text-decoration: none;
+    }
+    .btn-tel:hover { border-color: #9ca3af; color: var(--texto); }
     .btn-detalle {
-      width: 100%; background: transparent; color: var(--verde);
-      border: 1.5px solid var(--verde);
-      padding: 0.42rem 0.5rem; border-radius: 8px; cursor: pointer;
-      font-size: 0.76rem; font-weight: 600; display: flex; align-items: center;
-      justify-content: center; gap: 0.3rem; transition: all 0.2s;
+      background: transparent; color: var(--verde);
+      border: 1.5px solid var(--verde); font-weight: 600;
     }
     .btn-detalle:hover { background: var(--verde); color: #fff; }
 
@@ -1166,9 +1188,19 @@ function renderCategorias() {
 }
 
 // ══════════════════════════════════════════
-//  RENDER NEGOCIOS (fichas compactas)
+//  RENDER NEGOCIOS (fichas con dirección y horario)
 // ══════════════════════════════════════════
 let filtroActivo = null;
+
+// Íconos de línea usados dentro de las fichas
+const ICO_PIN   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+const ICO_RELOJ = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const ICO_TEL   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>';
+
+// El ícono del negocio ya se muestra aparte: quita el emoji inicial de la etiqueta
+function limpiarCatLabel(label) {
+  return String(label || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
+}
 
 function renderNegocios(lista) {
   const grid = document.getElementById('negociosGrid');
@@ -1194,29 +1226,43 @@ function renderNegocios(lista) {
   grid.innerHTML = lista.map(n => {
     const bg = catBg[n.categoria] || '#f0f7f2';
     const catColor = catColores[n.categoria] || '#1a6b3c';
+    const catTexto = limpiarCatLabel(n.catLabel);
     return `
-    <div class="negocio-card" style="background:#fff; border:2px solid ${catColor}40;" onclick="abrirModal(${n.id})">
-      <div class="negocio-img" style="background:${catColor}; position:relative; overflow:hidden;">
-        ${n.foto
-          ? `<img src="${esc(n.foto)}" alt="${esc(n.nombre)}" loading="lazy" decoding="async"
-                  style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
-                  onerror="this.style.display='none'">`
-          : `<span style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.3))">${n.icono}</span>`
-        }
-        ${n.destacado ? '<div class="destacado-ribbon">⭐ Destacado</div>' : ''}
-      </div>
+    <div class="negocio-card" onclick="abrirModal(${n.id})">
+      <div class="negocio-cat-bar" style="background:${catColor}"></div>
+      ${n.foto
+        ? `<div class="negocio-foto"><img src="${esc(n.foto)}" alt="${esc(n.nombre)}" loading="lazy" decoding="async"
+                style="width:100%;height:100%;object-fit:cover;display:block"
+                onerror="this.parentNode.style.display='none'"></div>`
+        : ''}
       <div class="negocio-body">
-        <span class="negocio-cat" style="color:${catColor};background:${catColor}18;">${esc(n.catLabel)}</span>
-        <div class="negocio-nombre">${esc(n.nombre)}</div>
+        <div class="negocio-head">
+          <div class="negocio-icono" style="background:${catColor}1a">${n.icono}</div>
+          <div class="negocio-titulo">
+            <div class="negocio-nombre">${esc(n.nombre)}</div>
+            <span class="negocio-cat" style="color:${catColor}">${esc(catTexto)}</span>
+          </div>
+          ${n.destacado ? '<span class="badge-destacado">Destacado</span>' : ''}
+        </div>
+
+        <div class="negocio-datos">
+          ${n.direccion
+            ? `<div class="negocio-dato">${ICO_PIN}<span>${esc(n.direccion)}</span></div>`
+            : `<div class="negocio-dato vacio">${ICO_PIN}<span>Sin dirección registrada</span></div>`}
+          ${n.horario
+            ? `<div class="negocio-dato horario">${ICO_RELOJ}<span>${esc(n.horario)}</span></div>`
+            : `<div class="negocio-dato vacio">${ICO_RELOJ}<span>Sin horario registrado</span></div>`}
+        </div>
+
         <div class="negocio-actions" onclick="event.stopPropagation()">
           ${n.whatsapp
             ? `<button class="btn-wsp" onclick="abrirWhatsAppId(${Number(n.id)})">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
                 WhatsApp
               </button>`
-            : `<button class="btn-wsp" style="background:rgba(107,114,128,0.38);color:#444;cursor:default;box-shadow:none" onclick="event.stopPropagation()">
-                📞 Llamar
-              </button>`
+            : n.telefono
+              ? `<a class="btn-tel" href="tel:${esc(String(n.telefono).replace(/[^\d+]/g, ''))}">${ICO_TEL} Llamar</a>`
+              : ''
           }
           <button class="btn-detalle" onclick="abrirModal(${n.id})">Ver más</button>
         </div>
