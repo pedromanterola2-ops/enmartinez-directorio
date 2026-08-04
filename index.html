@@ -1078,6 +1078,20 @@ function esc(v) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Devuelve la URL solo si es http(s). Cualquier otra cosa —javascript:,
+// data:, vbscript:— se descarta: escapar comillas no basta, porque el
+// esquema del enlace se ejecuta igual al hacer clic.
+// Se exige URL absoluta a propósito: sin base, un "tunegocio.com" sin
+// https:// se descarta en vez de convertirse en un enlace interno roto.
+function urlSegura(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(s);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+  } catch { return ''; }
+}
+
 // ¿El negocio tiene coordenadas válidas para el mapa?
 function tieneCoords(n) {
   return typeof n.lat === 'number' && typeof n.lng === 'number' && isFinite(n.lat) && isFinite(n.lng);
@@ -1230,8 +1244,8 @@ function renderNegocios(lista) {
     return `
     <div class="negocio-card" onclick="abrirModal(${n.id})">
       <div class="negocio-cat-bar" style="background:${catColor}"></div>
-      ${n.foto
-        ? `<div class="negocio-foto"><img src="${esc(n.foto)}" alt="${esc(n.nombre)}" loading="lazy" decoding="async"
+      ${urlSegura(n.foto)
+        ? `<div class="negocio-foto"><img src="${esc(urlSegura(n.foto))}" alt="${esc(n.nombre)}" loading="lazy" decoding="async"
                 style="width:100%;height:100%;object-fit:cover;display:block"
                 onerror="this.parentNode.style.display='none'"></div>`
         : ''}
@@ -1284,8 +1298,9 @@ function abrirModal(id) {
 
   // Foto de fachada (si el negocio tiene)
   const mFoto = document.getElementById('m-foto');
-  if (n.foto) {
-    mFoto.src = n.foto;
+  const fotoUrl = urlSegura(n.foto);
+  if (fotoUrl) {
+    mFoto.src = fotoUrl;
     mFoto.alt = 'Fachada de ' + n.nombre;
     mFoto.style.display = 'block';
     mFoto.onerror = () => { mFoto.style.display = 'none'; };
@@ -1315,18 +1330,22 @@ function abrirModal(id) {
 
   // Web
   const webRow = document.getElementById('m-web-row');
-  if (n.web) {
+  const webUrl = urlSegura(n.web);
+  if (webUrl) {
     webRow.style.display = 'flex';
-    document.getElementById('m-web').innerHTML = `<a href="${esc(n.web)}" target="_blank" rel="noopener">${esc(n.web.replace('https://',''))}</a>`;
+    document.getElementById('m-web').innerHTML =
+      `<a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(n.web.replace(/^https?:\/\//,''))}</a>`;
   } else {
     webRow.style.display = 'none';
   }
 
   // Facebook
   const fbRow = document.getElementById('m-fb-row');
-  if (n.facebook) {
+  const fbUrl = urlSegura(n.facebook);
+  if (fbUrl) {
     fbRow.style.display = 'flex';
-    document.getElementById('m-fb').innerHTML = `<a href="${esc(n.facebook)}" target="_blank" rel="noopener">Ver página en Facebook</a>`;
+    document.getElementById('m-fb').innerHTML =
+      `<a href="${esc(fbUrl)}" target="_blank" rel="noopener noreferrer">Ver página en Facebook</a>`;
   } else {
     fbRow.style.display = 'none';
   }

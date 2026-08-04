@@ -768,6 +768,19 @@ function esc(v) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Devuelve la URL solo si es http(s). Importante aquí: los campos Facebook
+// y Sitio web de las SOLICITUDES los escribe cualquiera desde el formulario
+// público. Sin este filtro, un "javascript:..." se convertiría en un enlace
+// que ejecuta código con tu sesión de admin en cuanto le dieras clic.
+function urlSegura(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(s);   // absoluta obligatoria: "sitio.com" sin https:// se descarta
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+  } catch { return ''; }
+}
+
 // ── Conexión a Supabase (base de datos + login real) ──
 const SUPABASE_URL  = 'https://ygeuqlohycckwngcmmxl.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZXVxbG9oeWNja3duZ2NtbXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDE1MTksImV4cCI6MjA5NTgxNzUxOX0.fuFaUcYKaTjBpunDqIc-xMIGm3gA17r5Cn_E_JxFR_Q';
@@ -1526,8 +1539,12 @@ function renderSolicitudes() {
             <div><dt>Horario</dt><dd>${esc(s.horario) || '—'}</dd></div>
             <div><dt>Teléfono</dt><dd>${esc(s.telefono) || '—'}</dd></div>
             <div><dt>WhatsApp público</dt><dd>${esc(s.whatsapp) || '—'}</dd></div>
-            <div><dt>Facebook</dt><dd>${s.facebook ? `<a href="${esc(s.facebook)}" target="_blank" rel="noopener" style="color:var(--verde)">${esc(s.facebook)}</a>` : '—'}</dd></div>
-            <div><dt>Sitio web</dt><dd>${s.web ? `<a href="${esc(s.web)}" target="_blank" rel="noopener" style="color:var(--verde)">${esc(s.web)}</a>` : '—'}</dd></div>
+            <div><dt>Facebook</dt><dd>${urlSegura(s.facebook)
+              ? `<a href="${esc(urlSegura(s.facebook))}" target="_blank" rel="noopener noreferrer" style="color:var(--verde)">${esc(s.facebook)}</a>`
+              : (s.facebook ? `${esc(s.facebook)} <span style="color:#b91c1c;font-size:0.75rem">(enlace no válido, no se abre)</span>` : '—')}</dd></div>
+            <div><dt>Sitio web</dt><dd>${urlSegura(s.web)
+              ? `<a href="${esc(urlSegura(s.web))}" target="_blank" rel="noopener noreferrer" style="color:var(--verde)">${esc(s.web)}</a>`
+              : (s.web ? `${esc(s.web)} <span style="color:#b91c1c;font-size:0.75rem">(enlace no válido, no se abre)</span>` : '—')}</dd></div>
             <div style="grid-column:span 2"><dt>Descripción</dt><dd>${esc(s.descripcion) || '—'}</dd></div>
             <div><dt>Servicios</dt><dd>${esc(s.servicios) || '—'}</dd></div>
             <div><dt>Métodos de pago</dt><dd>${esc(s.metodospago) || '—'}</dd></div>
@@ -1557,8 +1574,9 @@ async function aprobarSolicitud(id) {
     direccion:   s.direccion   || '',
     telefono:    s.telefono    || '',
     whatsapp:    s.whatsapp    || '',
-    facebook:    s.facebook    || '',
-    web:         s.web         || '',
+    // Se filtran al aprobar: así una URL rara nunca llega al sitio público
+    facebook:    urlSegura(s.facebook),
+    web:         urlSegura(s.web),
     horario:     s.horario     || '',
     servicios:   (s.servicios || '').split(',').map(x => x.trim()).filter(Boolean),
     pago:        (s.metodospago || 'Efectivo').split(',').map(x => x.trim())

@@ -30,6 +30,17 @@ function esc(v) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Devuelve la URL solo si es http(s). Escapar comillas no basta: un
+// "javascript:..." en un href se ejecuta igual al hacer clic.
+function urlSegura(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  try {
+    const u = new URL(s);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+  } catch (e) { return ''; }
+}
+
 function paginaNoEncontrada(res) {
   res.statusCode = 404;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -100,12 +111,14 @@ module.exports = async (req, res) => {
     ? `<div class="info-row"><div class="info-icon naranja">🕐</div><div>${esc(n.horario)}</div></div>`
     : '';
 
-  const webRow = n.web
-    ? `<div class="info-row"><div class="info-icon morado">🌐</div><div><a href="${esc(n.web)}" target="_blank" rel="noopener">${esc(n.web.replace('https://', ''))}</a></div></div>`
+  const webUrl = urlSegura(n.web);
+  const webRow = webUrl
+    ? `<div class="info-row"><div class="info-icon morado">🌐</div><div><a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(String(n.web).replace(/^https?:\/\//, ''))}</a></div></div>`
     : '';
 
-  const fbRow = n.facebook
-    ? `<div class="info-row"><div class="info-icon azul">👍</div><div><a href="${esc(n.facebook)}" target="_blank" rel="noopener">Ver página en Facebook</a></div></div>`
+  const fbUrl = urlSegura(n.facebook);
+  const fbRow = fbUrl
+    ? `<div class="info-row"><div class="info-icon azul">👍</div><div><a href="${esc(fbUrl)}" target="_blank" rel="noopener noreferrer">Ver página en Facebook</a></div></div>`
     : '';
 
   const servicios = Array.isArray(n.servicios) ? n.servicios : [];
@@ -127,7 +140,7 @@ module.exports = async (req, res) => {
 
   // Foto de fachada: se muestra arriba de la ficha y se usa como imagen
   // de vista previa al compartir por WhatsApp o Facebook.
-  const foto = typeof n.foto === 'string' && /^https:\/\//.test(n.foto) ? n.foto : '';
+  const foto = urlSegura(n.foto);
   const fotoHtml = foto
     ? `<img class="foto" src="${esc(foto)}" alt="Fachada de ${esc(nombre)}" loading="eager" decoding="async">`
     : '';
@@ -156,7 +169,7 @@ module.exports = async (req, res) => {
       }
     } : {}),
     ...(tieneCoords ? { geo: { '@type': 'GeoCoordinates', latitude: n.lat, longitude: n.lng } } : {}),
-    ...(typeof n.foto === 'string' && /^https:\/\//.test(n.foto) ? { image: n.foto } : {})
+    ...(urlSegura(n.foto) ? { image: urlSegura(n.foto) } : {})
   };
 
   // El JSON-LD va dentro de un <script>: si el nombre o la descripción
