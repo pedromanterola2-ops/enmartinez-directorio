@@ -16,8 +16,12 @@
   <meta property="og:title" content="Directorio de Negocios de Martínez de la Torre, Veracruz">
   <meta property="og:description" content="Restaurantes, farmacias, talleres, hoteles y más. Direcciones, teléfonos, horarios y WhatsApp de los negocios de Martínez de la Torre.">
   <meta property="og:url" content="https://enmartinez-directorio.vercel.app/">
+  <meta property="og:image" content="https://enmartinez-directorio.vercel.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="EnMartinez.com — Directorio de Negocios de Martínez de la Torre, Veracruz">
   <meta property="og:locale" content="es_MX">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <!-- Preconexiones para acelerar la primera carga -->
   <link rel="preconnect" href="https://ygeuqlohycckwngcmmxl.supabase.co" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -834,242 +838,7 @@
 // ══════════════════════════════════════════
 //  BASE DE DATOS DE NEGOCIOS
 // ══════════════════════════════════════════
-const NEGOCIOS_FALLBACK = [
-  {
-    id: 1,
-    nombre: "Taquería El Buen Taco",
-    categoria: "restaurantes",
-    catLabel: "🍽️ Restaurantes",
-    icono: "🌮",
-    descripcion: "Los mejores tacos de canasta y al pastor de Martínez. Más de 20 años de tradición familiar sirviendo a la comunidad con sabores auténticos veracruzanos.",
-    direccion: "Av. Insurgentes 45, Centro",
-    telefono: "232 123 4567",
-    whatsapp: "2321234567",
-    horario: "Lun–Sáb 8:00–20:00",
-    servicios: ["Tacos al pastor", "Tacos de canasta", "Tortas", "Para llevar", "A domicilio"],
-    pago: ["Efectivo", "Transferencia"],
-    facebook: "https://facebook.com",
-    web: "",
-    destacado: true,
-    lat: 20.0731, lng: -97.0527
-  },
-  {
-    id: 2,
-    nombre: "Farmacia San Francisco",
-    categoria: "salud",
-    catLabel: "🏥 Salud",
-    icono: "💊",
-    descripcion: "Medicamentos de patente y genéricos, vitaminas, artículos de salud y cuidado personal. Contamos con médico de guardia sin costo y servicio a domicilio disponible.",
-    direccion: "Calle Hidalgo 12, Centro",
-    telefono: "232 234 5678",
-    whatsapp: "2322345678",
-    horario: "Lun–Dom 8:00–22:00",
-    servicios: ["Medicamentos genéricos", "Vitaminas", "Médico sin costo", "Inyecciones", "Servicio a domicilio"],
-    pago: ["Efectivo", "Tarjeta", "Transferencia"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0715, lng: -97.0510
-  },
-  {
-    id: 3,
-    nombre: "Abarrotes La Esperanza",
-    categoria: "abarrotes",
-    catLabel: "🛒 Abarrotes",
-    icono: "🛒",
-    descripcion: "Abarrotes completos, frutas, verduras y productos de limpieza. Manejamos precios de mayoreo para negocios y familias. Surtido fresco todos los días.",
-    direccion: "Blvd. Adolfo Ruiz Cortines 88",
-    telefono: "232 345 6789",
-    whatsapp: "2323456789",
-    horario: "Lun–Sáb 7:00–21:00",
-    servicios: ["Abarrotes", "Frutas y verduras", "Limpieza", "Precios mayoreo", "Refrescos y agua"],
-    pago: ["Efectivo", "Transferencia"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0725, lng: -97.0535
-  },
-  {
-    id: 4,
-    nombre: "Hotel Plaza Martínez",
-    categoria: "hoteles",
-    catLabel: "🏨 Hoteles",
-    icono: "🏨",
-    descripcion: "Hotel céntrico con 30 habitaciones equipadas, WiFi de alta velocidad, estacionamiento gratuito y aire acondicionado. Ideal para viajeros de negocios y turistas.",
-    direccion: "Calle 20 de Noviembre 5, Centro",
-    telefono: "232 456 7890",
-    whatsapp: "2324567890",
-    horario: "Recepción 24 hrs",
-    servicios: ["WiFi gratis", "Estacionamiento", "Aire acondicionado", "TV cable", "Desayuno incluido"],
-    pago: ["Efectivo", "Tarjeta", "Transferencia"],
-    facebook: "https://facebook.com",
-    web: "",
-    destacado: true,
-    lat: 20.0718, lng: -97.0520
-  },
-  {
-    id: 5,
-    nombre: "Taller Mecánico García",
-    categoria: "talleres",
-    catLabel: "🔧 Talleres",
-    icono: "🔧",
-    descripcion: "Servicio mecánico general para todo tipo de vehículos. Especialistas en frenos, suspensión, afinaciones y diagnóstico computarizado. 15 años de experiencia.",
-    direccion: "Carretera a Tlapacoyan km 2",
-    telefono: "232 567 8901",
-    whatsapp: "2325678901",
-    horario: "Lun–Sáb 8:00–18:00",
-    servicios: ["Afinación", "Frenos", "Suspensión", "Diagnóstico computarizado", "Cambio de aceite"],
-    pago: ["Efectivo", "Transferencia"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0735, lng: -97.0515
-  },
-  {
-    id: 6,
-    nombre: "Salón de Belleza Vanity",
-    categoria: "belleza",
-    catLabel: "💇 Belleza",
-    icono: "💇",
-    descripcion: "Salón de belleza profesional con tratamientos capilares, cortes modernos, tintes, manicure y pedicure. Trabajamos con cita previa para brindarte mejor atención.",
-    direccion: "Av. Veracruz 67, Col. Centro",
-    telefono: "232 678 9012",
-    whatsapp: "2326789012",
-    horario: "Mar–Sáb 9:00–19:00",
-    servicios: ["Corte y peinado", "Tintes", "Manicure", "Pedicure", "Tratamientos capilares"],
-    pago: ["Efectivo", "Transferencia"],
-    facebook: "https://facebook.com",
-    web: "",
-    destacado: false,
-    lat: 20.0722, lng: -97.0525
-  },
-  {
-    id: 7,
-    nombre: "Ferretería El Tornillo",
-    categoria: "construccion",
-    catLabel: "🏗️ Construcción",
-    icono: "🏗️",
-    descripcion: "Ferretería y materiales de construcción con el surtido más completo de la región. Herramientas, tornillería, pinturas, tablarroca y más. Asesoría personalizada.",
-    direccion: "Calle Morelos 34, Centro",
-    telefono: "232 789 0123",
-    whatsapp: "2327890123",
-    horario: "Lun–Sáb 8:00–19:00",
-    servicios: ["Materiales de construcción", "Herramientas", "Pinturas", "Tornillería", "Instalación eléctrica"],
-    pago: ["Efectivo", "Tarjeta", "Transferencia", "Crédito"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0710, lng: -97.0530
-  },
-  {
-    id: 8,
-    nombre: "Veterinaria Patitas",
-    categoria: "veterinarias",
-    catLabel: "🐾 Veterinarias",
-    icono: "🐾",
-    descripcion: "Clínica veterinaria con médico titulado para consultas, vacunas, cirugías y estética de mascotas. Atendemos perros, gatos y animales de granja. Urgencias disponibles.",
-    direccion: "Av. Juárez 101, Col. Centro",
-    telefono: "232 890 1234",
-    whatsapp: "2328901234",
-    horario: "Lun–Vie 9:00–18:00, Sáb 9:00–14:00",
-    servicios: ["Consultas", "Vacunación", "Cirugías", "Estética", "Urgencias"],
-    pago: ["Efectivo", "Tarjeta", "Transferencia"],
-    facebook: "https://facebook.com",
-    web: "",
-    destacado: false,
-    lat: 20.0740, lng: -97.0518
-  },
-  {
-    id: 9,
-    nombre: "Taxis Martínez Express",
-    categoria: "transporte",
-    catLabel: "🚕 Transporte",
-    icono: "🚕",
-    descripcion: "Servicio de taxi local y foráneo las 24 horas del día. Viajes seguros a Xalapa, Poza Rica, Tuxpan y aeropuerto. Unidades cómodas y choferes de confianza.",
-    direccion: "Base: Av. Independencia 23, Centro",
-    telefono: "232 901 2345",
-    whatsapp: "2329012345",
-    horario: "24 horas, los 365 días",
-    servicios: ["Taxi local", "Viajes foráneos", "Aeropuerto", "Xalapa / Poza Rica", "Grupos"],
-    pago: ["Efectivo", "Transferencia"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0728, lng: -97.0512
-  },
-  {
-    id: 10,
-    nombre: "Panadería El Trigal",
-    categoria: "panaderias",
-    catLabel: "🥐 Panaderías",
-    icono: "🥐",
-    descripcion: "Panadería artesanal con hornada fresca dos veces al día. Pan de dulce, teleras, bolillos, pasteles y repostería para eventos. Sabor casero de toda la vida.",
-    direccion: "Calle Zaragoza 78, Col. Centro",
-    telefono: "232 012 3456",
-    whatsapp: "2320123456",
-    horario: "Lun–Dom 7:00–21:00",
-    servicios: ["Pan de dulce", "Teleras y bolillos", "Pasteles", "Repostería", "Pedidos especiales"],
-    pago: ["Efectivo"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0720, lng: -97.0528
-  },
-  {
-    id: 11,
-    nombre: "Banco BBVA Martínez",
-    categoria: "bancos",
-    catLabel: "🏦 Bancos",
-    icono: "🏦",
-    descripcion: "Sucursal bancaria con cajeros automáticos, ventanilla de servicio, créditos personales y empresariales, y atención a empresas. Estacionamiento disponible.",
-    direccion: "Av. Insurgentes 10, Centro",
-    telefono: "800 226 2663",
-    whatsapp: "",
-    horario: "Lun–Vie 9:00–16:00",
-    servicios: ["Cajero automático", "Cuentas de ahorro", "Créditos", "Transferencias", "Atención empresarial"],
-    pago: ["N/A"],
-    facebook: "",
-    web: "https://bbva.mx",
-    destacado: false,
-    lat: 20.0717, lng: -97.0523
-  },
-  {
-    id: 12,
-    nombre: "Despacho Contable Ramírez",
-    categoria: "profesionales",
-    catLabel: "⚖️ Profesionales",
-    icono: "📋",
-    descripcion: "Despacho contable y fiscal con más de 10 años de experiencia. Declaraciones de impuestos, nómina, contabilidad mensual y asesoría para personas físicas y morales.",
-    direccion: "Calle Allende 56, Planta Alta",
-    telefono: "232 111 2233",
-    whatsapp: "2321112233",
-    horario: "Lun–Vie 9:00–18:00",
-    servicios: ["Declaraciones SAT", "Contabilidad", "Nómina", "Facturación CFDI", "Asesoría fiscal"],
-    pago: ["Efectivo", "Transferencia"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0724, lng: -97.0519
-  },
-  {
-    id: 13,
-    nombre: "Empacadora Cítricos del Norte",
-    categoria: "agroindustria",
-    catLabel: "🍊 Agroindustria",
-    icono: "🍊",
-    descripcion: "Empresa empacadora y distribuidora de cítricos de la región. Naranja, mandarina y limón en presentaciones para mayoristas, supermercados y exportación.",
-    direccion: "Carretera Nautla km 4.5",
-    telefono: "232 222 3344",
-    whatsapp: "2322223344",
-    horario: "Lun–Sáb 7:00–17:00",
-    servicios: ["Empaque de naranja", "Mandarina", "Limón", "Venta mayoreo", "Exportación"],
-    pago: ["Efectivo", "Transferencia", "Crédito"],
-    facebook: "",
-    web: "",
-    destacado: false,
-    lat: 20.0755, lng: -97.0500
-  }
-];
+// (Se eliminaron los negocios de ejemplo: el directorio solo muestra datos reales de Supabase.)
 
 // Escapa texto para insertarlo de forma segura en HTML
 function esc(v) {
@@ -1127,18 +896,18 @@ function mapearNegocio(r) {
   };
 }
 
-// Carga desde Supabase; si la BD no responde usa el respaldo local
+// Carga desde Supabase. Si falla, devuelve null y la página lo dice
+// claramente. Antes había un respaldo con 13 negocios inventados: mostrar
+// teléfonos que no existen es peor que admitir que algo falló.
 async function cargarNegociosIndex() {
-  try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/negocios?select=*&order=destacado.desc,nombre.asc`,
-      { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
-    );
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const rows = await res.json();
-    if (Array.isArray(rows) && rows.length) return rows.map(mapearNegocio);
-  } catch(e) { console.warn('Supabase no disponible, usando respaldo local:', e.message); }
-  return JSON.parse(JSON.stringify(NEGOCIOS_FALLBACK));
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/negocios?select=*&order=destacado.desc,nombre.asc`,
+    { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
+  );
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) throw new Error('Respuesta inesperada de la base de datos');
+  return rows.map(mapearNegocio);
 }
 
 let negocios = [];
@@ -1922,7 +1691,14 @@ async function init() {
     '<div class="empty"><div class="empty-icon">⏳</div><p>Cargando negocios…</p></div>';
 
   // 2) Trae los negocios y actualiza conteos, lista y mapa cuando lleguen
-  negocios = await cargarNegociosIndex();
+  try {
+    negocios = await cargarNegociosIndex();
+  } catch (e) {
+    console.error('No se pudo cargar el directorio:', e);
+    mostrarErrorCarga();
+    return;
+  }
+
   crearMarcadores();
   renderCategorias();
   renderChips();
@@ -1930,6 +1706,31 @@ async function init() {
   actualizarMarcadores(negocios, true);
   inyectarJsonLd();
 }
+
+// Estado de error honesto: preferimos decir que algo falló antes que
+// mostrar negocios inventados con teléfonos que no existen.
+function mostrarErrorCarga() {
+  document.getElementById('negociosGrid').innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">⚠️</div>
+      <h3>No pudimos cargar el directorio</h3>
+      <p>Puede ser tu conexión o una falla momentánea de nuestro servidor.
+         Intenta de nuevo en unos minutos.</p>
+      <button onclick="location.reload()"
+        style="margin-top:1rem;background:var(--verde);color:#fff;border:none;
+               border-radius:10px;padding:0.7rem 1.4rem;font-size:0.9rem;
+               font-weight:700;cursor:pointer">
+        🔄 Reintentar
+      </button>
+      <p style="margin-top:1rem;font-size:0.82rem">
+        ¿Sigue fallando? Escríbenos a
+        <a href="mailto:enmartinez1@outlook.com" style="color:var(--verde);font-weight:600">enmartinez1@outlook.com</a>
+      </p>
+    </div>`;
+  const contador = document.getElementById('negocios-count');
+  if (contador) contador.textContent = '';
+}
+
 init();
 </script>
 </body>
