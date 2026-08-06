@@ -1339,7 +1339,9 @@ function actualizarMarcadores(lista, ajustarVista = false) {
   if (ajustarVista) {
     if (conMarcador.length > 0) {
       const grupo = L.featureGroup(conMarcador.map(n => marcadores[n.id]));
-      mapa.fitBounds(grupo.getBounds().pad(0.25));
+      // maxZoom evita que con 1 o 2 negocios el mapa se acerque hasta la calle:
+      // centra en los negocios pero nunca pasa del nivel 15 (barrio/ciudad).
+      mapa.fitBounds(grupo.getBounds().pad(0.25), { maxZoom: 15 });
     } else {
       mapa.setView([20.0725, -97.0522], 14);
     }

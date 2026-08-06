@@ -369,6 +369,11 @@
       onkeydown="if(event.key==='Enter')intentarLogin()">
     <button class="btn-login" id="btnLogin" onclick="intentarLogin()">Entrar</button>
     <p class="login-error" id="loginError">Contraseña incorrecta</p>
+    <p style="margin-top:0.9rem;font-size:0.82rem;text-align:center">
+      <a href="#" id="linkOlvide" onclick="recuperarPassword();return false;"
+         style="color:var(--texto-muted);text-decoration:underline">¿Olvidaste tu contraseña?</a>
+    </p>
+    <p id="olvideMsg" style="display:none;margin-top:0.6rem;font-size:0.82rem;text-align:center;color:#1a6b3c"></p>
   </div>
 </div>
 
@@ -879,6 +884,32 @@ async function intentarLogin() {
   }
   document.getElementById('loginError').style.display = 'none';
   entrarAlPanel();
+}
+
+// Envía el correo de restablecimiento. El link regresa aquí y dispara
+// PASSWORD_RECOVERY, que abre la pestaña de configuración para escribir la nueva.
+async function recuperarPassword() {
+  const email = document.getElementById('emailInput').value.trim();
+  const msg   = document.getElementById('olvideMsg');
+  if (!email) {
+    mostrarErrorLogin('Escribe tu correo arriba y vuelve a presionar el enlace');
+    return;
+  }
+  msg.style.display = 'block';
+  msg.style.color = 'var(--texto-muted)';
+  msg.textContent = '⏳ Enviando…';
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+
+  if (error) {
+    msg.style.color = '#c42424';
+    msg.textContent = '❌ ' + error.message;
+    return;
+  }
+  msg.style.color = '#1a6b3c';
+  msg.textContent = '✅ Te enviamos un correo. Abre el enlace desde este mismo navegador y podrás escribir tu contraseña nueva.';
 }
 
 // Si ya hay sesión activa (volviste a abrir la página), entrar directo
