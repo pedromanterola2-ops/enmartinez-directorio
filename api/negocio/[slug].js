@@ -144,11 +144,17 @@ module.exports = async (req, res) => {
   const fotoHtml = foto
     ? `<img class="foto" src="${esc(foto)}" alt="Fachada de ${esc(nombre)}" loading="eager" decoding="async">`
     : '';
+  // Sin foto propia se usa la imagen del sitio: al compartir por WhatsApp
+  // el enlace se ve con la marca EnMartinez en vez de salir en gris y pelón.
   const ogImageTags = foto
     ? `<meta property="og:image" content="${esc(foto)}">
 <meta property="og:image:alt" content="Fachada de ${esc(nombre)}">
 <meta name="twitter:card" content="summary_large_image">`
-    : `<meta name="twitter:card" content="summary">`;
+    : `<meta property="og:image" content="${SITE_URL}/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="EnMartinez.com — Directorio de Negocios de Martínez de la Torre, Veracruz">
+<meta name="twitter:card" content="summary_large_image">`;
 
   const catKey = n.categoria || '';
   const schemaTipo = SCHEMA_TIPO[catKey] || 'LocalBusiness';
