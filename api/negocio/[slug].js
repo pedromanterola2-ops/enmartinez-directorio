@@ -300,6 +300,7 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
 </div>
 
 <footer>© 2026 EnMartinez.com — Martínez de la Torre, Veracruz · Hecho con 💚 para la comunidad</footer>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>`;
 

@@ -410,6 +410,9 @@
       <button class="tab" onclick="cambiarTab('solicitudes')" id="tab-solicitudes">
         📋 Solicitudes <span class="tab-badge" id="badge-solicitudes" style="display:none;background:#ef4444">0</span>
       </button>
+      <button class="tab" onclick="cambiarTab('mensajes')" id="tab-mensajes">
+        ✉️ Mensajes <span class="tab-badge" id="badge-mensajes" style="display:none;background:#ef4444">0</span>
+      </button>
       <button class="tab" onclick="cambiarTab('mapa')" id="tab-mapa">
         🗺️ Ubicaciones <span class="tab-badge" id="badge-sin-coords" style="display:none;background:#ef4444">0</span>
       </button>
@@ -732,6 +735,25 @@
       </div>
     </div>
 
+    <!-- ════ TAB: MENSAJES DE CONTACTO ════ -->
+    <div class="tab-content" id="content-mensajes">
+      <div class="panel-card">
+        <div class="panel-card-header">
+          ✉️ Mensajes de contacto
+          <span style="margin-left:auto;font-size:0.78rem;color:var(--texto-muted);font-weight:400">
+            Lo que llega por el formulario de contacto
+          </span>
+        </div>
+        <div class="sol-filtros">
+          <button class="fbtn on" id="mfbtn-todos"     onclick="filtrarMsg('todos')">Todos</button>
+          <button class="fbtn"    id="mfbtn-nuevo"     onclick="filtrarMsg('nuevo')">🔵 Sin leer</button>
+          <button class="fbtn"    id="mfbtn-leido"     onclick="filtrarMsg('leido')">✅ Leídos</button>
+          <button class="fbtn"    id="mfbtn-archivado" onclick="filtrarMsg('archivado')">📦 Archivados</button>
+        </div>
+        <div id="listaMensajes" style="padding:0.75rem 1.25rem 1.25rem"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -831,6 +853,7 @@ const CAT_LABELS = {
 // ══════════════════════════════════════
 let negocios = [];
 let solicitudes = [];
+let mensajes = [];
 let editandoId = null;
 
 async function recargarNegocios() {
@@ -848,16 +871,31 @@ async function recargarSolicitudes() {
   actualizarBadgeSolicitudes();
 }
 
+async function recargarMensajes() {
+  const { data, error } = await sb.from('mensajes').select('*').order('id', { ascending: false });
+  if (error) {
+    // Si la tabla todavía no existe (falta correr mensajes-2026-08-06.sql)
+    // no vale la pena alarmar con un toast rojo en cada carga del panel.
+    console.warn('No se pudieron cargar los mensajes:', error.message);
+    mensajes = [];
+    actualizarBadgeMensajes();
+    return;
+  }
+  mensajes = data || [];
+  actualizarBadgeMensajes();
+}
+
 // ══════════════════════════════════════
 //  LOGIN
 // ══════════════════════════════════════
 async function entrarAlPanel() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('adminApp').style.display = 'block';
-  await Promise.all([recargarNegocios(), recargarSolicitudes()]);
+  await Promise.all([recargarNegocios(), recargarSolicitudes(), recargarMensajes()]);
   renderLista();
   poblarFiltroCategoria();
   renderSolicitudes();
+  renderMensajes();
 }
 
 function mostrarErrorLogin(msg) {
@@ -955,6 +993,9 @@ function cambiarTab(id) {
   document.getElementById('content-' + id)?.classList.add('active');
   if (id === 'solicitudes') {
     recargarSolicitudes().then(() => renderSolicitudes());
+  }
+  if (id === 'mensajes') {
+    recargarMensajes().then(() => renderMensajes());
   }
   if (id === 'mapa') {
     // setTimeout asegura que el contenedor ya es visible antes de inicializar Leaflet
@@ -1413,6 +1454,7 @@ function cerrarModal() {
   pendingDeleteId   = null;
   pendingImportData = null;
   pendingRechazarId = null;
+  pendingBorrarMensajeId = null;
 }
 
 document.getElementById('modalConfirm').addEventListener('click', e => {
@@ -1636,6 +1678,111 @@ async function confirmarEliminarSolicitud() {
   await recargarSolicitudes();
   renderSolicitudes();
   mostrarToast('🗑️ Solicitud eliminada', '');
+}
+
+// ══════════════════════════════════════
+//  MENSAJES DE CONTACTO
+// ══════════════════════════════════════
+let filtroMsgActivo = 'todos';
+
+function actualizarBadgeMensajes() {
+  const nuevos = mensajes.filter(m => m.estado === 'nuevo').length;
+  const badge = document.getElementById('badge-mensajes');
+  if (!badge) return;
+  badge.textContent = nuevos;
+  badge.style.display = nuevos > 0 ? 'inline' : 'none';
+}
+
+function filtrarMsg(f) {
+  filtroMsgActivo = f;
+  ['todos','nuevo','leido','archivado'].forEach(k => {
+    document.getElementById('mfbtn-' + k)?.classList.remove('on');
+  });
+  document.getElementById('mfbtn-' + f)?.classList.add('on');
+  renderMensajes();
+}
+
+function renderMensajes() {
+  const container = document.getElementById('listaMensajes');
+  if (!container) return;
+
+  const lista = filtroMsgActivo === 'todos'
+    ? mensajes
+    : mensajes.filter(m => m.estado === filtroMsgActivo);
+
+  if (!lista.length) {
+    const msgs = {
+      todos:     '📭 Todavía no hay mensajes de contacto.',
+      nuevo:     '✅ No tienes mensajes sin leer.',
+      leido:     '— Aún no has marcado ninguno como leído.',
+      archivado: '— No has archivado ningún mensaje.'
+    };
+    container.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--texto-muted)">
+      ${msgs[filtroMsgActivo]}</div>`;
+    return;
+  }
+
+  const colores = { nuevo:'#2563eb', leido:'#1a6b3c', archivado:'#9ca3af' };
+  const etiquetas = { nuevo:'🔵 Sin leer', leido:'✅ Leído', archivado:'📦 Archivado' };
+
+  container.innerHTML = lista.map(m => {
+    const color = colores[m.estado] || '#9ca3af';
+    // El asunto del correo de respuesta va codificado: si el nombre trae
+    // caracteres raros, el mailto no se rompe.
+    const asunto = encodeURIComponent('Re: tu mensaje en EnMartinez.com');
+    return `
+    <div style="border:1px solid var(--borde);border-left:3px solid ${color};
+                border-radius:10px;padding:1rem 1.15rem;margin-bottom:0.85rem;background:#fff">
+      <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.5rem">
+        <strong style="font-size:0.95rem">${esc(m.nombre)}</strong>
+        <span style="font-size:0.78rem;color:${color};font-weight:700">${etiquetas[m.estado] || m.estado}</span>
+        <span style="margin-left:auto;font-size:0.76rem;color:var(--texto-muted)">${fmtFecha(m.creado_en)}</span>
+      </div>
+      <div style="font-size:0.83rem;color:var(--texto-muted);margin-bottom:0.6rem">
+        <a href="mailto:${esc(m.email)}?subject=${asunto}"
+           style="color:#1a6b3c;text-decoration:none">✉️ ${esc(m.email)}</a>
+      </div>
+      <div style="background:#f9fafb;border-radius:8px;padding:0.8rem 0.95rem;font-size:0.9rem;
+                  line-height:1.6;white-space:pre-wrap;color:#1f2937">${esc(m.mensaje)}</div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap">
+        ${m.estado !== 'leido' ? `<button class="fbtn" onclick="marcarMensaje(${m.id},'leido')">✅ Marcar leído</button>` : ''}
+        ${m.estado !== 'archivado' ? `<button class="fbtn" onclick="marcarMensaje(${m.id},'archivado')">📦 Archivar</button>` : ''}
+        ${m.estado !== 'nuevo' ? `<button class="fbtn" onclick="marcarMensaje(${m.id},'nuevo')">↩️ Sin leer</button>` : ''}
+        <button class="fbtn" style="margin-left:auto;color:#b91c1c"
+                onclick="borrarMensaje(${m.id})">🗑️ Borrar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function marcarMensaje(id, estado) {
+  const { error } = await sb.from('mensajes').update({ estado }).eq('id', id);
+  if (error) { mostrarToast('❌ No se pudo actualizar: ' + error.message, 'error'); return; }
+  await recargarMensajes();
+  renderMensajes();
+}
+
+// Usa el mismo modal de confirmación que el resto del panel:
+// se guarda el id pendiente y se le cuelga la acción al botón OK.
+let pendingBorrarMensajeId = null;
+
+function borrarMensaje(id) {
+  const msg = mensajes.find(m => m.id === id);
+  pendingBorrarMensajeId = id;
+  document.getElementById('modal-titulo').textContent = 'Borrar mensaje';
+  document.getElementById('modal-msg').textContent =
+    `Se elimina definitivamente el mensaje de ${msg ? msg.nombre : 'este remitente'}. No se puede deshacer.`;
+  document.getElementById('modal-btn-ok').onclick = confirmarBorrarMensaje;
+  document.getElementById('modalConfirm').classList.add('open');
+}
+
+async function confirmarBorrarMensaje() {
+  const { error } = await sb.from('mensajes').delete().eq('id', pendingBorrarMensajeId);
+  if (error) { mostrarToast('❌ No se pudo borrar: ' + error.message, 'error'); cerrarModal(); return; }
+  await recargarMensajes();
+  renderMensajes();
+  cerrarModal();
+  mostrarToast('🗑️ Mensaje eliminado', 'exito');
 }
 
 let toastTimer;

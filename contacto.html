@@ -205,12 +205,10 @@
         <p>¿Tienes dudas, sugerencias o quieres registrar tu negocio? Escríbenos y te respondemos a la brevedad.</p>
       </div>
 
-      <form id="contact-form" action="https://formspree.io/f/enmartinez1@outlook.com" method="POST">
-
-        <!-- Redirigir de vuelta a esta página tras el envío -->
-        <input type="hidden" name="_next" value="contacto.html?enviado=1">
-        <!-- Asunto del correo -->
-        <input type="hidden" name="_subject" value="Nuevo mensaje desde EnMartinez.com">
+      <!-- El envío lo maneja el script del final: guarda en Supabase.
+           Antes esto apuntaba a un endpoint viejo de Formspree que ya no
+           existe, así que todo lo que la gente escribía se perdía. -->
+      <form id="contact-form" novalidate>
 
         <div class="form-group">
           <label for="nombre">Tu nombre</label>
@@ -227,7 +225,11 @@
           <textarea id="mensaje" name="mensaje" placeholder="Escribe tu mensaje aquí..." required></textarea>
         </div>
 
-        <button type="submit" class="btn-enviar">
+        <div id="form-error" style="display:none;background:#fef2f2;border:1.5px solid #fca5a5;
+             color:#b91c1c;border-radius:10px;padding:0.85rem 1rem;font-size:0.86rem;
+             line-height:1.5;margin-bottom:1rem"></div>
+
+        <button type="submit" class="btn-enviar" id="btn-enviar">
           <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
           </svg>
@@ -256,12 +258,85 @@
 </footer>
 
 <script>
-  // Mostrar mensaje de éxito si se regresó tras el envío
+  // Mostrar mensaje de éxito si se regresó tras el envío (enlaces viejos)
   if (new URLSearchParams(window.location.search).get('enviado') === '1') {
     document.getElementById('form-section').style.display = 'none';
     document.getElementById('success-section').style.display = 'block';
   }
+
+  // ══════════════════════════════════════════
+  //  ENVÍO DEL MENSAJE → Supabase
+  //  Mismo camino que registro.html: el mensaje se guarda en la tabla
+  //  `mensajes` y aparece en el panel admin. La tabla solo acepta
+  //  inserciones; leerla requiere ser el admin (ver RLS).
+  // ══════════════════════════════════════════
+  const SUPABASE_URL  = 'https://ygeuqlohycckwngcmmxl.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZXVxbG9oeWNja3duZ2NtbXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDE1MTksImV4cCI6MjA5NTgxNzUxOX0.fuFaUcYKaTjBpunDqIc-xMIGm3gA17r5Cn_E_JxFR_Q';
+
+  const form     = document.getElementById('contact-form');
+  const btn      = document.getElementById('btn-enviar');
+  const cajaErr  = document.getElementById('form-error');
+
+  function mostrarError(texto) {
+    cajaErr.textContent = '⚠️ ' + texto;
+    cajaErr.style.display = 'block';
+    cajaErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    cajaErr.style.display = 'none';
+
+    const nombre  = document.getElementById('nombre').value.trim();
+    const email   = document.getElementById('email').value.trim();
+    const mensaje = document.getElementById('mensaje').value.trim();
+
+    // Validación en el navegador: mismos mínimos que exige la base de datos,
+    // para que el usuario vea el problema antes de esperar el viaje al servidor.
+    if (nombre.length < 2)  return mostrarError('Escribe tu nombre.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+      return mostrarError('Revisa tu correo, no parece válido.');
+    if (mensaje.length < 10) return mostrarError('Cuéntanos un poco más, el mensaje es muy corto.');
+
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Enviando...';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/mensajes`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON,
+          Authorization: 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ nombre, email, mensaje })
+      });
+
+      if (!res.ok) {
+        // Los frenos anti-inundación devuelven un mensaje legible; lo usamos
+        // en vez de un "error 400" que no le dice nada a nadie.
+        let detalle = '';
+        try { detalle = (await res.json()).message || ''; } catch (_) {}
+        throw new Error(detalle);
+      }
+
+      document.getElementById('form-section').style.display = 'none';
+      document.getElementById('success-section').style.display = 'block';
+      document.getElementById('success-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = textoOriginal;
+      mostrarError(
+        err.message ||
+        'No pudimos enviar tu mensaje. Revisa tu conexión e intenta de nuevo.'
+      );
+    }
+  });
 </script>
 
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

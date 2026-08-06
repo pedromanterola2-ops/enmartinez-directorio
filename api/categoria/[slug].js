@@ -271,6 +271,7 @@ footer a{color:inherit}
 </main>
 
 <footer>© 2026 EnMartinez.com — ${esc(CIUDAD)} · Hecho con 💚 para la comunidad</footer>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>`;
 
