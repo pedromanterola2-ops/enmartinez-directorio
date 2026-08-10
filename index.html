@@ -657,7 +657,8 @@
       <option value="eventos">🎉 Eventos</option>
       <option value="transporte">🚕 Transporte</option>
       <option value="panaderias">🥐 Panaderías y pastelerías</option>
-      <option value="alimentos">☕ Cafés, botanas y bebidas</option>
+      <option value="cafes">☕ Cafés y cafeterías</option>
+      <option value="botanas">🥤 Botanas y bebidas</option>
       <option value="bancos">🏦 Bancos y financieros</option>
       <option value="profesionales">⚖️ Profesionales</option>
       <option value="agroindustria">🍊 Agroindustria</option>
@@ -670,7 +671,7 @@
   <div class="hero-stats">
     <!-- El JS reemplaza estos valores con el conteo real; "—" evita mostrar/indexar una cifra falsa -->
     <div class="hero-stat"><strong id="total-negocios">—</strong><span>Negocios registrados</span></div>
-    <div class="hero-stat"><strong id="total-categorias">21</strong><span>Categorías</span></div>
+    <div class="hero-stat"><strong id="total-categorias">22</strong><span>Categorías</span></div>
     <div class="hero-stat"><strong>MDT</strong><span>Martínez de la Torre, Ver.</span></div>
   </div>
 </section>
@@ -936,7 +937,8 @@ const categorias = [
   { id: 'eventos',       nombre: 'Eventos',                      icono: '🎉', bg: '#fad5e8' },
   { id: 'transporte',    nombre: 'Transporte',                   icono: '🚕', bg: '#f0e2d0' },
   { id: 'panaderias',    nombre: 'Panaderías y pastelerías',     icono: '🥐', bg: '#fef0e0' },
-  { id: 'alimentos',     nombre: 'Cafés, botanas y bebidas',     icono: '☕', bg: '#e8f2d8' },
+  { id: 'cafes',         nombre: 'Cafés y cafeterías',           icono: '☕', bg: '#e8ddd2' },
+  { id: 'botanas',       nombre: 'Botanas y bebidas',            icono: '🥤', bg: '#e8f2d8' },
   { id: 'bancos',        nombre: 'Bancos y financieros',         icono: '🏦', bg: '#d8ddf5' },
   { id: 'profesionales', nombre: 'Profesionales',                icono: '⚖️', bg: '#dde0e8' },
   { id: 'agroindustria', nombre: 'Agroindustria',                icono: '🍊', bg: '#fdf0d8' },
@@ -1207,11 +1209,12 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
 const marcadores = {};
 let clusterGroup;
 
-// Colores por categoría — 21 colores únicos sin repetición
+// Colores por categoría — 22 colores únicos sin repetición
 const catColores = {
   'restaurantes':   '#c42424',  // rojo
   'panaderias':     '#c07828',  // caramelo
-  'alimentos':      '#58b800',  // verde lima
+  'cafes':          '#3d2314',  // café espresso
+  'botanas':        '#58b800',  // verde lima
   'construccion':   '#e05c08',  // naranja vivo
   'agroindustria':  '#b87000',  // ámbar dorado
   'servicios':      '#c8b000',  // amarillo
