@@ -27,6 +27,7 @@ const CATEGORIAS = {
   eventos:       { icono: '🎉', nombre: 'Eventos',                      plural: 'servicios para eventos y fiestas' },
   transporte:    { icono: '🚕', nombre: 'Transporte',                   plural: 'servicios de transporte' },
   panaderias:    { icono: '🥐', nombre: 'Panaderías y pastelerías',     plural: 'panaderías y pastelerías' },
+  alimentos:     { icono: '☕', nombre: 'Cafés, botanas y bebidas',     plural: 'cafeterías, botanas y bebidas' },
   bancos:        { icono: '🏦', nombre: 'Bancos y financieros',         plural: 'bancos y servicios financieros' },
   profesionales: { icono: '⚖️', nombre: 'Profesionales',                plural: 'despachos y profesionistas' },
   agroindustria: { icono: '🍊', nombre: 'Agroindustria',                plural: 'empresas agroindustriales' },

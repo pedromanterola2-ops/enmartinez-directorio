@@ -657,6 +657,7 @@
       <option value="eventos">🎉 Eventos</option>
       <option value="transporte">🚕 Transporte</option>
       <option value="panaderias">🥐 Panaderías y pastelerías</option>
+      <option value="alimentos">☕ Cafés, botanas y bebidas</option>
       <option value="bancos">🏦 Bancos y financieros</option>
       <option value="profesionales">⚖️ Profesionales</option>
       <option value="agroindustria">🍊 Agroindustria</option>
@@ -934,6 +935,7 @@ const categorias = [
   { id: 'eventos',       nombre: 'Eventos',                      icono: '🎉', bg: '#fad5e8' },
   { id: 'transporte',    nombre: 'Transporte',                   icono: '🚕', bg: '#f0e2d0' },
   { id: 'panaderias',    nombre: 'Panaderías y pastelerías',     icono: '🥐', bg: '#fef0e0' },
+  { id: 'alimentos',     nombre: 'Cafés, botanas y bebidas',     icono: '☕', bg: '#e8f2d8' },
   { id: 'bancos',        nombre: 'Bancos y financieros',         icono: '🏦', bg: '#d8ddf5' },
   { id: 'profesionales', nombre: 'Profesionales',                icono: '⚖️', bg: '#dde0e8' },
   { id: 'agroindustria', nombre: 'Agroindustria',                icono: '🍊', bg: '#fdf0d8' },
@@ -1204,10 +1206,11 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
 const marcadores = {};
 let clusterGroup;
 
-// Colores por categoría — 20 colores únicos sin repetición
+// Colores por categoría — 21 colores únicos sin repetición
 const catColores = {
   'restaurantes':   '#c42424',  // rojo
   'panaderias':     '#c07828',  // caramelo
+  'alimentos':      '#58b800',  // verde lima
   'construccion':   '#e05c08',  // naranja vivo
   'agroindustria':  '#b87000',  // ámbar dorado
   'servicios':      '#c8b000',  // amarillo

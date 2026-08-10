@@ -12,14 +12,16 @@ const CAT_LABELS = {
   construccion: '🏗️ Construcción', veterinarias: '🐾 Veterinarias', ropa: '👗 Ropa',
   servicios: '⚡ Servicios Profesionales', agro: '🌿 Agro', educacion: '🏫 Educación',
   tecnologia: '💻 Tecnología', eventos: '🎉 Eventos', transporte: '🚕 Transporte',
-  panaderias: '🥐 Panaderías', bancos: '🏦 Bancos', profesionales: '⚖️ Profesionales',
+  panaderias: '🥐 Panaderías', alimentos: '☕ Cafés, botanas y bebidas',
+  bancos: '🏦 Bancos', profesionales: '⚖️ Profesionales',
   agroindustria: '🍊 Agroindustria', oficios: '🔩 Oficios y servicios del hogar'
 };
 
 const SCHEMA_TIPO = {
   hoteles: 'LodgingBusiness', restaurantes: 'Restaurant', veterinarias: 'VeterinaryCare',
   salud: 'MedicalBusiness', bancos: 'BankOrCreditUnion', belleza: 'BeautySalon',
-  talleres: 'AutoRepair', construccion: 'HomeAndConstructionBusiness'
+  talleres: 'AutoRepair', construccion: 'HomeAndConstructionBusiness',
+  alimentos: 'FoodEstablishment', panaderias: 'Bakery'
 };
 
 const PAGO_ICONOS = { Efectivo: '💵', Tarjeta: '💳', Transferencia: '📲', Crédito: '🤝' };
