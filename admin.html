@@ -118,6 +118,11 @@
     .neg-info { flex: 1; min-width: 0; }
     .neg-nombre { font-weight: 700; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .neg-meta { font-size: 0.75rem; color: var(--texto-muted); margin-top: 0.15rem; }
+    .neg-falta {
+      display: inline-block; margin-left: 0.35rem; background: #fef3c7; color: #92400e;
+      border-radius: 999px; padding: 0.05rem 0.45rem; font-size: 0.7rem; font-weight: 600;
+      cursor: help;
+    }
     .neg-cat-pill {
       display: inline-block; background: var(--verde-bg); color: var(--verde);
       padding: 0.1rem 0.45rem; border-radius: 20px; font-weight: 600; margin-right: 0.3rem;
@@ -511,7 +516,7 @@
 
           <div class="form-grid3" style="margin-bottom:0.85rem">
             <div class="form-group">
-              <label class="fl">Categoría <span class="req">*</span></label>
+              <label class="fl">Categoría</label>
               <select id="a-categoria" onchange="actualizarPreview()">
                 <option value="">— Selecciona —</option>
                 <option value="restaurantes">🍽️ Restaurantes</option>
@@ -539,11 +544,11 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="fl">Emoji / Ícono <span class="req">*</span></label>
+              <label class="fl">Emoji / Ícono</label>
               <input type="text" id="a-icono" placeholder="🍽️" oninput="actualizarPreview()">
             </div>
             <div class="form-group">
-              <label class="fl">Horario <span class="req">*</span></label>
+              <label class="fl">Horario</label>
               <input type="text" id="a-horario" placeholder="Lun–Sáb 9:00–18:00">
               <button type="button" class="hr-abrir" onclick="abrirHorario()">🕐 Editor de horarios</button>
             </div>
@@ -551,11 +556,11 @@
 
           <div class="form-grid2" style="margin-bottom:0.85rem">
             <div class="form-group">
-              <label class="fl">Dirección <span class="req">*</span></label>
+              <label class="fl">Dirección</label>
               <input type="text" id="a-direccion" placeholder="Calle, número, colonia" oninput="actualizarPreview()">
             </div>
             <div class="form-group">
-              <label class="fl">Teléfono <span class="req">*</span></label>
+              <label class="fl">Teléfono</label>
               <input type="tel" id="a-telefono" placeholder="232 000 0000" oninput="actualizarPreview()">
             </div>
             <div class="form-group">
@@ -571,7 +576,7 @@
               <input type="url" id="a-web" placeholder="https://...">
             </div>
             <div class="form-group span2">
-              <label class="fl">Descripción <span class="req">*</span></label>
+              <label class="fl">Descripción</label>
               <textarea id="a-descripcion" placeholder="Descripción del negocio para que los clientes sepan qué ofrecen…"></textarea>
             </div>
             <div class="form-group span2">
@@ -1122,12 +1127,14 @@ function renderLista() {
 
   container.innerHTML = lista.map(n => `
     <div class="neg-row">
-      <div class="neg-icon">${esc(n.icono)}</div>
+      <div class="neg-icon">${esc(n.icono || '🏪')}</div>
       <div class="neg-info">
         <div class="neg-nombre">${esc(n.nombre)}</div>
         <div class="neg-meta">
-          <span class="neg-cat-pill">${esc(CAT_LABELS[n.categoria] || n.categoria)}</span>
-          ${esc(n.direccion)}
+          <span class="neg-cat-pill">${esc(CAT_LABELS[n.categoria] || n.categoria || 'Sin categoría')}</span>
+          ${esc(n.direccion || 'Sin dirección')}
+          ${(() => { const f = camposFaltantes(n);
+            return f.length ? `<span class="neg-falta" title="Falta: ${esc(f.join(', '))}">⚠️ faltan ${f.length}</span>` : ''; })()}
         </div>
       </div>
       <span class="dest-pill ${n.destacado ? 'on' : 'off'}" onclick="toggleDestacado(${n.id})">
@@ -1324,6 +1331,39 @@ function quitarFoto() {
   estado.textContent = 'Foto quitada. Se aplica al presionar "Guardar negocio".';
 }
 
+// Ningún campo bloquea el guardado, pero sí conviene saber qué quedó pendiente.
+// Devuelve los nombres de los datos vacíos, en orden de importancia.
+const CAMPOS_UTILES = [
+  ['nombre',      'nombre'],
+  ['categoria',   'categoría'],
+  ['telefono',    'teléfono'],
+  ['direccion',   'dirección'],
+  ['horario',     'horario'],
+  ['descripcion', 'descripción'],
+  ['whatsapp',    'WhatsApp'],
+  ['foto',        'foto'],
+  ['facebook',    'Facebook'],
+  ['web',         'sitio web'],
+];
+function camposFaltantes(n) {
+  const falta = CAMPOS_UTILES
+    .filter(([k]) => !String(n[k] ?? '').trim())
+    .map(([, etiqueta]) => etiqueta);
+  if (!(n.lat && n.lng)) falta.push('ubicación en el mapa');
+  if (!(n.servicios || []).length) falta.push('servicios');
+  if (!(n.pago || []).length) falta.push('formas de pago');
+  return falta;
+}
+
+function marcarVacio(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.borderColor = 'var(--rojo)';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.focus();
+  setTimeout(() => { el.style.borderColor = ''; }, 2500);
+}
+
 function guardarFormulario() {
   const nombre    = document.getElementById('a-nombre').value.trim();
   const cat       = document.getElementById('a-categoria').value;
@@ -1333,8 +1373,12 @@ function guardarFormulario() {
   const horario   = document.getElementById('a-horario').value.trim();
   const desc      = document.getElementById('a-descripcion').value.trim();
 
-  if (!nombre || !cat || !icono || !direccion || !telefono || !horario || !desc) {
-    mostrarToast('⚠️ Completa los campos obligatorios (*)','error');
+  // Único campo indispensable: sin nombre no hay ficha que mostrar.
+  // Todo lo demás puede ir vacío — hay negocios sin teléfono, sin web y
+  // sin horario fijo, y no poder registrarlos es peor que registrarlos a medias.
+  if (!nombre) {
+    marcarVacio('a-nombre');
+    mostrarToast('⚠️ Al menos escribe el nombre del negocio', 'error');
     return;
   }
 
@@ -1342,7 +1386,9 @@ function guardarFormulario() {
   const lngVal = parseFloat(document.getElementById('a-lng').value);
 
   const data = {
-    nombre, categoria: cat, catLabel: CAT_LABELS[cat] || cat, icono,
+    nombre, categoria: cat,
+    catLabel: CAT_LABELS[cat] || cat,
+    icono: icono || CAT_ICONS[cat] || '🏪',
     descripcion: desc, direccion, telefono,
     whatsapp:  document.getElementById('a-whatsapp').value.trim(),
     facebook:  document.getElementById('a-facebook').value.trim(),
@@ -1357,7 +1403,8 @@ function guardarFormulario() {
     destacado: document.getElementById('a-destacado').checked,
     foto: document.getElementById('a-foto').value.trim()
   };
-  if (!data.pago.length) data.pago = ['Efectivo'];
+  // Antes se forzaba ['Efectivo'] cuando no marcabas nada: eso inventaba
+  // un dato que quizá es falso. Ahora se guarda vacío.
 
   guardarEnBD(data);
 }
@@ -1374,7 +1421,9 @@ async function guardarEnBD(data) {
     mostrarToast('❌ No se pudo guardar: ' + error.message, 'error');
     return;
   }
-  mostrarToast(editandoId !== null ? '✅ Negocio actualizado correctamente' : '✅ Negocio agregado al directorio', 'exito');
+  const falta = camposFaltantes(data);
+  const base = editandoId !== null ? '✅ Negocio actualizado' : '✅ Negocio agregado al directorio';
+  mostrarToast(falta.length ? `${base} · falta: ${falta.join(', ')}` : base, 'exito');
   await recargarNegocios();
   poblarFiltroCategoria();
   renderLista();

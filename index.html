@@ -1014,7 +1014,9 @@ function renderNegocios(lista) {
   grid.innerHTML = lista.map(n => {
     const bg = catBg[n.categoria] || '#f0f7f2';
     const catColor = catColores[n.categoria] || '#1a6b3c';
-    const catTexto = limpiarCatLabel(n.catLabel);
+    // Ningún campo es obligatorio al capturar: si faltan, se usa un respaldo
+    const catTexto = limpiarCatLabel(n.catLabel) || 'Negocio';
+    const icono = esc(n.icono || '🏪');
     return `
     <div class="negocio-card" onclick="abrirModal(${n.id})">
       <div class="negocio-cat-bar" style="background:${catColor}"></div>
@@ -1025,9 +1027,9 @@ function renderNegocios(lista) {
         : ''}
       <div class="negocio-body">
         <div class="negocio-head">
-          <div class="negocio-icono" style="background:${catColor}1a">${n.icono}</div>
+          <div class="negocio-icono" style="background:${catColor}1a">${icono}</div>
           <div class="negocio-titulo">
-            <div class="negocio-nombre">${esc(n.nombre)}</div>
+            <div class="negocio-nombre">${esc(n.nombre || 'Negocio sin nombre')}</div>
             <span class="negocio-cat" style="color:${catColor}">${esc(catTexto)}</span>
           </div>
           ${n.destacado ? '<span class="badge-destacado">Destacado</span>' : ''}
@@ -1066,9 +1068,9 @@ function abrirModal(id) {
   const n = negocios.find(x => x.id === id);
   if (!n) return;
 
-  document.getElementById('m-icono').textContent = n.icono;
-  document.getElementById('m-cat').textContent = n.catLabel;
-  document.getElementById('m-nombre').textContent = n.nombre;
+  document.getElementById('m-icono').textContent = n.icono || '🏪';
+  document.getElementById('m-cat').textContent = n.catLabel || 'Negocio';
+  document.getElementById('m-nombre').textContent = n.nombre || 'Negocio sin nombre';
 
   // Foto de fachada (si el negocio tiene)
   const mFoto = document.getElementById('m-foto');
