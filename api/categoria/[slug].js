@@ -29,6 +29,7 @@ const CATEGORIAS = {
   panaderias:    { icono: '🥐', nombre: 'Panaderías y pastelerías',     plural: 'panaderías y pastelerías' },
   cafes:         { icono: '☕', nombre: 'Cafés y cafeterías',           plural: 'cafés y cafeterías' },
   botanas:       { icono: '🥤', nombre: 'Botanas y bebidas',            plural: 'negocios de botanas y bebidas' },
+  comida:        { icono: '🍱', nombre: 'Comida',                      plural: 'negocios de comida para llevar, a domicilio y por encargo' },
   bancos:        { icono: '🏦', nombre: 'Bancos y financieros',         plural: 'bancos y servicios financieros' },
   profesionales: { icono: '⚖️', nombre: 'Profesionales',                plural: 'despachos y profesionistas' },
   agroindustria: { icono: '🍊', nombre: 'Agroindustria',                plural: 'empresas agroindustriales' },
