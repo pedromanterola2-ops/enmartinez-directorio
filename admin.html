@@ -444,7 +444,7 @@
         <span class="admin-badge">🔐 Admin</span>
       </div>
       <div style="display:flex;align-items:center;gap:0.75rem">
-        <a href="index.html" target="_blank" style="color:rgba(255,255,255,0.8);font-size:0.82rem;text-decoration:none">
+        <a href="/" target="_blank" style="color:rgba(255,255,255,0.8);font-size:0.82rem;text-decoration:none">
           Ver sitio →
         </a>
         <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
@@ -542,6 +542,7 @@
                 <option value="profesionales">⚖️ Profesionales</option>
                 <option value="agroindustria">🍊 Agroindustria</option>
                 <option value="oficios">🔩 Oficios y servicios del hogar</option>
+                <option value="papelerias">📚 Papelerías y regalos</option>
               </select>
             </div>
             <div class="form-group">
@@ -931,7 +932,7 @@ const CAT_LABELS = {
   comida:'🍱 Comida',
   bancos:'🏦 Bancos', profesionales:'⚖️ Profesionales',
   agroindustria:'🍊 Agroindustria',
-  oficios:'🔩 Oficios y servicios del hogar'
+  oficios:'🔩 Oficios y servicios del hogar', papelerias:'📚 Papelerías y regalos'
 };
 
 // ── Datos por defecto (mismos que index.html) ──
@@ -1384,6 +1385,15 @@ function guardarFormulario() {
     return;
   }
 
+  // WhatsApp a 10 dígitos: "52 1 232 323 8605" o "+52 232..." rompían el
+  // enlace wa.me porque el sitio le agrega el 52 por su cuenta.
+  function normalizarWhatsApp(v) {
+    let d = String(v || '').replace(/\D/g, '');
+    if (d.length === 13 && d.startsWith('521')) d = d.slice(3);
+    else if (d.length === 12 && d.startsWith('52')) d = d.slice(2);
+    return d.length === 10 ? d : String(v || '').trim();
+  }
+
   const latVal = parseFloat(document.getElementById('a-lat').value);
   const lngVal = parseFloat(document.getElementById('a-lng').value);
 
@@ -1392,7 +1402,7 @@ function guardarFormulario() {
     catLabel: CAT_LABELS[cat] || cat,
     icono: icono || CAT_ICONS[cat] || '🏪',
     descripcion: desc, direccion, telefono,
-    whatsapp:  document.getElementById('a-whatsapp').value.trim(),
+    whatsapp:  normalizarWhatsApp(document.getElementById('a-whatsapp').value),
     facebook:  document.getElementById('a-facebook').value.trim(),
     web:       document.getElementById('a-web').value.trim(),
     horario,
@@ -1610,7 +1620,7 @@ const CAT_ICONS = {
   belleza:'💇', hoteles:'🏨', construccion:'🏗️', veterinarias:'🐾',
   ropa:'👗', servicios:'⚡', agro:'🌿', educacion:'🏫',
   tecnologia:'💻', eventos:'🎉', transporte:'🚕', panaderias:'🥐',
-  cafes:'☕', botanas:'🥤', comida:'🍱', bancos:'🏦', profesionales:'⚖️', agroindustria:'🍊', oficios:'🔩'
+  cafes:'☕', botanas:'🥤', comida:'🍱', bancos:'🏦', profesionales:'⚖️', agroindustria:'🍊', oficios:'🔩', papelerias:'📚'
 };
 
 function actualizarBadgeSolicitudes() {
@@ -1977,10 +1987,10 @@ function initMapaAdmin() {
 
   mapaAdmin = L.map('mapaLeaflet', { zoomControl: true }).setView(MDT_CENTER, 14);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
-    maxZoom: 20
+  // CARTO ahora exige clave (pinta "API KEY REQUIRED"): se usa OpenStreetMap
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
   }).addTo(mapaAdmin);
 
   mapaAdmin.on('click', (e) => {

@@ -25,8 +25,7 @@
   <!-- Preconexiones para acelerar la primera carga -->
   <link rel="preconnect" href="https://ygeuqlohycckwngcmmxl.supabase.co" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="preconnect" href="https://a.basemaps.cartocdn.com">
-  <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com">
+  <link rel="preconnect" href="https://tile.openstreetmap.org">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
@@ -207,6 +206,10 @@
       box-shadow: 0 0 0 3px rgba(26,107,60,0.14);
     }
     .cat-card[data-count="0"] { opacity: 0.45; pointer-events: none; cursor: default; }
+    button.cat-card, button.chip { font: inherit; }
+    button.cat-card:focus-visible, button.chip:focus-visible, .negocio-card:focus-visible {
+      outline: 3px solid var(--naranja); outline-offset: 2px;
+    }
     .cat-check {
       position: absolute; top: 7px; right: 7px;
       width: 18px; height: 18px; background: var(--verde);
@@ -286,17 +289,18 @@
     .negocio-nombre {
       font-size: 0.98rem; font-weight: 800;
       line-height: 1.25; color: var(--texto);
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word; hyphens: auto;
     }
     .negocio-cat {
       display: block; font-size: 0.72rem; font-weight: 700;
       margin-top: 0.15rem;
     }
     .badge-destacado {
+      display: inline-block; vertical-align: middle;
       background: var(--naranja); color: #fff;
       font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
-      padding: 0.2rem 0.5rem; border-radius: 6px;
-      flex-shrink: 0; align-self: flex-start; white-space: nowrap;
+      padding: 0.12rem 0.45rem; border-radius: 6px;
+      margin-left: 0.35rem; white-space: nowrap;
     }
     .negocio-datos {
       display: flex; flex-direction: column; gap: 0.28rem; margin-bottom: 0.85rem;
@@ -304,7 +308,7 @@
     .negocio-dato {
       display: flex; align-items: flex-start; gap: 0.45rem;
       font-size: 0.78rem; color: var(--texto-muted); line-height: 1.35;
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word; min-width: 0;
     }
     .negocio-dato svg { flex-shrink: 0; margin-top: 1px; opacity: 0.65; }
     .negocio-dato.horario { color: var(--verde); }
@@ -386,6 +390,7 @@
       transition: background 0.2s; flex-shrink: 0;
     }
     .modal-close:hover { background: rgba(0,0,0,0.15); }
+    .modal-close:focus:not(:focus-visible) { outline: none; }
     .modal-body {
       padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1;
       display: flex; flex-direction: column; gap: 1rem;
@@ -446,6 +451,10 @@
     .modal-btn-wsp.disabled {
       background: #9ca3af; cursor: not-allowed;
     }
+    a.modal-btn-wsp { text-decoration: none; }
+    .modal-btn-wsp.llamar { background: var(--verde); }
+    .modal-btn-wsp.llamar:hover { background: var(--verde-claro); }
+    .modal-info-text a { overflow-wrap: anywhere; }
 
     /* ── MAPA ── */
     #mapa-section { background: var(--verde-bg); }
@@ -568,19 +577,46 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 640px) {
+      .hero { padding: 2.5rem 1rem 3rem; }
       .hero h1 { font-size: 1.6rem; }
       .search-box select { display: none; }
+      .search-box input { min-width: 0; }
       nav { display: none; }
       .header-search { display: none; }
       .hamburger { display: flex; align-items: center; }
       .hero-stats { gap: 1.5rem; }
-      .negocios-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
-      .modal { max-height: 95vh; }
+      .section { padding: 2rem 1rem; }
+      .modal { max-height: 92vh; }
+      .modal-header { padding: 1.25rem 1.1rem 0.9rem; }
+      .modal-body { padding: 1rem 1.1rem; }
+      .modal-footer { padding: 0.85rem 1.1rem; flex-wrap: wrap; }
+      .modal-icon { font-size: 2.6rem; }
+
+      /* Categorías: 3 columnas compactas (antes ocupaban ~3 pantallas) */
+      .cats-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+      .cat-card { padding: 0.7rem 0.35rem 0.6rem; gap: 0.35rem; border-radius: 12px; }
+      .cat-icon { width: 42px; height: 42px; font-size: 1.25rem; border-radius: 12px; }
+      .cat-name { font-size: 0.7rem; }
+      .cat-badge { font-size: 0.62rem; padding: 1px 7px; }
+
+      /* Filtros: una sola fila deslizable en lugar de 10 renglones de chips */
+      .filtros-chips {
+        flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem 1rem; padding: 0.15rem 1rem 0.4rem; scrollbar-width: none;
+      }
+      .filtros-chips::-webkit-scrollbar { display: none; }
+      .chip { flex-shrink: 0; padding: 0.45rem 0.85rem; }
+
+      #mapa { height: 380px; }
     }
-    @media (max-width: 360px) {
-      .negocios-grid { grid-template-columns: repeat(2, 1fr); gap: 0.45rem; }
-      .negocio-body { padding: 0.55rem 0.6rem 0.65rem; }
-      .negocio-nombre { font-size: 0.82rem; }
+    /* Fichas en celular: una columna. En 2 columnas de ~170 px los nombres
+       se partían letra por letra y los botones no cabían. */
+    @media (max-width: 560px) {
+      .negocios-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+      .negocio-foto { height: 150px; }
+      .negocio-nombre { font-size: 1.05rem; }
+      .negocio-dato { font-size: 0.85rem; }
+      .btn-wsp, .btn-tel, .btn-detalle { min-height: 44px; font-size: 0.88rem; }
     }
   </style>
 </head>
@@ -589,7 +625,7 @@
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="header-inner">
-    <a href="#" class="logo">
+    <a href="/" class="logo">
       <span class="logo-icon">🌿</span>
       <span class="logo-text">En<span>Martinez</span>.com</span>
     </a>
@@ -598,17 +634,17 @@
       <a href="#categorias" onclick="scrollSeccion(event,'categorias')">Categorías</a>
       <a href="#negocios" onclick="scrollSeccion(event,'negocios')">Negocios</a>
       <a href="#mapa-section" onclick="scrollSeccion(event,'mapa-section')">Mapa</a>
-      <a href="contacto.html">Contacto</a>
-      <a href="registro.html" class="nav-registro">＋ Registra tu negocio</a>
+      <a href="/contacto">Contacto</a>
+      <a href="/registro" class="nav-registro">＋ Registra tu negocio</a>
     </nav>
     <div class="header-search">
       <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
       </svg>
-      <input type="text" placeholder="Buscar negocio..." id="headerSearch">
+      <input type="search" placeholder="Buscar negocio..." id="headerSearch" aria-label="Buscar negocio" autocomplete="off">
       <div class="autocomplete-dropdown" id="headerAutocomplete"></div>
     </div>
-    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Abrir menú">
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu">
       <svg id="ham-icon" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
@@ -620,7 +656,7 @@
 <div class="mobile-menu" id="mobileMenu">
   <div class="mobile-search-bar">
     <div class="mobile-search-inner">
-      <input type="text" id="mobileSearch" placeholder="¿Qué estás buscando?">
+      <input type="search" id="mobileSearch" placeholder="¿Qué estás buscando?" aria-label="Buscar negocios" enterkeyhint="search" autocomplete="off">
       <div class="autocomplete-dropdown" id="mobileAutocomplete"></div>
     </div>
     <button onclick="buscarMobile()">Buscar</button>
@@ -629,7 +665,8 @@
   <a href="#categorias" onclick="cerrarMenu()">🗂️ Categorías</a>
   <a href="#negocios" onclick="cerrarMenu()">🏪 Negocios</a>
   <a href="#mapa-section" onclick="cerrarMenu()">📍 Mapa</a>
-  <a href="registro.html" class="mobile-menu-registra">➕ Registra tu negocio</a>
+  <a href="/contacto">✉️ Contacto</a>
+  <a href="/registro" class="mobile-menu-registra">➕ Registra tu negocio</a>
 </div>
 
 <!-- ═══ HERO ═══ -->
@@ -638,8 +675,8 @@
   <p>Restaurantes, talleres, farmacias, servicios y mucho más — todo en un solo lugar.</p>
   <div class="search-autocomplete-wrap">
   <div class="search-box">
-    <input type="text" placeholder="¿Qué estás buscando?" id="mainSearch">
-    <select id="catSelect">
+    <input type="search" placeholder="¿Qué estás buscando?" id="mainSearch" aria-label="Buscar negocios" enterkeyhint="search" autocomplete="off">
+    <select id="catSelect" aria-label="Categoría">
       <option value="">Todas las categorías</option>
       <option value="restaurantes">🍽️ Restaurantes y comida</option>
       <option value="abarrotes">🛒 Abarrotes y súper</option>
@@ -664,6 +701,7 @@
       <option value="profesionales">⚖️ Profesionales</option>
       <option value="agroindustria">🍊 Agroindustria</option>
       <option value="oficios">🔩 Oficios y servicios del hogar</option>
+      <option value="papelerias">📚 Papelerías y regalos</option>
     </select>
     <button onclick="buscar()">Buscar</button>
   </div>
@@ -672,7 +710,7 @@
   <div class="hero-stats">
     <!-- El JS reemplaza estos valores con el conteo real; "—" evita mostrar/indexar una cifra falsa -->
     <div class="hero-stat"><strong id="total-negocios">—</strong><span>Negocios registrados</span></div>
-    <div class="hero-stat"><strong id="total-categorias">23</strong><span>Categorías</span></div>
+    <div class="hero-stat"><strong id="total-categorias">24</strong><span>Categorías</span></div>
     <div class="hero-stat"><strong>MDT</strong><span>Martínez de la Torre, Ver.</span></div>
   </div>
 </section>
@@ -732,7 +770,7 @@
 
 <!-- ═══ MODAL NEGOCIO ═══ -->
 <div class="modal-overlay" id="modalOverlay" onclick="cerrarModalOverlay(event)">
-  <div class="modal" id="modalContenido">
+  <div class="modal" id="modalContenido" role="dialog" aria-modal="true" aria-labelledby="m-nombre">
     <div class="modal-header">
       <div>
         <div class="modal-icon" id="m-icono"></div>
@@ -742,7 +780,7 @@
         <div class="modal-nombre" id="m-nombre"></div>
         <div id="m-badge-wrap"></div>
       </div>
-      <button class="modal-close" onclick="cerrarModal()">✕</button>
+      <button class="modal-close" onclick="cerrarModal()" aria-label="Cerrar">✕</button>
     </div>
     <div class="modal-body">
       <img id="m-foto" alt="" style="display:none;width:100%;max-height:230px;object-fit:cover;border-radius:12px;margin-bottom:0.25rem">
@@ -755,11 +793,11 @@
             <div class="modal-info-icon verde">📍</div>
             <div class="modal-info-text" id="m-dir"></div>
           </div>
-          <div class="modal-info-row">
+          <div class="modal-info-row" id="m-tel-row">
             <div class="modal-info-icon azul">📞</div>
             <div class="modal-info-text" id="m-tel"></div>
           </div>
-          <div class="modal-info-row">
+          <div class="modal-info-row" id="m-horario-row">
             <div class="modal-info-icon naranja">🕐</div>
             <div class="modal-info-text" id="m-horario"></div>
           </div>
@@ -785,24 +823,24 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn-wsp" id="m-btn-wsp">
+      <a class="modal-btn-wsp" id="m-btn-wsp" href="#">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
         WhatsApp
-      </button>
+      </a>
       <button class="modal-btn-mapa" id="m-btn-mapa">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
         Ver en mapa
       </button>
     </div>
     <div id="m-link-wrap" style="padding:0 1.5rem 0.9rem;margin-top:-0.6rem;text-align:right;display:none">
-      <a id="m-link-pagina" href="#" target="_blank" rel="noopener" style="color:var(--verde);text-decoration:none;font-weight:600;font-size:0.82rem">🔗 Ver página / compartir</a>
+      <a id="m-link-pagina" href="#" target="_blank" rel="noopener" style="color:var(--verde);text-decoration:none;font-weight:600;font-size:0.82rem">🔗 Ver página del negocio / compartir</a>
     </div>
   </div>
 </div>
 
 <!-- ═══ FOOTER ═══ -->
 <div style="background:#f8faf8;padding:0.85rem 1.5rem;text-align:center;border-top:1px solid #e5e7eb;">
-  <span style="font-size:0.78rem;color:#6b7280;">¿Dudas o comentarios? <a href="contacto.html" style="color:#1a6b3c;font-weight:700;text-decoration:none;">Escríbenos aquí →</a></span>
+  <span style="font-size:0.78rem;color:#6b7280;">¿Dudas o comentarios? <a href="/contacto" style="color:#1a6b3c;font-weight:700;text-decoration:none;">Escríbenos aquí →</a></span>
 </div>
 
 <footer>
@@ -824,8 +862,8 @@
       </div>
       <div class="footer-links">
         <h4>¿Tienes un negocio?</h4>
-        <a href="registro.html">Registra tu negocio</a>
-        <a href="contacto.html">Contacto</a>
+        <a href="/registro">Registra tu negocio</a>
+        <a href="/contacto">Contacto</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -863,6 +901,35 @@ function urlSegura(v) {
     const u = new URL(s);
     return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
   } catch { return ''; }
+}
+
+// Normaliza teléfonos mexicanos. En la base hay de todo: "+522321046107",
+// "232 147 7805", "52 1 232 323 8605" y hasta "sin numero". Se quedan los
+// 10 dígitos nacionales; si no hay al menos 7 dígitos no hay teléfono.
+function digitosMx(v) {
+  let d = String(v ?? '').replace(/\D/g, '');
+  if (d.length === 13 && d.startsWith('521')) d = d.slice(3);
+  else if (d.length === 12 && d.startsWith('52')) d = d.slice(2);
+  return d;
+}
+function telDigitos(v) { const d = digitosMx(v); return d.length >= 7 ? d : ''; }
+function telHref(v) { const d = telDigitos(v); return d ? 'tel:' + (d.length === 10 ? '+52' + d : d) : ''; }
+function telBonito(v) {
+  const d = telDigitos(v);
+  if (d.length === 10) return d.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+  return d ? String(v).trim() : '';
+}
+// WhatsApp: solo con 10 dígitos exactos; antes "52 1 232..." se volvía
+// wa.me/52521232... y el enlace no abría el chat.
+function waDigitos(v) { const d = digitosMx(v); return d.length === 10 ? d : ''; }
+// Texto corto para mostrar un enlace: solo el dominio (las URLs de Instagram
+// con fbclid medían 300 caracteres y desbordaban el modal en el celular).
+function dominioCorto(u) {
+  try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; }
+}
+// Para buscar sin importar acentos ni mayúsculas: "cafe" encuentra "Café"
+function normalizar(v) {
+  return String(v ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 // ¿El negocio tiene coordenadas válidas para el mapa?
@@ -945,34 +1012,37 @@ const categorias = [
   { id: 'profesionales', nombre: 'Profesionales',                icono: '⚖️', bg: '#dde0e8' },
   { id: 'agroindustria', nombre: 'Agroindustria',                icono: '🍊', bg: '#fdf0d8' },
   { id: 'oficios',       nombre: 'Oficios y servicios del hogar',icono: '🔩', bg: '#d0f2f2' },
+  { id: 'papelerias',    nombre: 'Papelerías y regalos',         icono: '📚', bg: '#f2dce8' },
 ];
 
 function renderChips() {
   const conteos = {};
   negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
   const wrap = document.getElementById('filtrosChips');
-  wrap.innerHTML = categorias.map(c => {
-    const vacio = !conteos[c.id];
-    return `<span class="chip${filtroActivo === c.id ? ' active' : ''}"
-      onclick="filtrarPorCat('${c.id}')"
-      style="${vacio ? 'opacity:0.38;pointer-events:none;' : ''}">
-      ${c.icono} ${c.nombre}
-    </span>`;
-  }).join('');
+  // Solo categorías con negocios: los chips vacíos no se podían tocar y
+  // en el celular llenaban 10 renglones antes de llegar a las fichas.
+  wrap.innerHTML = categorias.filter(c => conteos[c.id]).map(c =>
+    `<button type="button" class="chip${filtroActivo === c.id ? ' active' : ''}"
+      aria-pressed="${filtroActivo === c.id}" onclick="filtrarPorCat('${c.id}')">${c.icono} ${c.nombre}</button>`
+  ).join('');
 }
 
 function renderCategorias() {
   const conteos = {};
   negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
   const grid = document.getElementById('catsGrid');
-  grid.innerHTML = categorias.map(cat => {
+  // Primero las categorías con negocios; las vacías (deshabilitadas) al final
+  const orden = negocios.length
+    ? [...categorias].sort((a, b) => (conteos[b.id] ? 1 : 0) - (conteos[a.id] ? 1 : 0))
+    : categorias;
+  grid.innerHTML = orden.map(cat => {
     const count = conteos[cat.id] || 0;
     const isActive = filtroActivo === cat.id;
     const badgeHtml = count > 0
       ? `<span class="cat-badge con">${count} negocio${count !== 1 ? 's' : ''}</span>`
       : `<span class="cat-badge sin">Sin negocios</span>`;
     const checkHtml = isActive ? '<span class="cat-check">&#10003;</span>' : '';
-    return `<div class="cat-card${isActive ? ' active' : ''}" onclick="filtrarPorCat('${cat.id}')" data-count="${count}">${checkHtml}<span class="cat-icon" style="background:${cat.bg}">${cat.icono}</span><span class="cat-name">${cat.nombre}</span>${badgeHtml}</div>`;
+    return `<button type="button" class="cat-card${isActive ? ' active' : ''}" onclick="filtrarPorCat('${cat.id}')" data-count="${count}" aria-pressed="${isActive}"${count ? '' : ' disabled'}>${checkHtml}<span class="cat-icon" style="background:${cat.bg}">${cat.icono}</span><span class="cat-name">${cat.nombre}</span>${badgeHtml}</button>`;
   }).join('');
   document.getElementById('total-categorias').textContent = categorias.length;
 }
@@ -1020,7 +1090,8 @@ function renderNegocios(lista) {
     const catTexto = limpiarCatLabel(n.catLabel) || 'Negocio';
     const icono = esc(n.icono || '🏪');
     return `
-    <div class="negocio-card" onclick="abrirModal(${n.id})">
+    <div class="negocio-card" onclick="abrirModal(${Number(n.id)})" tabindex="0" role="button"
+         aria-label="${esc(n.nombre || 'Negocio')}" onkeydown="if(event.key==='Enter'&&event.target===this)abrirModal(${Number(n.id)})">
       <div class="negocio-cat-bar" style="background:${catColor}"></div>
       ${urlSegura(n.foto)
         ? `<div class="negocio-foto"><img src="${esc(urlSegura(n.foto))}" alt="${esc(n.nombre)}" loading="lazy" decoding="async"
@@ -1032,9 +1103,8 @@ function renderNegocios(lista) {
           <div class="negocio-icono" style="background:${catColor}1a">${icono}</div>
           <div class="negocio-titulo">
             <div class="negocio-nombre">${esc(n.nombre || 'Negocio sin nombre')}</div>
-            <span class="negocio-cat" style="color:${catColor}">${esc(catTexto)}</span>
+            <span class="negocio-cat" style="color:${catColor}">${esc(catTexto)}${n.destacado ? '<span class="badge-destacado">Destacado</span>' : ''}</span>
           </div>
-          ${n.destacado ? '<span class="badge-destacado">Destacado</span>' : ''}
         </div>
 
         <div class="negocio-datos">
@@ -1047,16 +1117,16 @@ function renderNegocios(lista) {
         </div>
 
         <div class="negocio-actions" onclick="event.stopPropagation()">
-          ${n.whatsapp
+          ${waDigitos(n.whatsapp)
             ? `<button class="btn-wsp" onclick="abrirWhatsAppId(${Number(n.id)})">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
                 WhatsApp
               </button>`
-            : n.telefono
-              ? `<a class="btn-tel" href="tel:${esc(String(n.telefono).replace(/[^\d+]/g, ''))}">${ICO_TEL} Llamar</a>`
+            : telHref(n.telefono)
+              ? `<a class="btn-tel" href="${esc(telHref(n.telefono))}">${ICO_TEL} Llamar</a>`
               : ''
           }
-          <button class="btn-detalle" onclick="abrirModal(${n.id})">Ver más</button>
+          <button class="btn-detalle" onclick="abrirModal(${Number(n.id)})">Ver más</button>
         </div>
       </div>
     </div>
@@ -1086,7 +1156,9 @@ function abrirModal(id) {
     mFoto.style.display = 'none';
     mFoto.removeAttribute('src');
   }
-  document.getElementById('m-desc').textContent = n.descripcion;
+  const mDesc = document.getElementById('m-desc');
+  mDesc.textContent = n.descripcion;
+  mDesc.style.display = n.descripcion ? '' : 'none';
 
   // Badge destacado
   const badgeWrap = document.getElementById('m-badge-wrap');
@@ -1097,13 +1169,17 @@ function abrirModal(id) {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(n.nombre + ' ' + n.direccion + ' Martínez de la Torre')}`;
     document.getElementById('m-dir').innerHTML = `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>`;
   } else {
-    document.getElementById('m-dir').textContent = 'Servicio a domicilio · Contacto por teléfono o WhatsApp';
+    // Antes decía "Servicio a domicilio": era un dato inventado
+    document.getElementById('m-dir').innerHTML = '<span style="color:var(--texto-muted)">Sin dirección registrada</span>';
   }
 
   // Teléfono
-  document.getElementById('m-tel').innerHTML = `<a href="tel:${esc(String(n.telefono || '').replace(/\s/g,''))}">${esc(n.telefono)}</a>`;
+  const tHref = telHref(n.telefono);
+  document.getElementById('m-tel-row').style.display = tHref ? 'flex' : 'none';
+  document.getElementById('m-tel').innerHTML = tHref ? `<a href="${esc(tHref)}">${esc(telBonito(n.telefono))}</a>` : '';
 
   // Horario
+  document.getElementById('m-horario-row').style.display = n.horario ? 'flex' : 'none';
   document.getElementById('m-horario').textContent = n.horario;
 
   // Web
@@ -1112,7 +1188,7 @@ function abrirModal(id) {
   if (webUrl) {
     webRow.style.display = 'flex';
     document.getElementById('m-web').innerHTML =
-      `<a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(n.web.replace(/^https?:\/\//,''))}</a>`;
+      `<a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(dominioCorto(webUrl))}</a>`;
   } else {
     webRow.style.display = 'none';
   }
@@ -1151,15 +1227,23 @@ function abrirModal(id) {
 
   // Botones del footer
   const waSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>`;
+  // Botón principal: WhatsApp si hay; si no, "Llamar" que sí marca.
+  // Antes, sin WhatsApp quedaba un botón gris desactivado con el número.
   const btnWsp = document.getElementById('m-btn-wsp');
-  if (n.whatsapp) {
+  if (waDigitos(n.whatsapp)) {
     btnWsp.className = 'modal-btn-wsp';
     btnWsp.innerHTML = waSvg + ' WhatsApp';
-    btnWsp.onclick = () => abrirWhatsApp(n.whatsapp, n.nombre);
+    btnWsp.href = urlWhatsApp(n.whatsapp, n.nombre);
+    btnWsp.target = '_blank'; btnWsp.rel = 'noopener';
+    btnWsp.style.display = '';
+  } else if (tHref) {
+    btnWsp.className = 'modal-btn-wsp llamar';
+    btnWsp.innerHTML = '📞 Llamar';
+    btnWsp.href = tHref;
+    btnWsp.removeAttribute('target');
+    btnWsp.style.display = '';
   } else {
-    btnWsp.className = 'modal-btn-wsp disabled';
-    btnWsp.onclick = null;
-    btnWsp.innerHTML = `📞 ${n.telefono}`;
+    btnWsp.style.display = 'none';
   }
 
   // Ocultar "Ver en mapa" si el negocio no tiene coordenadas
@@ -1186,6 +1270,7 @@ function abrirModal(id) {
 
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  document.querySelector('#modalContenido .modal-close').focus({ preventScroll: true });
 }
 
 function cerrarModal() {
@@ -1203,12 +1288,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(
 //  MAPA LEAFLET
 // ══════════════════════════════════════════
 const mapa = L.map('mapa').setView([20.0725, -97.0522], 14);
-// Tiles CARTO Voyager: {r} se vuelve "@2x" solo en pantallas retina → mapa nítido en celular
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  subdomains: 'abcd',
-  maxZoom: 20,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>'
-}).addTo(mapa);
+// Mosaicos del mapa. Desde octubre de 2026 CARTO exige clave y sin ella
+// pinta "API KEY REQUIRED" en cada cuadro. Si sacas una clave gratis en
+// carto.com/basemaps/apikey ponla aquí y se vuelve a usar Voyager (retina).
+// Sin clave se usa OpenStreetMap, que no pide registro.
+const CARTO_KEY = '';
+if (CARTO_KEY) {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
+    subdomains: 'abcd', maxZoom: 20,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(mapa);
+} else {
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(mapa);
+}
 
 const marcadores = {};
 let clusterGroup;
@@ -1227,6 +1322,7 @@ const catColores = {
   'agro':           '#18a030',  // verde vivo
   'veterinarias':   '#009868',  // esmeralda
   'oficios':        '#009090',  // teal
+  'papelerias':     '#7b3f61',  // ciruela
   'tecnologia':     '#0080bc',  // cian-azul
   'salud':          '#2890d0',  // azul cielo
   'educacion':      '#1830c0',  // índigo
@@ -1322,7 +1418,7 @@ function crearMarcadores() {
       .bindTooltip(`
         <div class="popup-content">
           <div class="popup-nombre">${esc(n.nombre)}</div>
-          <div class="popup-dir">📞 ${esc(n.telefono)}</div>
+          ${telBonito(n.telefono) ? `<div class="popup-dir">📞 ${esc(telBonito(n.telefono))}</div>` : ''}
           <div class="popup-hint">👆 Clic para ver más</div>
         </div>
       `, { direction: 'top', className: 'mapa-tooltip', offset: [0, -6], opacity: 1 })
@@ -1413,11 +1509,15 @@ function scrollSeccion(e, id) {
 // ══════════════════════════════════════════
 //  WHATSAPP
 // ══════════════════════════════════════════
-function abrirWhatsApp(numero, nombre) {
-  const num = String(numero || '').replace(/\D/g, ''); // solo dígitos
-  if (!num) return;
+function urlWhatsApp(numero, nombre) {
+  const num = waDigitos(numero);
+  if (!num) return '';
   const msg = encodeURIComponent(`Hola, vi su negocio "${nombre}" en EnMartinez.com y me gustaría más información.`);
-  window.open(`https://wa.me/52${num}?text=${msg}`, '_blank');
+  return `https://wa.me/52${num}?text=${msg}`;
+}
+function abrirWhatsApp(numero, nombre) {
+  const url = urlWhatsApp(numero, nombre);
+  if (url) window.open(url, '_blank', 'noopener');
 }
 // Versión segura por id (evita inyectar datos en el HTML)
 function abrirWhatsAppId(id) {
@@ -1428,16 +1528,22 @@ function abrirWhatsAppId(id) {
 // ══════════════════════════════════════════
 //  BÚSQUEDA Y FILTROS
 // ══════════════════════════════════════════
+// Busca en nombre, descripción, dirección, servicios y categoría,
+// sin importar acentos: "cafe", "estetica" o "farmacia" ya encuentran algo.
+function coincide(n, q) {
+  if (!q) return true;
+  const cat = categorias.find(c => c.id === n.categoria);
+  const texto = normalizar([n.nombre, n.descripcion, n.direccion, n.catLabel,
+    cat ? cat.nombre : '', (n.servicios || []).join(' ')].join(' '));
+  return normalizar(q).split(/\s+/).filter(Boolean).every(p => texto.includes(p));
+}
+
 function buscar() {
-  const texto = (document.getElementById('mainSearch').value || document.getElementById('headerSearch').value).toLowerCase().trim();
+  const texto = (document.getElementById('mainSearch').value || document.getElementById('headerSearch').value).trim();
   const cat = document.getElementById('catSelect').value;
   let lista = negocios;
   if (cat) lista = lista.filter(n => n.categoria === cat);
-  if (texto) lista = lista.filter(n =>
-    (n.nombre || '').toLowerCase().includes(texto) ||
-    (n.descripcion || '').toLowerCase().includes(texto) ||
-    (n.direccion || '').toLowerCase().includes(texto)
-  );
+  if (texto) lista = lista.filter(n => coincide(n, texto));
   renderNegocios(lista);
   actualizarMarcadores(lista);
   const seccionBuscar = document.getElementById('negociosGrid').closest('.section');
@@ -1472,12 +1578,10 @@ function limpiarFiltro() {
 document.getElementById('mainSearch').addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
 document.getElementById('headerSearch').addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
 document.getElementById('headerSearch').addEventListener('input', e => {
-  const texto = e.target.value.toLowerCase().trim();
-  renderNegocios(texto ? negocios.filter(n =>
-    (n.nombre || '').toLowerCase().includes(texto) ||
-    (n.descripcion || '').toLowerCase().includes(texto) ||
-    (n.direccion || '').toLowerCase().includes(texto)
-  ) : negocios);
+  const texto = e.target.value.trim();
+  const lista = texto ? negocios.filter(n => coincide(n, texto)) : negocios;
+  renderNegocios(lista);
+  actualizarMarcadores(lista);
 });
 
 // ══════════════════════════════════════════
@@ -1486,6 +1590,7 @@ document.getElementById('headerSearch').addEventListener('input', e => {
 function toggleMenu() {
   const menu = document.getElementById('mobileMenu');
   const isOpen = menu.classList.toggle('open');
+  document.getElementById('hamburger').setAttribute('aria-expanded', isOpen);
   // Cambiar icono: ☰ ↔ ✕
   document.getElementById('ham-icon').innerHTML = isOpen
     ? '<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>'
@@ -1493,6 +1598,7 @@ function toggleMenu() {
 }
 function cerrarMenu() {
   document.getElementById('mobileMenu').classList.remove('open');
+  document.getElementById('hamburger').setAttribute('aria-expanded', 'false');
   document.getElementById('ham-icon').innerHTML =
     '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>';
 }
@@ -1536,11 +1642,7 @@ function setupAutocomplete(inputId, dropdownId, onSelectFn) {
 
   function getMatches(q) {
     if (!q) return [];
-    const ql = q.toLowerCase();
-    return negocios.filter(n =>
-      (n.nombre || '').toLowerCase().includes(ql) ||
-      (n.descripcion || '').toLowerCase().includes(ql)
-    ).slice(0, 8);
+    return negocios.filter(n => coincide(n, q)).slice(0, 8);
   }
 
   function render(q) {
@@ -1625,14 +1727,12 @@ function renderChipsMapa() {
   const conteos = {};
   negocios.forEach(n => { conteos[n.categoria] = (conteos[n.categoria] || 0) + 1; });
   const wrap = document.getElementById('filtrosChipsMapa');
-  wrap.innerHTML = categorias.map(c => {
-    const vacio = !conteos[c.id];
-    return `<span class="chip${filtroMapaActivo === c.id ? ' active' : ''}"
-      onclick="filtrarMapaPorCat('${c.id}')"
-      style="${vacio ? 'opacity:0.38;pointer-events:none;' : ''}">
-      ${c.icono} ${c.nombre}
-    </span>`;
-  }).join('');
+  // Solo categorías con negocios: los chips vacíos no se podían tocar y
+  // en el celular llenaban 10 renglones antes de llegar a las fichas.
+  wrap.innerHTML = categorias.filter(c => conteos[c.id]).map(c =>
+    `<button type="button" class="chip${filtroMapaActivo === c.id ? ' active' : ''}"
+      aria-pressed="${filtroMapaActivo === c.id}" onclick="filtrarMapaPorCat('${c.id}')">${c.icono} ${c.nombre}</button>`
+  ).join('');
 }
 
 function filtrarMapaPorCat(cat) {

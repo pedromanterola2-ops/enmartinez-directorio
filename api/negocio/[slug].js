@@ -15,7 +15,8 @@ const CAT_LABELS = {
   panaderias: '🥐 Panaderías', cafes: '☕ Cafés y cafeterías', botanas: '🥤 Botanas y bebidas',
   comida: '🍱 Comida',
   bancos: '🏦 Bancos', profesionales: '⚖️ Profesionales',
-  agroindustria: '🍊 Agroindustria', oficios: '🔩 Oficios y servicios del hogar'
+  agroindustria: '🍊 Agroindustria', oficios: '🔩 Oficios y servicios del hogar',
+  papelerias: '📚 Papelerías y regalos'
 };
 
 const SCHEMA_TIPO = {
@@ -42,6 +43,26 @@ function urlSegura(v) {
     const u = new URL(s);
     return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
   } catch (e) { return ''; }
+}
+
+// Teléfonos mexicanos: en la base hay "+522321046107", "232 147 7805",
+// "52 1 232 323 8605" y hasta "sin numero". Se quedan los 10 dígitos.
+function digitosMx(v) {
+  let d = String(v == null ? '' : v).replace(/\D/g, '');
+  if (d.length === 13 && d.startsWith('521')) d = d.slice(3);
+  else if (d.length === 12 && d.startsWith('52')) d = d.slice(2);
+  return d;
+}
+function telDigitos(v) { const d = digitosMx(v); return d.length >= 7 ? d : ''; }
+function telHref(v) { const d = telDigitos(v); return d ? 'tel:' + (d.length === 10 ? '+52' + d : d) : ''; }
+function telBonito(v) {
+  const d = telDigitos(v);
+  if (d.length === 10) return d.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+  return d ? String(v).trim() : '';
+}
+function waDigitos(v) { const d = digitosMx(v); return d.length === 10 ? d : ''; }
+function dominioCorto(u) {
+  try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; }
 }
 
 function paginaNoEncontrada(res) {
@@ -93,6 +114,7 @@ module.exports = async (req, res) => {
   const icono = n.icono || '🏪';
   const nombre = n.nombre || 'Negocio';
   const descripcion = n.descripcion || `${nombre} en Martínez de la Torre, Veracruz.`;
+  const tieneDescripcion = !!(n.descripcion && n.descripcion.trim());
   const tieneCoords = typeof n.lat === 'number' && typeof n.lng === 'number' && isFinite(n.lat) && isFinite(n.lng);
   const url = `${SITE_URL}/negocio/${encodeURIComponent(n.slug)}`;
   const metaDesc = descripcion.length > 155 ? descripcion.slice(0, 152) + '...' : descripcion;
@@ -100,14 +122,19 @@ module.exports = async (req, res) => {
   const mapsUrl = n.direccion
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nombre + ' ' + n.direccion + ' Martínez de la Torre')}`
     : null;
+  // "Cómo llegar": con coordenadas va directo al punto; si no, a la dirección
+  const llegarUrl = tieneCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${n.lat},${n.lng}`
+    : mapsUrl;
 
+  // Antes, sin dirección se inventaba "Servicio a domicilio"
   const dirHtml = n.direccion
     ? `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>`
-    : 'Servicio a domicilio · Contacto por teléfono o WhatsApp';
+    : '<span class="muted">Sin dirección registrada</span>';
 
-  const telDigits = String(n.telefono || '').replace(/\s/g, '');
-  const telRow = n.telefono
-    ? `<div class="info-row"><div class="info-icon azul">📞</div><div><a href="tel:${esc(telDigits)}">${esc(n.telefono)}</a></div></div>`
+  const tHref = telHref(n.telefono);
+  const telRow = tHref
+    ? `<div class="info-row"><div class="info-icon azul">📞</div><div><a href="${esc(tHref)}">${esc(telBonito(n.telefono))}</a></div></div>`
     : '';
 
   const horarioRow = n.horario
@@ -116,7 +143,7 @@ module.exports = async (req, res) => {
 
   const webUrl = urlSegura(n.web);
   const webRow = webUrl
-    ? `<div class="info-row"><div class="info-icon morado">🌐</div><div><a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(String(n.web).replace(/^https?:\/\//, ''))}</a></div></div>`
+    ? `<div class="info-row"><div class="info-icon morado">🌐</div><div><a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(dominioCorto(webUrl))}</a></div></div>`
     : '';
 
   const fbUrl = urlSegura(n.facebook);
@@ -134,10 +161,15 @@ module.exports = async (req, res) => {
     ? `<div><div class="section-title">Métodos de pago</div><div class="tags">${pago.map(p => `<span class="tag">${PAGO_ICONOS[p] || ''} ${esc(p)}</span>`).join('')}</div></div>`
     : '';
 
-  const wspDigits = String(n.whatsapp || '').replace(/\D/g, '');
-  const wspBtn = wspDigits
-    ? `<a class="btn-wsp" href="https://wa.me/52${esc(wspDigits)}?text=${encodeURIComponent('Hola, vi tu negocio en EnMartinez.com y quisiera más información sobre ' + nombre)}" target="_blank" rel="noopener">💬 Enviar WhatsApp</a>`
-    : (n.telefono ? `<a class="btn-wsp disabled" href="tel:${esc(telDigits)}">📞 Llamar</a>` : '');
+  // Botones de acción. Antes "Llamar" salía gris y parecía desactivado.
+  const wspDigits = waDigitos(n.whatsapp);
+  const botones = [];
+  if (wspDigits) botones.push(`<a class="btn btn-wsp" href="https://wa.me/52${wspDigits}?text=${encodeURIComponent('Hola, vi tu negocio en EnMartinez.com y quisiera más información sobre ' + nombre)}" target="_blank" rel="noopener">💬 WhatsApp</a>`);
+  if (tHref) botones.push(`<a class="btn btn-tel" href="${esc(tHref)}">📞 Llamar</a>`);
+  if (llegarUrl) botones.push(`<a class="btn btn-sec" href="${esc(llegarUrl)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>`);
+  // Compartir: la estrategia de crecimiento es mandar la ficha por WhatsApp
+  botones.push(`<a class="btn btn-sec" id="btn-compartir" href="https://wa.me/?text=${encodeURIComponent(nombre + ' en EnMartinez.com: ' + url)}" target="_blank" rel="noopener">🔗 Compartir</a>`);
+  const wspBtn = botones.join('\n      ');
 
   const destacadoBadge = n.destacado ? '<span class="badge">⭐ Destacado</span>' : '';
 
@@ -189,7 +221,9 @@ module.exports = async (req, res) => {
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026');
 
-  const catSlugParaBreadcrumb = esc(catLabel.replace(/^\S+\s/, ''));
+  const catSlugParaBreadcrumb = esc(catLabel.replace(/^[^\p{L}\p{N}]+/u, ''));
+  // La miga de pan lleva a la página de la categoría, no al home
+  const catHref = CAT_LABELS[catKey] ? `/categoria/${encodeURIComponent(catKey)}` : '/#categorias';
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -231,7 +265,9 @@ nav a.reg{background:var(--naranja);color:#fff;font-weight:700;margin-left:0.5re
 .card-header{background:linear-gradient(135deg,var(--verde-bg),#d1fae5);padding:2rem 1.75rem 1.5rem;display:flex;gap:1.25rem}
 .card-icon{font-size:4rem;line-height:1}
 .cat{display:inline-block;font-size:0.75rem;font-weight:600;color:var(--verde);background:rgba(26,107,60,0.12);padding:0.25rem 0.7rem;border-radius:20px;margin-bottom:0.5rem}
-.nombre{font-size:1.7rem;font-weight:900;line-height:1.2}
+.nombre{font-size:1.7rem;font-weight:900;line-height:1.2;margin:0;overflow-wrap:break-word}
+.muted{color:var(--texto-muted)}
+@media (max-width:620px){.card-header{padding:1.4rem 1.1rem 1.1rem;gap:.9rem}.card-icon{font-size:2.8rem}.nombre{font-size:1.4rem}.card-body{padding:1.25rem 1.1rem}.footer-btns{padding:1rem 1.1rem}.ficha,.breadcrumb{padding:0 1rem}}
 .badge{display:inline-block;background:var(--naranja);color:#fff;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;margin-left:0.5rem}
 .card-body{padding:1.75rem;display:flex;flex-direction:column;gap:1.5rem}
 .desc{font-size:0.98rem;line-height:1.65;background:#f9fafb;border-radius:10px;padding:1rem 1.1rem;border-left:3px solid var(--verde)}
@@ -246,9 +282,12 @@ nav a.reg{background:var(--naranja);color:#fff;font-weight:700;margin-left:0.5re
 .tags{display:flex;flex-wrap:wrap;gap:0.4rem}
 .tag{background:#f3f4f6;color:var(--texto);border-radius:20px;padding:0.25rem 0.7rem;font-size:0.82rem;font-weight:500}
 .tag.verde{background:var(--verde-bg);color:var(--verde)}
-.footer-btns{padding:1.25rem 1.75rem;border-top:1px solid var(--borde);display:flex;gap:0.7rem;flex-wrap:wrap}
-.btn-wsp{flex:1;min-width:180px;background:#25D366;color:#fff;padding:0.85rem;border-radius:10px;font-size:0.95rem;font-weight:700;text-align:center;text-decoration:none}
-.btn-wsp.disabled{background:#6b7280}
+.footer-btns{padding:1.25rem 1.75rem;border-top:1px solid var(--borde);display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.6rem}
+.btn{display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:48px;padding:0.7rem;border-radius:10px;font-size:0.95rem;font-weight:700;text-align:center;text-decoration:none}
+.btn-wsp{background:#25D366;color:#fff}
+.btn-tel{background:var(--verde);color:#fff}
+.btn-sec{background:var(--verde-bg);color:var(--verde);border:1.5px solid rgba(26,107,60,.35)}
+footer a{color:rgba(255,255,255,.85)}
 .volver{display:inline-block;margin-top:1.25rem;color:var(--verde);text-decoration:none;font-weight:600;font-size:0.9rem}
 .volver:hover{text-decoration:underline}
 footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin-top:2rem;text-align:center;font-size:0.8rem}
@@ -268,7 +307,7 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
   </div>
 </header>
 
-<div class="breadcrumb"><a href="/">Inicio</a> › <a href="/#categorias">${catSlugParaBreadcrumb}</a> › ${esc(nombre)}</div>
+<div class="breadcrumb" role="navigation" aria-label="Ruta"><a href="/">Inicio</a> › <a href="${catHref}">${catSlugParaBreadcrumb}</a> › ${esc(nombre)}</div>
 
 <div class="ficha">
   <div class="card">
@@ -277,11 +316,11 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
       <div class="card-icon">${icono}</div>
       <div>
         <div class="cat">${esc(catLabel)}</div>
-        <div class="nombre">${esc(nombre)}${destacadoBadge}</div>
+        <h1 class="nombre">${esc(nombre)}${destacadoBadge}</h1>
       </div>
     </div>
     <div class="card-body">
-      <div class="desc">${esc(descripcion)}</div>
+      ${tieneDescripcion ? `<div class="desc">${esc(descripcion)}</div>` : ''}
       <div>
         <div class="section-title">Información de contacto</div>
         <div class="info-grid">
@@ -302,7 +341,19 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
   <a class="volver" href="/">← Volver al directorio</a>
 </div>
 
-<footer>© 2026 EnMartinez.com — Martínez de la Torre, Veracruz · Hecho con 💚 para la comunidad</footer>
+<footer>© 2026 EnMartinez.com — Martínez de la Torre, Veracruz · Hecho con 💚 para la comunidad
+<br><a href="/registro">¿Tienes un negocio? Regístralo gratis</a> · <a href="/contacto">Contacto</a></footer>
+<script>
+// En el celular abre el menú nativo de compartir; si no existe, WhatsApp
+(function () {
+  var b = document.getElementById('btn-compartir');
+  if (!b || !navigator.share) return;
+  b.addEventListener('click', function (e) {
+    e.preventDefault();
+    navigator.share({ title: document.title, url: ${JSON.stringify(url).replace(/</g, '\\u003c')} }).catch(function () {});
+  });
+})();
+</script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>`;

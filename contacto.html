@@ -65,7 +65,12 @@
     nav a:hover { background: rgba(255,255,255,0.12); color: #fff; }
     nav a.active { color: #fff; font-weight: 700; border-bottom: 2.5px solid var(--naranja); padding-bottom: 0.25rem; }
 
-    @media (max-width: 640px) { nav { display: none; } }
+    .volver-movil { display: none; color: rgba(255,255,255,0.9); text-decoration: none; font-size: 0.88rem; font-weight: 600; white-space: nowrap; }
+    @media (max-width: 640px) {
+      nav { display: none; }
+      .volver-movil { display: inline-block; }
+      main { padding: 1.5rem 1rem; }
+    }
 
     /* ── MAIN ── */
     main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; }
@@ -180,17 +185,18 @@
 
 <header>
   <div class="header-inner">
-    <a href="index.html" class="logo">
+    <a href="/" class="logo">
       <span class="logo-icon">🌿</span>
       <span class="logo-text">En<span>Martinez</span>.com</span>
     </a>
     <nav>
-      <a href="index.html">Inicio</a>
-      <a href="index.html#categorias">Categorías</a>
-      <a href="index.html#negocios">Negocios</a>
-      <a href="index.html#mapa-section">Mapa</a>
-      <a href="contacto.html" class="active">Contacto</a>
+      <a href="/">Inicio</a>
+      <a href="/#categorias">Categorías</a>
+      <a href="/#negocios">Negocios</a>
+      <a href="/#mapa-section">Mapa</a>
+      <a href="/contacto" class="active">Contacto</a>
     </nav>
+    <a href="/" class="volver-movil">← Directorio</a>
   </div>
 </header>
 
@@ -244,7 +250,7 @@
       <span class="success-icon">✅</span>
       <h2>¡Mensaje enviado!</h2>
       <p>Gracias por escribirnos. Te responderemos a la brevedad en tu correo.</p>
-      <a href="index.html">← Volver al inicio</a>
+      <a href="/">← Volver al inicio</a>
     </div>
 
   </div>
@@ -252,8 +258,8 @@
 
 <footer>
   © 2026 EnMartinez.com — Martínez de la Torre, Veracruz
-  <a href="index.html">Inicio</a>
-  <a href="registro.html">Registra tu negocio</a>
+  <a href="/">Inicio</a>
+  <a href="/registro">Registra tu negocio</a>
   <br><a href="https://pytr-pagina.vercel.app/" style="color:inherit;opacity:.35;text-decoration:none;font-size:0.75rem;">Pytr</a>
 </footer>
 

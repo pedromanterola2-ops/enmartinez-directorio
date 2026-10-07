@@ -1,6 +1,6 @@
 // Página de categoría: /categoria/:slug (ver rewrite en vercel.json)
 //
-// Son 20 páginas de aterrizaje para búsquedas del tipo "restaurantes en
+// Son 24 páginas de aterrizaje para búsquedas del tipo "restaurantes en
 // Martínez de la Torre". Se generan en el servidor para que Google lea el
 // listado real, no un contenedor vacío que se llena con JavaScript.
 
@@ -34,6 +34,7 @@ const CATEGORIAS = {
   profesionales: { icono: '⚖️', nombre: 'Profesionales',                plural: 'despachos y profesionistas' },
   agroindustria: { icono: '🍊', nombre: 'Agroindustria',                plural: 'empresas agroindustriales' },
   oficios:       { icono: '🔩', nombre: 'Oficios y servicios del hogar', plural: 'oficios y servicios para el hogar' },
+  papelerias:    { icono: '📚', nombre: 'Papelerías y regalos',         plural: 'papelerías y tiendas de regalos' },
 };
 
 function esc(v) {
@@ -50,6 +51,22 @@ function urlSegura(v) {
     return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
   } catch (e) { return ''; }
 }
+
+// Teléfonos mexicanos: se normalizan a 10 dígitos ("+52...", "52 1 ...")
+function digitosMx(v) {
+  let d = String(v == null ? '' : v).replace(/\D/g, '');
+  if (d.length === 13 && d.startsWith('521')) d = d.slice(3);
+  else if (d.length === 12 && d.startsWith('52')) d = d.slice(2);
+  return d;
+}
+function telDigitos(v) { const d = digitosMx(v); return d.length >= 7 ? d : ''; }
+function telHref(v) { const d = telDigitos(v); return d ? 'tel:' + (d.length === 10 ? '+52' + d : d) : ''; }
+function telBonito(v) {
+  const d = telDigitos(v);
+  if (d.length === 10) return d.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+  return d ? String(v).trim() : '';
+}
+function waDigitos(v) { const d = digitosMx(v); return d.length === 10 ? d : ''; }
 
 function paginaSimple(res, codigo, titulo, mensaje) {
   res.statusCode = codigo;
@@ -100,7 +117,8 @@ module.exports = async (req, res) => {
     const nombre = n.nombre || 'Negocio';
     const enlace = n.slug ? `/negocio/${encodeURIComponent(n.slug)}` : null;
     const foto = urlSegura(n.foto);
-    const wsp = String(n.whatsapp || '').replace(/\D/g, '');
+    const wsp = waDigitos(n.whatsapp);
+    const tHref = telHref(n.telefono);
     const desc = n.descripcion
       ? (n.descripcion.length > 150 ? n.descripcion.slice(0, 147) + '…' : n.descripcion)
       : '';
@@ -122,11 +140,12 @@ module.exports = async (req, res) => {
         ${desc ? `<p class="desc">${esc(desc)}</p>` : ''}
         <ul class="datos">
           ${n.direccion ? `<li>📍 ${esc(n.direccion)}</li>` : ''}
-          ${n.telefono ? `<li>📞 <a href="tel:${esc(String(n.telefono).replace(/\s/g,''))}">${esc(n.telefono)}</a></li>` : ''}
+          ${tHref ? `<li>📞 <a href="${esc(tHref)}">${esc(telBonito(n.telefono))}</a></li>` : ''}
           ${n.horario ? `<li>🕐 ${esc(n.horario)}</li>` : ''}
         </ul>
         <div class="acciones">
-          ${wsp ? `<a class="btn-wsp" href="https://wa.me/52${esc(wsp)}" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>` : ''}
+          ${wsp ? `<a class="btn-wsp" href="https://wa.me/52${wsp}" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>`
+                : (tHref ? `<a class="btn-tel" href="${esc(tHref)}">📞 Llamar</a>` : '')}
           ${enlace ? `<a class="btn-ver" href="${esc(enlace)}">Ver ficha →</a>` : ''}
         </div>
       </div>
@@ -204,7 +223,12 @@ header{background:var(--verde);padding:0 1.5rem;position:sticky;top:0;z-index:10
 .logo{color:#fff;font-weight:800;font-size:1.25rem;text-decoration:none}.logo span{color:var(--naranja)}
 nav a{color:rgba(255,255,255,.85);text-decoration:none;padding:.4rem .9rem;border-radius:6px;font-size:.9rem}
 nav a.reg{background:var(--naranja);color:#fff;font-weight:700}
+nav{display:flex;align-items:center;flex-shrink:0}
+nav a.reg{white-space:nowrap}
 @media(max-width:820px){nav a:not(.reg){display:none}}
+@media(max-width:480px){.logo{font-size:1.1rem;white-space:nowrap}nav a.reg{padding:.45rem .7rem;font-size:.8rem}.reg-largo{display:none}
+.hero{padding:2rem 1rem}.hero h1{font-size:1.5rem}main,.breadcrumb{padding:0 1rem}.grid{grid-template-columns:1fr}
+.acciones a{flex:1;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center}}
 .hero{background:linear-gradient(135deg,var(--verde),#0f4d2b);padding:2.5rem 1.5rem;text-align:center;color:#fff}
 .hero .icono{font-size:3rem;display:block;margin-bottom:.5rem}
 .hero h1{font-size:1.85rem;font-weight:900;margin-bottom:.5rem;line-height:1.2}
@@ -227,6 +251,7 @@ a.nombre:hover{color:var(--verde);text-decoration:underline}
 .datos a{color:var(--verde);font-weight:600;text-decoration:none}
 .acciones{display:flex;gap:.5rem;margin-top:auto;padding-top:.4rem;flex-wrap:wrap}
 .btn-wsp{background:#25D366;color:#fff;padding:.5rem .85rem;border-radius:8px;font-size:.83rem;font-weight:700;text-decoration:none}
+.btn-tel{background:var(--verde);color:#fff;padding:.5rem .85rem;border-radius:8px;font-size:.83rem;font-weight:700;text-decoration:none}
 .btn-ver{background:var(--verde-bg);color:var(--verde);padding:.5rem .85rem;border-radius:8px;font-size:.83rem;font-weight:700;text-decoration:none}
 .vacio{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:3rem 1.5rem;text-align:center}
 .vacio-icono{font-size:3.2rem;margin-bottom:.75rem}
@@ -250,7 +275,7 @@ footer a{color:inherit}
       <a href="/">Inicio</a>
       <a href="/#categorias">Categorías</a>
       <a href="/#mapa-section">Mapa</a>
-      <a href="/registro" class="reg">＋ Registra tu negocio</a>
+      <a href="/registro" class="reg">＋ Registra<span class="reg-largo"> tu negocio</span></a>
     </nav>
   </div>
 </header>
@@ -273,7 +298,8 @@ footer a{color:inherit}
   </section>
 </main>
 
-<footer>© 2026 EnMartinez.com — ${esc(CIUDAD)} · Hecho con 💚 para la comunidad</footer>
+<footer>© 2026 EnMartinez.com — ${esc(CIUDAD)} · Hecho con 💚 para la comunidad
+<br><a href="/">Directorio</a> · <a href="/registro">Registra tu negocio</a> · <a href="/contacto">Contacto</a></footer>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>`;
