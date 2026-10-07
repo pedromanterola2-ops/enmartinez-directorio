@@ -114,6 +114,9 @@ module.exports = async (req, res) => {
   const icono = n.icono || '🏪';
   const nombre = n.nombre || 'Negocio';
   const descripcion = n.descripcion || `${nombre} en Martínez de la Torre, Veracruz.`;
+  const evId = Number(n.id) || 0;
+  // data-ev / data-id: el script del final cuenta estos clics en `eventos`
+  const ev = tipo => `data-ev="${tipo}" data-id="${evId}"`;
   const tieneDescripcion = !!(n.descripcion && n.descripcion.trim());
   const tieneCoords = typeof n.lat === 'number' && typeof n.lng === 'number' && isFinite(n.lat) && isFinite(n.lng);
   const url = `${SITE_URL}/negocio/${encodeURIComponent(n.slug)}`;
@@ -132,12 +135,12 @@ module.exports = async (req, res) => {
   const dirHtml = modalidad === 'domicilio'
     ? `<strong>🛵 Sin local · servicio a domicilio</strong>${n.direccion ? `<br><span class="muted">Zona: ${esc(n.direccion)}</span>` : ''}`
     : n.direccion
-      ? `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>${modalidad === 'ambos' ? '<br><strong class="domicilio">🛵 También a domicilio</strong>' : ''}`
+      ? `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener" ${ev('como_llegar')}>${esc(n.direccion)}</a>${modalidad === 'ambos' ? '<br><strong class="domicilio">🛵 También a domicilio</strong>' : ''}`
       : '<span class="muted">Sin dirección registrada</span>';
 
   const tHref = telHref(n.telefono);
   const telRow = tHref
-    ? `<div class="info-row"><div class="info-icon azul">📞</div><div><a href="${esc(tHref)}">${esc(telBonito(n.telefono))}</a></div></div>`
+    ? `<div class="info-row"><div class="info-icon azul">📞</div><div><a href="${esc(tHref)}" ${ev('llamar')}>${esc(telBonito(n.telefono))}</a></div></div>`
     : '';
 
   const horarioRow = n.horario
@@ -146,12 +149,12 @@ module.exports = async (req, res) => {
 
   const webUrl = urlSegura(n.web);
   const webRow = webUrl
-    ? `<div class="info-row"><div class="info-icon morado">🌐</div><div><a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(dominioCorto(webUrl))}</a></div></div>`
+    ? `<div class="info-row"><div class="info-icon morado">🌐</div><div><a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer" ${ev('web')}>${esc(dominioCorto(webUrl))}</a></div></div>`
     : '';
 
   const fbUrl = urlSegura(n.facebook);
   const fbRow = fbUrl
-    ? `<div class="info-row"><div class="info-icon azul">👍</div><div><a href="${esc(fbUrl)}" target="_blank" rel="noopener noreferrer">Ver página en Facebook</a></div></div>`
+    ? `<div class="info-row"><div class="info-icon azul">👍</div><div><a href="${esc(fbUrl)}" target="_blank" rel="noopener noreferrer" ${ev('facebook')}>Ver página en Facebook</a></div></div>`
     : '';
 
   const servicios = Array.isArray(n.servicios) ? n.servicios : [];
@@ -167,11 +170,11 @@ module.exports = async (req, res) => {
   // Botones de acción. Antes "Llamar" salía gris y parecía desactivado.
   const wspDigits = waDigitos(n.whatsapp);
   const botones = [];
-  if (wspDigits) botones.push(`<a class="btn btn-wsp" href="https://wa.me/52${wspDigits}?text=${encodeURIComponent('Hola, vi tu negocio en EnMartinez.com y quisiera más información sobre ' + nombre)}" target="_blank" rel="noopener">💬 WhatsApp</a>`);
-  if (tHref) botones.push(`<a class="btn btn-tel" href="${esc(tHref)}">📞 Llamar</a>`);
-  if (llegarUrl && modalidad !== 'domicilio') botones.push(`<a class="btn btn-sec" href="${esc(llegarUrl)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>`);
+  if (wspDigits) botones.push(`<a class="btn btn-wsp" ${ev('whatsapp')} href="https://wa.me/52${wspDigits}?text=${encodeURIComponent('Hola, vi tu negocio en EnMartinez.com y quisiera más información sobre ' + nombre)}" target="_blank" rel="noopener">💬 WhatsApp</a>`);
+  if (tHref) botones.push(`<a class="btn btn-tel" ${ev('llamar')} href="${esc(tHref)}">📞 Llamar</a>`);
+  if (llegarUrl && modalidad !== 'domicilio') botones.push(`<a class="btn btn-sec" ${ev('como_llegar')} href="${esc(llegarUrl)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>`);
   // Compartir: la estrategia de crecimiento es mandar la ficha por WhatsApp
-  botones.push(`<a class="btn btn-sec" id="btn-compartir" href="https://wa.me/?text=${encodeURIComponent(nombre + ' en EnMartinez.com: ' + url)}" target="_blank" rel="noopener">🔗 Compartir</a>`);
+  botones.push(`<a class="btn btn-sec" id="btn-compartir" ${ev('compartir')} href="https://wa.me/?text=${encodeURIComponent(nombre + ' en EnMartinez.com: ' + url)}" target="_blank" rel="noopener">🔗 Compartir</a>`);
   const wspBtn = botones.join('\n      ');
 
   const destacadoBadge = n.destacado ? '<span class="badge">⭐ Destacado</span>' : '';
@@ -348,6 +351,28 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
 <footer>© 2026 EnMartinez.com — Martínez de la Torre, Veracruz · Hecho con 💚 para la comunidad
 <br><a href="/registro">¿Tienes un negocio? Regístralo gratis</a> · <a href="/contacto">Contacto</a></footer>
 <script>
+// Contador de visitas y clics (tabla eventos). Sin datos del visitante.
+(function () {
+  var URL_EV = ${JSON.stringify(SUPABASE_URL + '/rest/v1/eventos')};
+  var KEY = ${JSON.stringify(SUPABASE_ANON)};
+  function registrar(id, tipo) {
+    try {
+      if (!id || navigator.webdriver) return;
+      try { if (localStorage.getItem('sb-ygeuqlohycckwngcmmxl-auth-token')) return; } catch (e) {}
+      if (tipo === 'vista') {
+        try { var k = 'ev_v_' + id; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (e) {}
+      }
+      fetch(URL_EV, { method: 'POST', keepalive: true,
+        headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ negocio_id: id, tipo: tipo, origen: 'ficha' }) }).catch(function () {});
+    } catch (e) {}
+  }
+  registrar(${evId}, 'vista');
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest && e.target.closest('[data-ev]');
+    if (el) registrar(Number(el.getAttribute('data-id')), el.getAttribute('data-ev'));
+  }, true);
+})();
 // En el celular abre el menú nativo de compartir; si no existe, WhatsApp
 (function () {
   var b = document.getElementById('btn-compartir');

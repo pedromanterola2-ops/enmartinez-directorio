@@ -99,3 +99,25 @@ Revisión del sitio en vivo (celular 390 px y escritorio 1280 px), del código y
   - `tiles.openfreemap.org` agregado en `img-src` y `connect-src`;
   - `cdn.jsdelivr.net` agregado en `style-src`;
   - `worker-src blob:` nuevo, porque MapLibre usa workers.
+
+## Tercera ronda — contador de visitas y clics
+
+- **Tabla nueva `eventos`** (`eventos-2026-10-06.sql`, **hay que correrlo en Supabase**):
+  - se guarda una fila por evento: negocio, tipo (`vista`, `whatsapp`, `llamar`, `como_llegar`, `compartir`, `web`, `facebook`), origen (`home`, `ficha`, `categoria`, `mapa`) y fecha;
+  - no se guarda IP, navegador ni nada que identifique al visitante.
+- **Seguridad:**
+  - el público solo puede insertar; leer y borrar es solo para el admin;
+  - un trigger pone la fecha del lado del servidor y limita a 600 eventos por minuto en total y 60 por minuto por negocio;
+  - el panel lee los datos con la función `resumen_eventos(desde, hasta)`, que verifica `es_admin_enmartinez()`.
+- **Qué se cuenta en el sitio:**
+  - una vista cuando se abre una ficha, ya sea el modal del home, la página `/negocio/...` o un pin del mapa, y solo una por negocio por sesión;
+  - los toques en WhatsApp, Llamar, Cómo llegar (incluido el enlace de la dirección), Compartir, sitio web y Facebook.
+  - Los envíos usan `keepalive`, así que se registran aunque el toque abra WhatsApp. Si algo falla, el contador nunca rompe la página.
+- **Qué no cuenta:**
+  - navegadores automatizados (`navigator.webdriver`);
+  - las visitas de Pedro mientras tenga abierta la sesión del panel en ese navegador.
+- **Panel → 📊 Estadísticas:**
+  - periodos: este mes, mes pasado, 7, 30 o 90 días;
+  - totales del periodo y una tabla por negocio, ordenada por contactos (WhatsApp + Llamar + Cómo llegar);
+  - **📋 Reporte** copia un mensaje listo para el dueño, y **💬** lo abre directo en WhatsApp con el número del negocio. A los negocios que no son Destacados, el mensaje les termina invitando a la ficha Destacada.
+- **Si se publica el código antes de correr el SQL**, no se rompe nada: los envíos fallan sin que el visitante lo note, y la pestaña de Estadísticas avisa que falta la migración.

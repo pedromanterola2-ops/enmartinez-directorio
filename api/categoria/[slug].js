@@ -118,6 +118,7 @@ module.exports = async (req, res) => {
     const enlace = n.slug ? `/negocio/${encodeURIComponent(n.slug)}` : null;
     const foto = urlSegura(n.foto);
     const wsp = waDigitos(n.whatsapp);
+    const ev = tipo => `data-ev="${tipo}" data-id="${Number(n.id) || 0}"`;
     const tHref = telHref(n.telefono);
     const desc = n.descripcion
       ? (n.descripcion.length > 150 ? n.descripcion.slice(0, 147) + '…' : n.descripcion)
@@ -143,12 +144,12 @@ module.exports = async (req, res) => {
             ? `<li class="dom">🛵 Sin local · servicio a domicilio</li>`
             : (n.direccion ? `<li>📍 ${esc(n.direccion)}</li>` : '')}
           ${n.modalidad === 'ambos' ? `<li class="dom">🛵 También a domicilio</li>` : ''}
-          ${tHref ? `<li>📞 <a href="${esc(tHref)}">${esc(telBonito(n.telefono))}</a></li>` : ''}
+          ${tHref ? `<li>📞 <a href="${esc(tHref)}" ${ev('llamar')}>${esc(telBonito(n.telefono))}</a></li>` : ''}
           ${n.horario ? `<li>🕐 ${esc(n.horario)}</li>` : ''}
         </ul>
         <div class="acciones">
-          ${wsp ? `<a class="btn-wsp" href="https://wa.me/52${wsp}" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>`
-                : (tHref ? `<a class="btn-tel" href="${esc(tHref)}">📞 Llamar</a>` : '')}
+          ${wsp ? `<a class="btn-wsp" ${ev('whatsapp')} href="https://wa.me/52${wsp}" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>`
+                : (tHref ? `<a class="btn-tel" ${ev('llamar')} href="${esc(tHref)}">📞 Llamar</a>` : '')}
           ${enlace ? `<a class="btn-ver" href="${esc(enlace)}">Ver ficha →</a>` : ''}
         </div>
       </div>
@@ -304,6 +305,22 @@ footer a{color:inherit}
 
 <footer>© 2026 EnMartinez.com — ${esc(CIUDAD)} · Hecho con 💚 para la comunidad
 <br><a href="/">Directorio</a> · <a href="/registro">Registra tu negocio</a> · <a href="/contacto">Contacto</a></footer>
+<script>
+// Contador de clics en WhatsApp / Llamar (tabla eventos). Sin datos del visitante.
+document.addEventListener('click', function (e) {
+  try {
+    var el = e.target.closest && e.target.closest('[data-ev]');
+    if (!el || navigator.webdriver) return;
+    try { if (localStorage.getItem('sb-ygeuqlohycckwngcmmxl-auth-token')) return; } catch (e2) {}
+    var id = Number(el.getAttribute('data-id'));
+    if (!id) return;
+    var KEY = ${JSON.stringify(SUPABASE_ANON)};
+    fetch(${JSON.stringify(SUPABASE_URL + '/rest/v1/eventos')}, { method: 'POST', keepalive: true,
+      headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ negocio_id: id, tipo: el.getAttribute('data-ev'), origen: 'categoria' }) }).catch(function () {});
+  } catch (err) {}
+}, true);
+</script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>`;

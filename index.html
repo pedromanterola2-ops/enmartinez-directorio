@@ -990,6 +990,39 @@ async function cargarNegociosIndex() {
 
 let negocios = [];
 
+// ══════════════════════════════════════════
+//  CONTADOR DE VISITAS Y CLICS (tabla `eventos`)
+// ══════════════════════════════════════════
+// Sirve para mandarle a cada dueño su reporte ("tu ficha tuvo 120 visitas
+// y 18 llamadas"). No guarda nada que identifique al visitante. Cualquier
+// falla se ignora: el contador nunca debe estorbar a la página.
+function registrarEvento(negocioId, tipo, origen) {
+  try {
+    const id = Number(negocioId);
+    if (!id || navigator.webdriver) return;           // sin id o navegador automatizado
+    try { if (localStorage.getItem('sb-ygeuqlohycckwngcmmxl-auth-token')) return; } catch (e) {}  // Pedro con sesión del panel: no contar
+    if (tipo === 'vista') {                            // una vista por negocio por sesión
+      try {
+        const k = 'ev_v_' + id;
+        if (sessionStorage.getItem(k)) return;
+        sessionStorage.setItem(k, '1');
+      } catch (e) { /* sin sessionStorage: se cuenta igual */ }
+    }
+    fetch(`${SUPABASE_URL}/rest/v1/eventos`, {
+      method: 'POST', keepalive: true,                 // keepalive: sobrevive al salto a WhatsApp
+      headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON,
+                 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ negocio_id: id, tipo, origen: origen || 'home' })
+    }).catch(() => {});
+  } catch (e) { /* nunca romper la página */ }
+}
+// Cualquier enlace o botón con data-ev="whatsapp|llamar|como_llegar|web|facebook"
+// y data-id se cuenta solo. Fase de captura: corre antes de los stopPropagation.
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-ev]');
+  if (el && el.dataset.id) registrarEvento(el.dataset.id, el.dataset.ev, el.dataset.origen);
+}, true);
+
 // (verificados eliminado)
 
 // ══════════════════════════════════════════
@@ -1140,12 +1173,12 @@ function renderNegocios(lista) {
 
         <div class="negocio-actions" onclick="event.stopPropagation()">
           ${waDigitos(n.whatsapp)
-            ? `<button class="btn-wsp" onclick="abrirWhatsAppId(${Number(n.id)})">
+            ? `<button class="btn-wsp" data-ev="whatsapp" data-id="${Number(n.id)}" onclick="abrirWhatsAppId(${Number(n.id)})">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.551 4.1 1.515 5.827L.057 23.5l5.825-1.527A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.003-1.371l-.359-.214-3.718.975.992-3.62-.234-.372A9.789 9.789 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
                 WhatsApp
               </button>`
             : telHref(n.telefono)
-              ? `<a class="btn-tel" href="${esc(telHref(n.telefono))}">${ICO_TEL} Llamar</a>`
+              ? `<a class="btn-tel" data-ev="llamar" data-id="${Number(n.id)}" href="${esc(telHref(n.telefono))}">${ICO_TEL} Llamar</a>`
               : ''
           }
           <button class="btn-detalle" onclick="abrirModal(${Number(n.id)})">Ver más</button>
@@ -1158,9 +1191,11 @@ function renderNegocios(lista) {
 // ══════════════════════════════════════════
 //  MODAL
 // ══════════════════════════════════════════
-function abrirModal(id) {
+function abrirModal(id, origen) {
   const n = negocios.find(x => x.id === id);
   if (!n) return;
+  registrarEvento(n.id, 'vista', origen || 'home');
+  const evId = Number(n.id);
 
   document.getElementById('m-icono').textContent = n.icono || '🏪';
   document.getElementById('m-cat').textContent = n.catLabel || 'Negocio';
@@ -1193,7 +1228,7 @@ function abrirModal(id) {
       + (n.direccion ? '<br><span style="color:var(--texto-muted)">Zona: ' + esc(n.direccion) + '</span>' : '');
   } else if (n.direccion) {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(n.nombre + ' ' + n.direccion + ' Martínez de la Torre')}`;
-    document.getElementById('m-dir').innerHTML = `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>`
+    document.getElementById('m-dir').innerHTML = `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener" data-ev="como_llegar" data-id="${evId}">${esc(n.direccion)}</a>`
       + (n.modalidad === 'ambos' ? '<br><strong style="color:#9a4a06">🛵 También a domicilio</strong>' : '');
   } else {
     // Antes decía "Servicio a domicilio": era un dato inventado
@@ -1203,7 +1238,7 @@ function abrirModal(id) {
   // Teléfono
   const tHref = telHref(n.telefono);
   document.getElementById('m-tel-row').style.display = tHref ? 'flex' : 'none';
-  document.getElementById('m-tel').innerHTML = tHref ? `<a href="${esc(tHref)}">${esc(telBonito(n.telefono))}</a>` : '';
+  document.getElementById('m-tel').innerHTML = tHref ? `<a href="${esc(tHref)}" data-ev="llamar" data-id="${evId}">${esc(telBonito(n.telefono))}</a>` : '';
 
   // Horario
   document.getElementById('m-horario-row').style.display = n.horario ? 'flex' : 'none';
@@ -1215,7 +1250,7 @@ function abrirModal(id) {
   if (webUrl) {
     webRow.style.display = 'flex';
     document.getElementById('m-web').innerHTML =
-      `<a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer">${esc(dominioCorto(webUrl))}</a>`;
+      `<a href="${esc(webUrl)}" target="_blank" rel="noopener noreferrer" data-ev="web" data-id="${evId}">${esc(dominioCorto(webUrl))}</a>`;
   } else {
     webRow.style.display = 'none';
   }
@@ -1226,7 +1261,7 @@ function abrirModal(id) {
   if (fbUrl) {
     fbRow.style.display = 'flex';
     document.getElementById('m-fb').innerHTML =
-      `<a href="${esc(fbUrl)}" target="_blank" rel="noopener noreferrer">Ver página en Facebook</a>`;
+      `<a href="${esc(fbUrl)}" target="_blank" rel="noopener noreferrer" data-ev="facebook" data-id="${evId}">Ver página en Facebook</a>`;
   } else {
     fbRow.style.display = 'none';
   }
@@ -1257,6 +1292,8 @@ function abrirModal(id) {
   // Botón principal: WhatsApp si hay; si no, "Llamar" que sí marca.
   // Antes, sin WhatsApp quedaba un botón gris desactivado con el número.
   const btnWsp = document.getElementById('m-btn-wsp');
+  btnWsp.dataset.id = evId;
+  btnWsp.dataset.ev = waDigitos(n.whatsapp) ? 'whatsapp' : 'llamar';
   if (waDigitos(n.whatsapp)) {
     btnWsp.className = 'modal-btn-wsp';
     btnWsp.innerHTML = waSvg + ' WhatsApp';
@@ -1490,7 +1527,7 @@ function crearMarcadores() {
           <div class="popup-hint">👆 Clic para ver más</div>
         </div>
       `, { direction: 'top', className: 'mapa-tooltip', offset: [0, -6], opacity: 1 })
-      .on('click', () => abrirModal(n.id));
+      .on('click', () => abrirModal(n.id, 'mapa'));
     marcadores[n.id] = marker;
   });
 }

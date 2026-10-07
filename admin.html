@@ -339,6 +339,20 @@
     .sol-filtros { display:flex; gap:0.4rem; flex-wrap:wrap; padding:0.75rem 1.25rem 0; }
     .fbtn { padding:0.28rem 0.8rem; border-radius:20px; font-size:0.75rem; font-weight:600; cursor:pointer; border:1.5px solid var(--borde); background:#fff; color:var(--texto-muted); transition:all 0.15s; }
     .fbtn.on { background:var(--verde); color:#fff; border-color:var(--verde); }
+    /* Estadísticas */
+    .st-totales { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:0.6rem; }
+    .st-total { background:var(--verde-bg, #f0f7f2); border-radius:10px; padding:0.7rem 0.85rem; }
+    .st-total b { display:block; font-size:1.45rem; color:var(--verde); line-height:1.1; }
+    .st-total span { font-size:0.74rem; color:var(--texto-muted); font-weight:600; }
+    .st-tabla { width:100%; border-collapse:collapse; font-size:0.84rem; min-width:640px; }
+    .st-tabla th { text-align:right; font-size:0.72rem; color:var(--texto-muted); font-weight:700; padding:0.5rem 0.45rem; border-bottom:2px solid var(--borde); white-space:nowrap; }
+    .st-tabla th:first-child, .st-tabla td:first-child { text-align:left; }
+    .st-tabla td { text-align:right; padding:0.55rem 0.45rem; border-bottom:1px solid var(--borde); font-variant-numeric:tabular-nums; }
+    .st-tabla td.cero { color:#c4c9c4; }
+    .st-tabla tr:hover td { background:#fafcfa; }
+    .st-btn { padding:0.3rem 0.6rem; border-radius:7px; border:1px solid var(--borde); background:#fff; cursor:pointer; font:inherit; font-size:0.75rem; font-weight:700; white-space:nowrap; color:var(--texto); text-decoration:none; display:inline-block; }
+    .st-btn:hover { border-color:var(--verde); color:var(--verde); }
+    .st-btn.wa { background:#25D366; border-color:#25D366; color:#fff; }
     .sol-empty { padding:2.5rem; text-align:center; color:var(--texto-muted); font-size:0.88rem; }
     .dest-tag { font-size:0.7rem; color:#c2410c; font-weight:600; white-space:nowrap; flex-shrink:0; }
 
@@ -468,6 +482,9 @@
       </button>
       <button class="tab" onclick="cambiarTab('mensajes')" id="tab-mensajes">
         ✉️ Mensajes <span class="tab-badge" id="badge-mensajes" style="display:none;background:#ef4444">0</span>
+      </button>
+      <button class="tab" onclick="cambiarTab('stats')" id="tab-stats">
+        📊 Estadísticas
       </button>
       <button class="tab" onclick="cambiarTab('mapa')" id="tab-mapa">
         🗺️ Ubicaciones <span class="tab-badge" id="badge-sin-coords" style="display:none;background:#ef4444">0</span>
@@ -805,6 +822,32 @@
       </div>
     </div>
 
+    <!-- ════ TAB: ESTADÍSTICAS ════ -->
+    <div class="tab-content" id="content-stats">
+      <div class="panel-card">
+        <div class="panel-card-header" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+          📊 Visitas y contactos por negocio
+          <select id="st-periodo" onchange="cargarStats()" style="margin-left:auto;width:auto;padding:0.35rem 0.6rem;border-radius:8px;border:1px solid var(--borde);font:inherit;font-size:0.82rem">
+            <option value="mes">Este mes</option>
+            <option value="mes_pasado">Mes pasado</option>
+            <option value="7">Últimos 7 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+        </div>
+        <div style="padding:1.1rem 1.25rem">
+          <div class="st-totales" id="st-totales"></div>
+          <p style="font-size:0.78rem;color:var(--texto-muted);margin:0.4rem 0 1rem;line-height:1.5">
+            <strong>Vistas</strong> = veces que alguien abrió la ficha (una por persona por visita).
+            <strong>Contactos</strong> = toques en WhatsApp, Llamar o Cómo llegar.
+            Con <em>📋 Reporte</em> copias un mensaje listo para mandarle al dueño.
+            Tus propias visitas no cuentan mientras tengas la sesión del panel abierta en ese navegador.
+          </p>
+          <div style="overflow-x:auto"><table class="st-tabla" id="st-tabla"></table></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ════ TAB: MENSAJES DE CONTACTO ════ -->
     <div class="tab-content" id="content-mensajes">
       <div class="panel-card">
@@ -1100,6 +1143,9 @@ function cambiarTab(id) {
   }
   if (id === 'mensajes') {
     recargarMensajes().then(() => renderMensajes());
+  }
+  if (id === 'stats') {
+    cargarStats();
   }
   if (id === 'mapa') {
     // setTimeout asegura que el contenedor ya es visible antes de inicializar Leaflet
@@ -1961,6 +2007,121 @@ async function confirmarBorrarMensaje() {
 }
 
 let toastTimer;
+// ══════════════════════════════════════
+//  ESTADÍSTICAS (tabla eventos, función resumen_eventos)
+// ══════════════════════════════════════
+let statsFilas = [];
+let statsPeriodoTexto = '';
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function rangoPeriodo(valor) {
+  const hoy = new Date();
+  if (valor === 'mes') {
+    return { desde: new Date(hoy.getFullYear(), hoy.getMonth(), 1), hasta: new Date(Date.now() + 60000),
+             texto: `en lo que va de ${MESES[hoy.getMonth()]}` };
+  }
+  if (valor === 'mes_pasado') {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    return { desde: d, hasta: new Date(hoy.getFullYear(), hoy.getMonth(), 1),
+             texto: `en ${MESES[d.getMonth()]}` };
+  }
+  const dias = Number(valor) || 30;
+  return { desde: new Date(Date.now() - dias * 86400000), hasta: new Date(Date.now() + 60000),
+           texto: `en los últimos ${dias} días` };
+}
+
+async function cargarStats() {
+  const tabla = document.getElementById('st-tabla');
+  const tot = document.getElementById('st-totales');
+  tabla.innerHTML = '<tr><td style="text-align:left;padding:1rem">Cargando…</td></tr>';
+  const { desde, hasta, texto } = rangoPeriodo(document.getElementById('st-periodo').value);
+  statsPeriodoTexto = texto;
+  const { data, error } = await sb.rpc('resumen_eventos', { desde: desde.toISOString(), hasta: hasta.toISOString() });
+  if (error) {
+    tot.innerHTML = '';
+    tabla.innerHTML = `<tr><td style="text-align:left;padding:1rem;color:#b91c1c">
+      No se pudieron leer las estadísticas: ${esc(error.message)}<br>
+      <span style="color:var(--texto-muted)">Si dice que la función no existe, falta correr <code>eventos-2026-10-06.sql</code> en Supabase.</span></td></tr>`;
+    return;
+  }
+  const porId = {};
+  (data || []).forEach(r => { porId[r.negocio_id] = r; });
+  const num = v => Number(v) || 0;
+  statsFilas = negocios.map(n => {
+    const r = porId[n.id] || {};
+    const fila = { n, vistas: num(r.vistas), whatsapp: num(r.whatsapp), llamar: num(r.llamar),
+      como_llegar: num(r.como_llegar), compartir: num(r.compartir), web: num(r.web) + num(r.facebook) };
+    fila.contactos = fila.whatsapp + fila.llamar + fila.como_llegar;
+    return fila;
+  }).sort((a, b) => (b.contactos - a.contactos) || (b.vistas - a.vistas) || a.n.nombre.localeCompare(b.n.nombre));
+
+  const suma = k => statsFilas.reduce((t, f) => t + f[k], 0);
+  tot.innerHTML = [
+    ['vistas', '👀 Vistas de fichas'], ['contactos', '📲 Contactos'], ['whatsapp', '💬 WhatsApp'],
+    ['llamar', '📞 Llamadas'], ['como_llegar', '🧭 Cómo llegar'], ['compartir', '🔗 Compartidas']
+  ].map(([k, t]) => `<div class="st-total"><b>${suma(k).toLocaleString('es-MX')}</b><span>${t}</span></div>`).join('');
+
+  const celda = v => `<td class="${v ? '' : 'cero'}">${v}</td>`;
+  tabla.innerHTML = `<thead><tr><th>Negocio</th><th>Vistas</th><th>WhatsApp</th><th>Llamar</th><th>Cómo llegar</th><th>Compartir</th><th>Web/FB</th><th>Contactos</th><th></th></tr></thead>
+    <tbody>${statsFilas.map((f, i) => `<tr>
+      <td>${esc(f.n.icono || '🏪')} ${esc(f.n.nombre)}${f.n.destacado ? ' <span title="Destacado">⭐</span>' : ''}</td>
+      ${celda(f.vistas)}${celda(f.whatsapp)}${celda(f.llamar)}${celda(f.como_llegar)}${celda(f.compartir)}${celda(f.web)}
+      <td class="${f.contactos ? '' : 'cero'}"><strong>${f.contactos}</strong></td>
+      <td style="white-space:nowrap">
+        <button class="st-btn" onclick="copiarReporte(${i})">📋 Reporte</button>
+        ${numeroDueno(f.n) ? `<a class="st-btn wa" href="${esc(urlReporteWhatsApp(i))}" target="_blank" rel="noopener" title="Abrir WhatsApp con el reporte">💬</a>` : ''}
+      </td></tr>`).join('')}</tbody>`;
+}
+
+// Número del negocio a 10 dígitos (WhatsApp o, si no, teléfono)
+function numeroDueno(n) {
+  for (const v of [n.whatsapp, n.telefono]) {
+    let d = String(v || '').replace(/\D/g, '');
+    if (d.length === 13 && d.startsWith('521')) d = d.slice(3);
+    else if (d.length === 12 && d.startsWith('52')) d = d.slice(2);
+    if (d.length === 10) return d;
+  }
+  return '';
+}
+
+function textoReporte(i) {
+  const f = statsFilas[i];
+  if (!f) return '';
+  const n = f.n;
+  const url = n.slug ? `https://enmartinez-directorio.vercel.app/negocio/${n.slug}` : 'https://enmartinez-directorio.vercel.app/';
+  const p = (v, uno, varios) => `${v} ${v === 1 ? uno : varios}`;
+  const lineas = [
+    `¡Hola! 👋 Te comparto cómo le fue a *${n.nombre}* en EnMartinez.com ${statsPeriodoTexto}:`,
+    '',
+    `👀 ${p(f.vistas, 'persona vio', 'personas vieron')} tu ficha`
+  ];
+  if (f.whatsapp)    lineas.push(`💬 ${p(f.whatsapp, 'te escribió', 'te escribieron')} por WhatsApp`);
+  if (f.llamar)      lineas.push(`📞 ${p(f.llamar, 'te marcó', 'te marcaron')}`);
+  if (f.como_llegar) lineas.push(`🧭 ${p(f.como_llegar, 'pidió', 'pidieron')} cómo llegar`);
+  if (f.compartir)   lineas.push(`🔗 ${p(f.compartir, 'compartió', 'compartieron')} tu ficha`);
+  lineas.push('', `Tu ficha: ${url}`);
+  if (!n.destacado) {
+    lineas.push('', '¿Te gustaría salir entre los primeros de tu categoría y en el mapa? Pregúntame por la ficha ⭐ Destacada.');
+  }
+  return lineas.join('\n');
+}
+
+function urlReporteWhatsApp(i) {
+  const n = statsFilas[i] && statsFilas[i].n;
+  const num = n ? numeroDueno(n) : '';
+  return num ? `https://wa.me/52${num}?text=${encodeURIComponent(textoReporte(i))}` : '';
+}
+
+async function copiarReporte(i) {
+  const txt = textoReporte(i);
+  try {
+    await navigator.clipboard.writeText(txt);
+    mostrarToast('📋 Reporte copiado. Pégalo en WhatsApp.', 'exito');
+  } catch (e) {
+    window.prompt('Copia el reporte:', txt);
+  }
+}
+
 function mostrarToast(msg, tipo = '') {
   const t = document.getElementById('toast');
   t.textContent = msg;
