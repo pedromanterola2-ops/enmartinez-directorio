@@ -237,6 +237,11 @@
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
     }
+    .ver-mas-wrap { grid-column: 1 / -1; display: flex; justify-content: center; padding: 0.75rem 0 0.25rem; }
+    .btn-ver-mas { background: var(--verde); color: #fff; border: 0; border-radius: 999px; padding: 0.8rem 1.6rem;
+                   font: inherit; font-weight: 600; font-size: 0.92rem; cursor: pointer; min-height: 44px; }
+    .btn-ver-mas span { opacity: 0.8; font-weight: 400; }
+    .btn-ver-mas:hover { filter: brightness(1.08); }
     .negocios-count { font-size: 0.88rem; color: var(--texto-muted); }
     .btn-ver-mapa {
       background: var(--verde); color: #fff; border: none;
@@ -1036,13 +1041,28 @@ function mapearNegocio(r) {
 // claramente. Antes había un respaldo con 13 negocios inventados: mostrar
 // teléfonos que no existen es peor que admitir que algo falló.
 async function cargarNegociosIndex() {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/negocios?select=*&order=destacado.desc,nombre.asc`,
-    { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
-  );
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const rows = await res.json();
-  if (!Array.isArray(rows)) throw new Error('Respuesta inesperada de la base de datos');
+  // Supabase entrega máximo 1000 filas por consulta: se pide por páginas.
+  const PAGINA = 1000;
+  let rows = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/negocios?select=*&order=destacado.desc,nombre.asc,id.asc`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON,
+                   'Range-Unit': 'items', Range: `${desde}-${desde + PAGINA - 1}` } }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const lote = await res.json();
+    if (!Array.isArray(lote)) throw new Error('Respuesta inesperada de la base de datos');
+    rows = rows.concat(lote);
+    if (lote.length < PAGINA) break;
+  }
+  // Orden del listado: destacados, luego los más completos (con foto,
+  // WhatsApp, horario — normalmente capturados a mano), y al final los que
+  // solo traen lo básico (importados del DENUE). Dentro de cada grupo, A–Z.
+  const completitud = r => (r.destacado ? 100 : 0) + (r.foto ? 4 : 0) + (r.whatsapp ? 2 : 0)
+                         + (r.horario ? 2 : 0) + (r.origen ? 0 : 3);
+  rows.sort((a, b) => completitud(b) - completitud(a)
+                   || String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
   return rows.map(mapearNegocio);
 }
 
@@ -1192,7 +1212,20 @@ function limpiarCatLabel(label) {
   return String(label || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
 }
 
-function renderNegocios(lista) {
+// Con cientos de negocios no se pintan todos de golpe: primero 24 y un
+// botón "Ver más" que agrega de 24 en 24. El mapa sí recibe la lista entera.
+const POR_TANDA = 24;
+let listaVisible = [];
+let cuantosVisibles = POR_TANDA;
+
+function verMasNegocios() {
+  cuantosVisibles += POR_TANDA;
+  renderNegocios(listaVisible, true);
+}
+
+function renderNegocios(lista, conservar) {
+  if (!conservar) cuantosVisibles = POR_TANDA;
+  listaVisible = lista;
   const grid = document.getElementById('negociosGrid');
   document.getElementById('negocios-count').textContent =
     `Mostrando ${lista.length} negocio${lista.length !== 1 ? 's' : ''}`;
@@ -1213,7 +1246,8 @@ function renderNegocios(lista) {
   const catBg = {};
   categorias.forEach(c => { catBg[c.id] = c.bg; });
 
-  grid.innerHTML = lista.map(n => {
+  const restantes = lista.length - cuantosVisibles;
+  grid.innerHTML = lista.slice(0, cuantosVisibles).map(n => {
     const bg = catBg[n.categoria] || '#f0f7f2';
     const catColor = catColores[n.categoria] || '#1a6b3c';
     // Ningún campo es obligatorio al capturar: si faltan, se usa un respaldo
@@ -1263,7 +1297,10 @@ function renderNegocios(lista) {
         </div>
       </div>
     </div>
-  `}).join('');
+  `}).join('') + (restantes > 0
+    ? `<div class="ver-mas-wrap"><button class="btn-ver-mas" onclick="verMasNegocios()">
+         Ver ${Math.min(restantes, POR_TANDA)} negocios más <span>(quedan ${restantes})</span></button></div>`
+    : '');
 }
 
 // ══════════════════════════════════════════

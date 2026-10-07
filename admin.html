@@ -1044,7 +1044,14 @@ let mensajes = [];
 let editandoId = null;
 
 async function recargarNegocios() {
-  const { data, error } = await sb.from('negocios').select('*').order('id', { ascending: true });
+  // Supabase entrega máximo 1000 filas por consulta: se pide por páginas.
+  let data = [], error = null;
+  for (let desde = 0; ; desde += 1000) {
+    const r = await sb.from('negocios').select('*').order('id', { ascending: true }).range(desde, desde + 999);
+    if (r.error) { error = r.error; break; }
+    data = data.concat(r.data || []);
+    if ((r.data || []).length < 1000) break;
+  }
   if (error) { mostrarToast('❌ Error al cargar negocios: ' + error.message, 'error'); return; }
   negocios = (data || []).map(dbANegocio);
   actualizarBadge();
