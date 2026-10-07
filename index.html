@@ -1506,7 +1506,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(
 // ══════════════════════════════════════════
 //  MAPA LEAFLET
 // ══════════════════════════════════════════
-const mapa = L.map('mapa', { maxZoom: 19 }).setView([20.0690, -97.0555], 15);
+const mapa = L.map('mapa', { maxZoom: 19, zoomSnap: 0.5 }).setView([20.0690, -97.0555], 15);
 // ── Mapa base ─────────────────────────────────────────────────────
 // OpenFreeMap "Liberty": vectorial (nítido en cualquier pantalla), gratis
 // y sin clave ni registro. Su librería (MapLibre, ~220 KB) se descarga
@@ -1712,7 +1712,13 @@ function actualizarMarcadores(lista, ajustarVista = false) {
   if (ajustarVista === 'ciudad') {
     // Vista inicial: la mancha urbana de Martínez (ahí está el 80 % de los
     // negocios). Antes se ajustaba a todos y abría mostrando el municipio entero.
-    mapa.fitBounds(BOUNDS_MARTINEZ);
+    // En celular la pantalla es angosta: se muestra toda la mancha urbana
+    // (media vuelta de zoom más lejos) para que no queden grupos cortados.
+    if (window.innerWidth < 560) {
+      mapa.setView([20.0712, -97.0552], 13.5);
+    } else {
+      mapa.fitBounds(BOUNDS_MARTINEZ);
+    }
   } else if (ajustarVista) {
     if (conMarcador.length > 0) {
       const grupo = L.featureGroup(conMarcador.map(n => marcadores[n.id]));
