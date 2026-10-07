@@ -339,6 +339,25 @@
     .sol-filtros { display:flex; gap:0.4rem; flex-wrap:wrap; padding:0.75rem 1.25rem 0; }
     .fbtn { padding:0.28rem 0.8rem; border-radius:20px; font-size:0.75rem; font-weight:600; cursor:pointer; border:1.5px solid var(--borde); background:#fff; color:var(--texto-muted); transition:all 0.15s; }
     .fbtn.on { background:var(--verde); color:#fff; border-color:var(--verde); }
+    /* Modal QR */
+    #qr-modal { display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.55);
+      align-items:center; justify-content:center; padding:1rem; }
+    #qr-modal.open { display:flex; }
+    .qr-caja { background:#fff; border-radius:16px; width:100%; max-width:440px; max-height:94vh; overflow:auto; padding:1rem 1.1rem 1.1rem; }
+    .qr-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.7rem; }
+    .qr-x { border:none; background:#f3f4f6; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1rem; }
+    #qr-preview { display:block; width:100%; border-radius:10px; border:1px solid var(--borde); }
+    .qr-url { font-size:0.75rem; color:var(--texto-muted); margin:0.6rem 0; word-break:break-all; }
+    .qr-url a { color:var(--verde); }
+    .qr-botones { display:flex; gap:0.5rem; flex-wrap:wrap; }
+    .qr-botones .btn { flex:1; justify-content:center; padding:0.6rem 0.7rem; font-size:0.82rem; }
+    .qr-nota { font-size:0.74rem; color:var(--texto-muted); margin-top:0.7rem; line-height:1.5; }
+    #qr-print { display:none; }
+    @media print {
+      body.imprimiendo-qr > *:not(#qr-print) { display:none !important; }
+      body.imprimiendo-qr #qr-print { display:block !important; width:100%; max-width:12cm; margin:0 auto; }
+      @page { margin: 1cm; }
+    }
     /* Estadísticas */
     .st-totales { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:0.6rem; }
     .st-total { background:var(--verde-bg, #f0f7f2); border-radius:10px; padding:0.7rem 0.85rem; }
@@ -827,7 +846,8 @@
       <div class="panel-card">
         <div class="panel-card-header" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
           📊 Visitas y contactos por negocio
-          <select id="st-periodo" onchange="cargarStats()" style="margin-left:auto;width:auto;padding:0.35rem 0.6rem;border-radius:8px;border:1px solid var(--borde);font:inherit;font-size:0.82rem">
+          <button class="st-btn" onclick="abrirQR(null)" style="margin-left:auto">🖨️ QR del directorio (flyers)</button>
+          <select id="st-periodo" onchange="cargarStats()" style="width:auto;padding:0.35rem 0.6rem;border-radius:8px;border:1px solid var(--borde);font:inherit;font-size:0.82rem">
             <option value="mes">Este mes</option>
             <option value="mes_pasado">Mes pasado</option>
             <option value="7">Últimos 7 días</option>
@@ -912,6 +932,26 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ════ MODAL: CARTEL CON CÓDIGO QR ════ -->
+<div id="qr-modal" onclick="if(event.target===this)cerrarQR()">
+  <div class="qr-caja">
+    <div class="qr-top">
+      <strong id="qr-titulo">Código QR</strong>
+      <button class="qr-x" onclick="cerrarQR()" aria-label="Cerrar">✕</button>
+    </div>
+    <img id="qr-preview" alt="Vista previa del cartel con código QR">
+    <p class="qr-url">Abre: <a id="qr-url" href="#" target="_blank" rel="noopener"></a></p>
+    <div class="qr-botones">
+      <button class="btn btn-primary" onclick="imprimirQR()">🖨️ Imprimir cartel</button>
+      <button class="btn btn-gris" onclick="descargarQR('cartel')">⬇️ Cartel (PNG)</button>
+      <button class="btn btn-gris" onclick="descargarQR('solo')">⬇️ Solo el QR (PNG)</button>
+    </div>
+    <p class="qr-nota">Imprime en tamaño media carta o más chico; el QR funciona desde unos 3 cm por lado.
+      Cada escaneo se cuenta en 📊 Estadísticas.</p>
+  </div>
+</div>
+<img id="qr-print" alt="">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -1203,6 +1243,7 @@ function renderLista() {
       </span>
       <div class="neg-actions">
         ${n.slug ? `<a class="btn-edit" style="text-decoration:none" href="https://enmartinez-directorio.vercel.app/negocio/${esc(n.slug)}" target="_blank" rel="noopener" title="Ver página pública">🔗</a>` : ''}
+        ${n.slug ? `<button class="btn-edit" onclick="abrirQR(${n.id})" title="Cartel con código QR para imprimir">🖨️ QR</button>` : ''}
         <button class="btn-edit" onclick="abrirFormularioEditar(${n.id})">✏️ Editar</button>
         <button class="btn-del"  onclick="pedirEliminar(${n.id})">🗑️</button>
       </div>
@@ -2050,22 +2091,26 @@ async function cargarStats() {
   statsFilas = negocios.map(n => {
     const r = porId[n.id] || {};
     const fila = { n, vistas: num(r.vistas), whatsapp: num(r.whatsapp), llamar: num(r.llamar),
-      como_llegar: num(r.como_llegar), compartir: num(r.compartir), web: num(r.web) + num(r.facebook) };
+      como_llegar: num(r.como_llegar), compartir: num(r.compartir), web: num(r.web) + num(r.facebook), qr: num(r.qr) };
     fila.contactos = fila.whatsapp + fila.llamar + fila.como_llegar;
     return fila;
   }).sort((a, b) => (b.contactos - a.contactos) || (b.vistas - a.vistas) || a.n.nombre.localeCompare(b.n.nombre));
 
   const suma = k => statsFilas.reduce((t, f) => t + f[k], 0);
+  // Fila sin negocio = escaneos del QR del directorio (flyers)
+  const qrDirectorio = num((data || []).filter(r => r.negocio_id == null).reduce((t, r) => t + num(r.qr), 0));
   tot.innerHTML = [
     ['vistas', '👀 Vistas de fichas'], ['contactos', '📲 Contactos'], ['whatsapp', '💬 WhatsApp'],
     ['llamar', '📞 Llamadas'], ['como_llegar', '🧭 Cómo llegar'], ['compartir', '🔗 Compartidas']
-  ].map(([k, t]) => `<div class="st-total"><b>${suma(k).toLocaleString('es-MX')}</b><span>${t}</span></div>`).join('');
+  ].map(([k, t]) => `<div class="st-total"><b>${suma(k).toLocaleString('es-MX')}</b><span>${t}</span></div>`).join('')
+  + `<div class="st-total"><b>${(suma('qr') + qrDirectorio).toLocaleString('es-MX')}</b><span>📷 Escaneos QR</span></div>`
+  + `<div class="st-total" title="Gente que llegó escaneando el QR del directorio (flyers)"><b>${qrDirectorio.toLocaleString('es-MX')}</b><span>📄 QR de flyers</span></div>`;
 
   const celda = v => `<td class="${v ? '' : 'cero'}">${v}</td>`;
-  tabla.innerHTML = `<thead><tr><th>Negocio</th><th>Vistas</th><th>WhatsApp</th><th>Llamar</th><th>Cómo llegar</th><th>Compartir</th><th>Web/FB</th><th>Contactos</th><th></th></tr></thead>
+  tabla.innerHTML = `<thead><tr><th>Negocio</th><th>Vistas</th><th>WhatsApp</th><th>Llamar</th><th>Cómo llegar</th><th>Compartir</th><th>Web/FB</th><th>QR</th><th>Contactos</th><th></th></tr></thead>
     <tbody>${statsFilas.map((f, i) => `<tr>
       <td>${esc(f.n.icono || '🏪')} ${esc(f.n.nombre)}${f.n.destacado ? ' <span title="Destacado">⭐</span>' : ''}</td>
-      ${celda(f.vistas)}${celda(f.whatsapp)}${celda(f.llamar)}${celda(f.como_llegar)}${celda(f.compartir)}${celda(f.web)}
+      ${celda(f.vistas)}${celda(f.whatsapp)}${celda(f.llamar)}${celda(f.como_llegar)}${celda(f.compartir)}${celda(f.web)}${celda(f.qr)}
       <td class="${f.contactos ? '' : 'cero'}"><strong>${f.contactos}</strong></td>
       <td style="white-space:nowrap">
         <button class="st-btn" onclick="copiarReporte(${i})">📋 Reporte</button>
@@ -2099,6 +2144,7 @@ function textoReporte(i) {
   if (f.llamar)      lineas.push(`📞 ${p(f.llamar, 'te marcó', 'te marcaron')}`);
   if (f.como_llegar) lineas.push(`🧭 ${p(f.como_llegar, 'pidió', 'pidieron')} cómo llegar`);
   if (f.compartir)   lineas.push(`🔗 ${p(f.compartir, 'compartió', 'compartieron')} tu ficha`);
+  if (f.qr)          lineas.push(`📷 ${p(f.qr, 'escaneó', 'escanearon')} tu código QR`);
   lineas.push('', `Tu ficha: ${url}`);
   if (!n.destacado) {
     lineas.push('', '¿Te gustaría salir entre los primeros de tu categoría y en el mapa? Pregúntame por la ficha ⭐ Destacada.');
@@ -2120,6 +2166,153 @@ async function copiarReporte(i) {
   } catch (e) {
     window.prompt('Copia el reporte:', txt);
   }
+}
+
+// ══════════════════════════════════════
+//  CARTEL CON CÓDIGO QR (por negocio o del directorio)
+// ══════════════════════════════════════
+// Los QR apuntan a direcciones cortas (/qr y /q/<slug>) que redirigen con
+// ?ref=qr: así cada escaneo se cuenta y el QR queda más simple de leer.
+const SITIO = 'https://enmartinez-directorio.vercel.app';
+let qrActual = null;   // { url, canvasCartel, canvasSolo, nombreArchivo }
+
+function cargarLibQR() {
+  if (window.qrcode) return Promise.resolve();
+  return new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+    s.onload = ok; s.onerror = mal;
+    document.head.appendChild(s);
+  });
+}
+
+// Dibuja la matriz del QR en un canvas, con margen blanco de 4 módulos
+function dibujarQR(ctx, url, x, y, lado) {
+  const qr = qrcode(0, 'Q');           // nivel Q: aguanta manchas y dobleces del papel
+  qr.addData(url);
+  qr.make();
+  const n = qr.getModuleCount();
+  const total = n + 8;
+  const m = lado / total;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x, y, lado, lado);
+  ctx.fillStyle = '#0f2d1c';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (qr.isDark(r, c)) ctx.fillRect(Math.floor(x + (c + 4) * m), Math.floor(y + (r + 4) * m), Math.ceil(m), Math.ceil(m));
+  }
+}
+
+// Texto centrado que se parte en renglones si no cabe
+function textoCentrado(ctx, texto, cx, y, maxAncho, altoLinea, maxLineas) {
+  const palabras = String(texto).split(/\s+/);
+  const lineas = []; let actual = '';
+  palabras.forEach(p => {
+    const prueba = actual ? actual + ' ' + p : p;
+    if (ctx.measureText(prueba).width > maxAncho && actual) { lineas.push(actual); actual = p; }
+    else actual = prueba;
+  });
+  if (actual) lineas.push(actual);
+  const usar = lineas.slice(0, maxLineas);
+  if (lineas.length > maxLineas) usar[maxLineas - 1] = usar[maxLineas - 1].replace(/\s*\S*$/, '') + '…';
+  usar.forEach((l, i) => ctx.fillText(l, cx, y + i * altoLinea));
+  return usar.length;
+}
+
+function crearCartel(datos) {
+  const W = 1200, H = 1800;            // 4×6 pulgadas a 300 dpi
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const fuente = (peso, px) => `${peso} ${px}px "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif`;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+
+  // Franja superior con la marca
+  ctx.fillStyle = '#1a6b3c'; ctx.fillRect(0, 0, W, 250);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = fuente(900, 92);
+  const partes = [['En', '#ffffff'], ['Martinez', '#f97316'], ['.com', '#ffffff']];
+  const anchoLogo = partes.reduce((t, [p]) => t + ctx.measureText(p).width, 0);
+  let lx = (W - anchoLogo) / 2;
+  partes.forEach(([p, col]) => { ctx.fillStyle = col; ctx.fillText(p, lx, 140); lx += ctx.measureText(p).width; });
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = fuente(500, 36);
+  ctx.fillText('Directorio de negocios de Martínez de la Torre', W / 2, 205);
+
+  // Encabezado del cartel
+  ctx.fillStyle = '#6b7280'; ctx.font = fuente(600, 42);
+  ctx.fillText(datos.arriba, W / 2, 345);
+  ctx.fillStyle = '#1f2937'; ctx.font = fuente(900, datos.nombre.length > 22 ? 74 : 88);
+  const lineas = textoCentrado(ctx, datos.nombre, W / 2, 450, W - 160, 96, 2);
+
+  // QR
+  const lado = 760, qy = lineas > 1 ? 600 : 530;
+  ctx.fillStyle = '#f0f7f2';
+  ctx.beginPath(); ctx.roundRect((W - lado) / 2 - 30, qy - 30, lado + 60, lado + 60, 36); ctx.fill();
+  dibujarQR(ctx, datos.url, (W - lado) / 2, qy, lado);
+
+  // Llamado a la acción
+  const ty = qy + lado + 120;
+  ctx.fillStyle = '#1a6b3c'; ctx.font = fuente(800, 58);
+  ctx.fillText('Escanea con la cámara de tu celular', W / 2, ty);
+  ctx.fillStyle = '#4b5563'; ctx.font = fuente(500, 40);
+  textoCentrado(ctx, datos.abajo, W / 2, ty + 70, W - 200, 52, 2);
+
+  // Pie
+  ctx.fillStyle = '#0f2d1c'; ctx.fillRect(0, H - 110, W, 110);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = fuente(600, 34);
+  ctx.fillText(datos.url.replace(/^https?:\/\//, ''), W / 2, H - 45);
+  return cv;
+}
+
+function crearSoloQR(url) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 1500;          // 5×5 pulgadas a 300 dpi
+  dibujarQR(cv.getContext('2d'), url, 0, 0, 1500);
+  return cv;
+}
+
+async function abrirQR(id) {
+  try { await cargarLibQR(); }
+  catch (e) { mostrarToast('❌ No se pudo cargar el generador de QR. Revisa tu conexión.', 'error'); return; }
+  let datos;
+  if (id == null) {
+    datos = { url: SITIO + '/qr', nombre: 'Todos los negocios de Martínez de la Torre',
+      arriba: 'Encuentra en un solo lugar', abajo: 'Teléfonos, horarios, WhatsApp y cómo llegar a cada negocio',
+      archivo: 'qr-directorio-enmartinez', titulo: 'QR del directorio (para flyers)' };
+  } else {
+    const n = negocios.find(x => x.id === id);
+    if (!n || !n.slug) return;
+    datos = { url: SITIO + '/q/' + n.slug, nombre: n.nombre,
+      arriba: 'Encuéntranos en EnMartinez', abajo: 'Mira nuestro horario, ubicación y escríbenos por WhatsApp',
+      archivo: 'qr-' + n.slug, titulo: 'QR de ' + n.nombre };
+  }
+  const cartel = crearCartel(datos);
+  qrActual = { url: datos.url, cartel, solo: crearSoloQR(datos.url), archivo: datos.archivo };
+  document.getElementById('qr-titulo').textContent = datos.titulo;
+  document.getElementById('qr-preview').src = cartel.toDataURL('image/png');
+  const a = document.getElementById('qr-url'); a.href = datos.url; a.textContent = datos.url;
+  document.getElementById('qr-modal').classList.add('open');
+}
+
+function cerrarQR() { document.getElementById('qr-modal').classList.remove('open'); }
+
+function descargarQR(cual) {
+  if (!qrActual) return;
+  const cv = cual === 'solo' ? qrActual.solo : qrActual.cartel;
+  const a = document.createElement('a');
+  a.href = cv.toDataURL('image/png');
+  a.download = qrActual.archivo + (cual === 'solo' ? '-solo-qr' : '-cartel') + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function imprimirQR() {
+  if (!qrActual) return;
+  const img = document.getElementById('qr-print');
+  img.src = qrActual.cartel.toDataURL('image/png');
+  document.body.classList.add('imprimiendo-qr');
+  const quitar = () => { document.body.classList.remove('imprimiendo-qr'); window.removeEventListener('afterprint', quitar); };
+  window.addEventListener('afterprint', quitar);
+  setTimeout(() => window.print(), 100);
 }
 
 function mostrarToast(msg, tipo = '') {

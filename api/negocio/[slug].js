@@ -367,6 +367,15 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
         body: JSON.stringify({ negocio_id: id, tipo: tipo, origen: 'ficha' }) }).catch(function () {});
     } catch (e) {}
   }
+  // Llegó escaneando el QR del negocio (/q/slug → ?ref=qr)
+  try {
+    if (/[?&]ref=qr(&|$)/.test(location.search)) {
+      history.replaceState(null, '', location.pathname);
+      var kq = 'ev_qr_' + ${evId};
+      var ya = false; try { ya = !!sessionStorage.getItem(kq); sessionStorage.setItem(kq, '1'); } catch (e) {}
+      if (!ya) registrar(${evId}, 'qr');
+    }
+  } catch (e) {}
   registrar(${evId}, 'vista');
   document.addEventListener('click', function (e) {
     var el = e.target.closest && e.target.closest('[data-ev]');

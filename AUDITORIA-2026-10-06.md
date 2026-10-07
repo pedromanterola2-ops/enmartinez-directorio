@@ -121,3 +121,22 @@ Revisión del sitio en vivo (celular 390 px y escritorio 1280 px), del código y
   - totales del periodo y una tabla por negocio, ordenada por contactos (WhatsApp + Llamar + Cómo llegar);
   - **📋 Reporte** copia un mensaje listo para el dueño, y **💬** lo abre directo en WhatsApp con el número del negocio. A los negocios que no son Destacados, el mensaje les termina invitando a la ficha Destacada.
 - **Si se publica el código antes de correr el SQL**, no se rompe nada: los envíos fallan sin que el visitante lo note, y la pestaña de Estadísticas avisa que falta la migración.
+
+## Cuarta ronda — códigos QR
+
+- **Direcciones cortas** en `vercel.json`:
+  - `/qr` lleva a `/?ref=qr` (el directorio);
+  - `/q/<slug>` lleva a `/negocio/<slug>?ref=qr` (un negocio).
+  - Son redirecciones temporales: si algún día se cambia a dónde llevan, los QR ya impresos siguen funcionando.
+- **Conteo de escaneos:** al llegar con `?ref=qr` se registra un evento `tipo='qr'`, una vez por sesión, y se limpia la dirección para que compartirla después no cuente como escaneo. El escaneo del QR del directorio se guarda con `negocio_id` vacío.
+- **Hay que correr `eventos-qr-2026-10-06.sql`**: permite `negocio_id` vacío, agrega el tipo `qr` y recrea `resumen_eventos` con la columna `qr`.
+- **Panel:**
+  - botón **🖨️ QR** en cada negocio de la lista;
+  - en 📊 Estadísticas, botón **🖨️ QR del directorio (flyers)**;
+  - las dos abren el cartel (1200×1800 px, 4×6" a 300 dpi) con opciones para imprimir, descargar el cartel en PNG o descargar solo el QR en PNG (1500 px);
+  - nueva columna QR y totales "📷 Escaneos QR" y "📄 QR de flyers";
+  - el reporte para el dueño incluye "📷 N escanearon tu código QR".
+- **Calidad de los QR:**
+  - generados en el navegador con qrcode-generator (cdnjs, ya permitido por la CSP), nivel de corrección **Q** para que aguanten manchas y dobleces;
+  - verificados con dos lectores (OpenCV y zbar).
+- **Archivos para el flyer en `impresos/`** (fuera de git): `qr-directorio-enmartinez.svg` (vectorial, para imprenta), `qr-directorio-enmartinez.png` y `cartel-qr-directorio-enmartinez.png`.

@@ -1016,6 +1016,26 @@ function registrarEvento(negocioId, tipo, origen) {
     }).catch(() => {});
   } catch (e) { /* nunca romper la página */ }
 }
+// Llegó escaneando un QR impreso (/qr → /?ref=qr): se cuenta una vez y se
+// limpia la dirección, para que si la comparten no siga contando como QR.
+(function () {
+  try {
+    const p = new URLSearchParams(location.search);
+    if (p.get('ref') !== 'qr') return;
+    p.delete('ref');
+    history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '') + location.hash);
+    if (navigator.webdriver) return;
+    try { if (localStorage.getItem('sb-ygeuqlohycckwngcmmxl-auth-token')) return; } catch (e) {}
+    try { if (sessionStorage.getItem('ev_qr')) return; sessionStorage.setItem('ev_qr', '1'); } catch (e) {}
+    fetch(`${SUPABASE_URL}/rest/v1/eventos`, {
+      method: 'POST', keepalive: true,
+      headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON,
+                 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ negocio_id: null, tipo: 'qr', origen: 'home' })
+    }).catch(() => {});
+  } catch (e) {}
+})();
+
 // Cualquier enlace o botón con data-ev="whatsapp|llamar|como_llegar|web|facebook"
 // y data-id se cuenta solo. Fase de captura: corre antes de los stopPropagation.
 document.addEventListener('click', e => {
