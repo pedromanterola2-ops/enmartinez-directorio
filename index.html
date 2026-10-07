@@ -521,6 +521,38 @@
     .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
     .empty h3 { font-size: 1.1rem; margin-bottom: 0.4rem; }
 
+    /* ── QR DEL DIRECTORIO ── */
+    #qr-directorio { scroll-margin-top: 68px; }
+    .qr-sec {
+      display: flex; gap: 2rem; align-items: center;
+      background: var(--blanco); border: 1px solid var(--borde); border-radius: 18px;
+      padding: 1.75rem; box-shadow: var(--sombra);
+    }
+    .qr-sec-img {
+      flex-shrink: 0; background: var(--verde-bg); border-radius: 16px; padding: 0.9rem;
+    }
+    .qr-sec-img img { display: block; width: 220px; height: 220px; border-radius: 8px; background: #fff; }
+    .qr-sec-texto h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: 0.6rem; }
+    .qr-sec-texto p { font-size: 0.92rem; color: var(--texto-muted); line-height: 1.6; margin-bottom: 0.6rem; }
+    .qr-sec-botones { display: flex; flex-wrap: wrap; gap: 0.55rem; margin: 1rem 0 0.4rem; }
+    .qr-btn {
+      display: inline-flex; align-items: center; gap: 0.35rem; justify-content: center;
+      padding: 0.65rem 1rem; border-radius: 10px; min-height: 44px;
+      font: inherit; font-size: 0.88rem; font-weight: 700; cursor: pointer; text-decoration: none;
+      background: var(--verde-bg); color: var(--verde); border: 1.5px solid rgba(26,107,60,0.35);
+    }
+    .qr-btn:hover { background: #e2f0e7; }
+    .qr-btn.principal { background: var(--verde); color: #fff; border-color: var(--verde); }
+    .qr-btn.principal:hover { background: var(--verde-claro); }
+    .qr-sec-texto .qr-sec-nota { font-size: 0.82rem; margin: 0.4rem 0 0; }
+    .qr-sec-nota a { color: var(--naranja); font-weight: 700; text-decoration: none; }
+    @media (max-width: 640px) {
+      .qr-sec { flex-direction: column; text-align: center; padding: 1.4rem 1.1rem; gap: 1.1rem; }
+      .qr-sec-img img { width: 180px; height: 180px; }
+      .qr-sec-botones { justify-content: center; }
+      .qr-btn { flex: 1 1 100%; }
+    }
+
     /* ── FOOTER ── */
     footer {
       background: #0f2d1c; color: rgba(255,255,255,0.7);
@@ -669,6 +701,7 @@
   <a href="#categorias" onclick="cerrarMenu()">🗂️ Categorías</a>
   <a href="#negocios" onclick="cerrarMenu()">🏪 Negocios</a>
   <a href="#mapa-section" onclick="cerrarMenu()">📍 Mapa</a>
+  <a href="#qr-directorio" onclick="cerrarMenu()">📱 Código QR</a>
   <a href="/contacto">✉️ Contacto</a>
   <a href="/registro" class="mobile-menu-registra">➕ Registra tu negocio</a>
 </div>
@@ -772,6 +805,30 @@
   </div>
 </div>
 
+<!-- ═══ QR DEL DIRECTORIO ═══ -->
+<section id="qr-directorio" class="section">
+  <div class="qr-sec">
+    <div class="qr-sec-img">
+      <img src="/qr-enmartinez.svg" width="220" height="220" loading="lazy"
+           alt="Código QR que abre el directorio EnMartinez.com">
+    </div>
+    <div class="qr-sec-texto">
+      <h2>📱 Lleva el directorio contigo</h2>
+      <p>EnMartinez.com es el catálogo de negocios de Martínez de la Torre: restaurantes,
+         salud, talleres, servicios y más, con teléfono, horario, WhatsApp y cómo llegar.
+         Es gratis para quien busca y para los negocios que aparecen.</p>
+      <p>Escanea este código con la cámara de tu celular para abrirlo, o descárgalo para
+         compartirlo en tus grupos, pegarlo en tu negocio o ponerlo en un volante.</p>
+      <div class="qr-sec-botones">
+        <a class="qr-btn principal" href="/qr-enmartinez.png" download="qr-directorio-enmartinez.png">⬇️ Descargar QR</a>
+        <a class="qr-btn" href="/cartel-qr-enmartinez.png" download="cartel-qr-enmartinez.png">🖨️ Cartel para imprimir</a>
+        <button type="button" class="qr-btn" id="btn-compartir-sitio">🔗 Compartir enlace</button>
+      </div>
+      <p class="qr-sec-nota">¿Tienes un negocio? <a href="/registro">Regístralo gratis</a> y te damos tu propio QR.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ MODAL NEGOCIO ═══ -->
 <div class="modal-overlay" id="modalOverlay" onclick="cerrarModalOverlay(event)">
   <div class="modal" id="modalContenido" role="dialog" aria-modal="true" aria-labelledby="m-nombre">
@@ -863,6 +920,7 @@
         <a href="#categorias" onclick="scrollSeccion(event,'categorias')">Todas las categorías</a>
         <a href="#negocios" onclick="scrollSeccion(event,'negocios')">Negocios destacados</a>
         <a href="#mapa-section" onclick="scrollSeccion(event,'mapa-section')">Mapa de negocios</a>
+        <a href="#qr-directorio" onclick="scrollSeccion(event,'qr-directorio')">Código QR del directorio</a>
       </div>
       <div class="footer-links">
         <h4>¿Tienes un negocio?</h4>
@@ -1973,6 +2031,17 @@ function mostrarErrorCarga() {
   const contador = document.getElementById('negocios-count');
   if (contador) contador.textContent = '';
 }
+
+// Compartir el directorio: menú nativo del celular o, si no hay, WhatsApp
+document.getElementById('btn-compartir-sitio')?.addEventListener('click', () => {
+  const url = 'https://enmartinez-directorio.vercel.app/';
+  const texto = 'Todos los negocios de Martínez de la Torre en un solo lugar: teléfonos, horarios y WhatsApp.';
+  if (navigator.share) {
+    navigator.share({ title: 'EnMartinez.com', text: texto, url }).catch(() => {});
+  } else {
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto + ' ' + url), '_blank', 'noopener');
+  }
+});
 
 init();
 </script>

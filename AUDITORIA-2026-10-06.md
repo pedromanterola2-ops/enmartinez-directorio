@@ -140,3 +140,8 @@ Revisión del sitio en vivo (celular 390 px y escritorio 1280 px), del código y
   - generados en el navegador con qrcode-generator (cdnjs, ya permitido por la CSP), nivel de corrección **Q** para que aguanten manchas y dobleces;
   - verificados con dos lectores (OpenCV y zbar).
 - **Archivos para el flyer en `impresos/`** (fuera de git): `qr-directorio-enmartinez.svg` (vectorial, para imprenta), `qr-directorio-enmartinez.png` y `cartel-qr-directorio-enmartinez.png`.
+
+## Quinta ronda: sección pública "📱 Lleva el directorio contigo"
+- Nueva sección en el home, después del mapa. Muestra el QR del directorio, un texto que explica qué es el catálogo y tres botones: descargar el QR, descargar el cartel para imprimir y compartir el enlace (menú nativo del celular o WhatsApp).
+- Se agregaron enlaces a la sección en el menú móvil y en el pie de página.
+- Archivos estáticos nuevos en la raíz: `qr-enmartinez.svg` (el que se muestra en la sección), `qr-enmartinez.png` y `cartel-qr-enmartinez.png` (los que se descargan). Apuntan a `/qr`, así que cada escaneo cuenta en "📄 QR de flyers".
