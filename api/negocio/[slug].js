@@ -127,10 +127,13 @@ module.exports = async (req, res) => {
     ? `https://www.google.com/maps/dir/?api=1&destination=${n.lat},${n.lng}`
     : mapsUrl;
 
-  // Antes, sin dirección se inventaba "Servicio a domicilio"
-  const dirHtml = n.direccion
-    ? `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>`
-    : '<span class="muted">Sin dirección registrada</span>';
+  // modalidad: 'local' | 'domicilio' (sin local) | 'ambos'
+  const modalidad = ['domicilio', 'ambos'].includes(n.modalidad) ? n.modalidad : 'local';
+  const dirHtml = modalidad === 'domicilio'
+    ? `<strong>🛵 Sin local · servicio a domicilio</strong>${n.direccion ? `<br><span class="muted">Zona: ${esc(n.direccion)}</span>` : ''}`
+    : n.direccion
+      ? `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>${modalidad === 'ambos' ? '<br><strong class="domicilio">🛵 También a domicilio</strong>' : ''}`
+      : '<span class="muted">Sin dirección registrada</span>';
 
   const tHref = telHref(n.telefono);
   const telRow = tHref
@@ -166,7 +169,7 @@ module.exports = async (req, res) => {
   const botones = [];
   if (wspDigits) botones.push(`<a class="btn btn-wsp" href="https://wa.me/52${wspDigits}?text=${encodeURIComponent('Hola, vi tu negocio en EnMartinez.com y quisiera más información sobre ' + nombre)}" target="_blank" rel="noopener">💬 WhatsApp</a>`);
   if (tHref) botones.push(`<a class="btn btn-tel" href="${esc(tHref)}">📞 Llamar</a>`);
-  if (llegarUrl) botones.push(`<a class="btn btn-sec" href="${esc(llegarUrl)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>`);
+  if (llegarUrl && modalidad !== 'domicilio') botones.push(`<a class="btn btn-sec" href="${esc(llegarUrl)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>`);
   // Compartir: la estrategia de crecimiento es mandar la ficha por WhatsApp
   botones.push(`<a class="btn btn-sec" id="btn-compartir" href="https://wa.me/?text=${encodeURIComponent(nombre + ' en EnMartinez.com: ' + url)}" target="_blank" rel="noopener">🔗 Compartir</a>`);
   const wspBtn = botones.join('\n      ');
@@ -200,7 +203,7 @@ module.exports = async (req, res) => {
     description: descripcion,
     url,
     ...(n.telefono ? { telephone: n.telefono } : {}),
-    ...(n.direccion ? {
+    ...(n.direccion && modalidad !== 'domicilio' ? {
       address: {
         '@type': 'PostalAddress',
         streetAddress: n.direccion,
@@ -267,6 +270,7 @@ nav a.reg{background:var(--naranja);color:#fff;font-weight:700;margin-left:0.5re
 .cat{display:inline-block;font-size:0.75rem;font-weight:600;color:var(--verde);background:rgba(26,107,60,0.12);padding:0.25rem 0.7rem;border-radius:20px;margin-bottom:0.5rem}
 .nombre{font-size:1.7rem;font-weight:900;line-height:1.2;margin:0;overflow-wrap:break-word}
 .muted{color:var(--texto-muted)}
+.domicilio{color:#9a4a06}
 @media (max-width:620px){.card-header{padding:1.4rem 1.1rem 1.1rem;gap:.9rem}.card-icon{font-size:2.8rem}.nombre{font-size:1.4rem}.card-body{padding:1.25rem 1.1rem}.footer-btns{padding:1rem 1.1rem}.ficha,.breadcrumb{padding:0 1rem}}
 .badge{display:inline-block;background:var(--naranja);color:#fff;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;margin-left:0.5rem}
 .card-body{padding:1.75rem;display:flex;flex-direction:column;gap:1.5rem}

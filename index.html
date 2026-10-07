@@ -25,7 +25,8 @@
   <!-- Preconexiones para acelerar la primera carga -->
   <link rel="preconnect" href="https://ygeuqlohycckwngcmmxl.supabase.co" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
@@ -312,6 +313,7 @@
     }
     .negocio-dato svg { flex-shrink: 0; margin-top: 1px; opacity: 0.65; }
     .negocio-dato.horario { color: var(--verde); }
+    .negocio-dato.domicilio { color: #9a4a06; font-weight: 600; }
     .negocio-dato.vacio { color: #b0b6b0; font-style: italic; }
     /* Estilos legacy (usados en modal, no en card) */
     .negocio-info { display: flex; flex-direction: column; gap: 0.28rem; }
@@ -508,6 +510,8 @@
     .chip.active {
       background: var(--verde); color: #fff; border-color: var(--verde);
     }
+    .chip-domicilio { border-color: #f5c9a3; color: #9a4a06; background: #fff7ef; font-weight: 600; }
+    .chip-domicilio.active { background: #c2560c; border-color: #c2560c; color: #fff; }
 
     /* ── VACÍO ── */
     .empty {
@@ -790,7 +794,7 @@
         <div class="modal-section-title">Información de contacto</div>
         <div class="modal-info-grid">
           <div class="modal-info-row">
-            <div class="modal-info-icon verde">📍</div>
+            <div class="modal-info-icon verde" id="m-dir-icon">📍</div>
             <div class="modal-info-text" id="m-dir"></div>
           </div>
           <div class="modal-info-row" id="m-tel-row">
@@ -963,7 +967,10 @@ function mapearNegocio(r) {
     destacado: !!r.destacado,
     lat: r.lat, lng: r.lng,
     slug: r.slug || '',
-    foto: r.foto || ''
+    foto: r.foto || '',
+    // 'local' | 'domicilio' (sin local) | 'ambos'. Si la columna aún no
+    // existe en la BD, todos cuentan como 'local'.
+    modalidad: ['domicilio', 'ambos'].includes(r.modalidad) ? r.modalidad : 'local'
   };
 }
 
@@ -1021,7 +1028,11 @@ function renderChips() {
   const wrap = document.getElementById('filtrosChips');
   // Solo categorías con negocios: los chips vacíos no se podían tocar y
   // en el celular llenaban 10 renglones antes de llegar a las fichas.
-  wrap.innerHTML = categorias.filter(c => conteos[c.id]).map(c =>
+  const nDomicilio = negocios.filter(n => n.modalidad !== 'local').length;
+  wrap.innerHTML = (nDomicilio
+    ? `<button type="button" class="chip chip-domicilio${filtroActivo === DOMICILIO ? ' active' : ''}"
+        aria-pressed="${filtroActivo === DOMICILIO}" onclick="filtrarPorCat(DOMICILIO)">🛵 A domicilio</button>`
+    : '') + categorias.filter(c => conteos[c.id]).map(c =>
     `<button type="button" class="chip${filtroActivo === c.id ? ' active' : ''}"
       aria-pressed="${filtroActivo === c.id}" onclick="filtrarPorCat('${c.id}')">${c.icono} ${c.nombre}</button>`
   ).join('');
@@ -1051,10 +1062,18 @@ function renderCategorias() {
 //  RENDER NEGOCIOS (fichas con dirección y horario)
 // ══════════════════════════════════════════
 let filtroActivo = null;
+// Filtro especial: negocios que llevan a domicilio (sin local o ambos)
+const DOMICILIO = '__domicilio';
+function filtrarLista(cat) {
+  return cat === DOMICILIO
+    ? negocios.filter(n => n.modalidad !== 'local')
+    : negocios.filter(n => n.categoria === cat);
+}
 
 // Íconos de línea usados dentro de las fichas
 const ICO_PIN   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>';
 const ICO_RELOJ = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const ICO_MOTO  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
 const ICO_TEL   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>';
 
 // El ícono del negocio ya se muestra aparte: quita el emoji inicial de la etiqueta
@@ -1108,9 +1127,12 @@ function renderNegocios(lista) {
         </div>
 
         <div class="negocio-datos">
-          ${n.direccion
-            ? `<div class="negocio-dato">${ICO_PIN}<span>${esc(n.direccion)}</span></div>`
-            : `<div class="negocio-dato vacio">${ICO_PIN}<span>Sin dirección registrada</span></div>`}
+          ${n.modalidad === 'domicilio'
+            ? `<div class="negocio-dato domicilio">${ICO_MOTO}<span>Sin local · servicio a domicilio${n.direccion ? ' — ' + esc(n.direccion) : ''}</span></div>`
+            : n.direccion
+              ? `<div class="negocio-dato">${ICO_PIN}<span>${esc(n.direccion)}</span></div>`
+              : `<div class="negocio-dato vacio">${ICO_PIN}<span>Sin dirección registrada</span></div>`}
+          ${n.modalidad === 'ambos' ? `<div class="negocio-dato domicilio">${ICO_MOTO}<span>También a domicilio</span></div>` : ''}
           ${n.horario
             ? `<div class="negocio-dato horario">${ICO_RELOJ}<span>${esc(n.horario)}</span></div>`
             : `<div class="negocio-dato vacio">${ICO_RELOJ}<span>Sin horario registrado</span></div>`}
@@ -1165,9 +1187,14 @@ function abrirModal(id) {
   badgeWrap.innerHTML = n.destacado ? '<span class="modal-badge">⭐ Destacado</span>' : '';
 
   // Dirección con link a Google Maps (si hay dirección)
-  if (n.direccion) {
+  document.getElementById('m-dir-icon').textContent = n.modalidad === 'domicilio' ? '🛵' : '📍';
+  if (n.modalidad === 'domicilio') {
+    document.getElementById('m-dir').innerHTML = '<strong>Sin local · servicio a domicilio</strong>'
+      + (n.direccion ? '<br><span style="color:var(--texto-muted)">Zona: ' + esc(n.direccion) + '</span>' : '');
+  } else if (n.direccion) {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(n.nombre + ' ' + n.direccion + ' Martínez de la Torre')}`;
-    document.getElementById('m-dir').innerHTML = `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>`;
+    document.getElementById('m-dir').innerHTML = `<a href="${esc(mapsUrl)}" target="_blank" rel="noopener">${esc(n.direccion)}</a>`
+      + (n.modalidad === 'ambos' ? '<br><strong style="color:#9a4a06">🛵 También a domicilio</strong>' : '');
   } else {
     // Antes decía "Servicio a domicilio": era un dato inventado
     document.getElementById('m-dir').innerHTML = '<span style="color:var(--texto-muted)">Sin dirección registrada</span>';
@@ -1287,22 +1314,63 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(
 // ══════════════════════════════════════════
 //  MAPA LEAFLET
 // ══════════════════════════════════════════
-const mapa = L.map('mapa').setView([20.0725, -97.0522], 14);
-// Mosaicos del mapa. Desde octubre de 2026 CARTO exige clave y sin ella
-// pinta "API KEY REQUIRED" en cada cuadro. Si sacas una clave gratis en
-// carto.com/basemaps/apikey ponla aquí y se vuelve a usar Voyager (retina).
-// Sin clave se usa OpenStreetMap, que no pide registro.
-const CARTO_KEY = '';
-if (CARTO_KEY) {
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
-    subdomains: 'abcd', maxZoom: 20,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>'
-  }).addTo(mapa);
+const mapa = L.map('mapa', { maxZoom: 19 }).setView([20.0725, -97.0522], 14);
+// ── Mapa base ─────────────────────────────────────────────────────
+// OpenFreeMap "Liberty": vectorial (nítido en cualquier pantalla), gratis
+// y sin clave ni registro. Su librería (MapLibre, ~220 KB) se descarga
+// solo cuando el visitante se acerca al mapa, para no frenar el inicio.
+// Si el celular no soporta WebGL o algo falla, cae a OpenStreetMap.
+// (CARTO, el anterior, desde octubre de 2026 exige clave.)
+const ESTILO_MAPA = 'https://tiles.openfreemap.org/styles/liberty';
+const MAPLIBRE_JS  = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+const MAPLIBRE_CSS = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+const PUENTE_JS    = 'https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js';
+const ATRIB_OSM = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+function cargarScript(src) {
+  return new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = mal;
+    document.head.appendChild(s);
+  });
+}
+function soportaWebGL() {
+  try {
+    const c = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+  } catch (e) { return false; }
+}
+function mapaRespaldoOSM(m) {
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: ATRIB_OSM }).addTo(m);
+}
+let fondoCargado = false;
+async function cargarFondoMapa(m) {
+  if (fondoCargado) return;
+  fondoCargado = true;
+  if (!soportaWebGL()) return mapaRespaldoOSM(m);
+  try {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = MAPLIBRE_CSS;
+    document.head.appendChild(css);
+    if (!window.maplibregl) await cargarScript(MAPLIBRE_JS);
+    if (!L.maplibreGL) await cargarScript(PUENTE_JS);
+    L.maplibreGL({
+      style: ESTILO_MAPA,
+      attribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> ' + ATRIB_OSM
+    }).addTo(m);
+  } catch (e) {
+    console.warn('Mapa vectorial no disponible, usando OpenStreetMap', e);
+    mapaRespaldoOSM(m);
+  }
+}
+// Arranca cuando el mapa está a ~800 px de entrar en pantalla
+if ('IntersectionObserver' in window) {
+  const obs = new IntersectionObserver(ents => {
+    if (ents.some(e => e.isIntersecting)) { obs.disconnect(); cargarFondoMapa(mapa); }
+  }, { rootMargin: '800px 0px' });
+  obs.observe(document.getElementById('mapa'));
 } else {
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(mapa);
+  cargarFondoMapa(mapa);
 }
 
 const marcadores = {};
@@ -1534,7 +1602,8 @@ function coincide(n, q) {
   if (!q) return true;
   const cat = categorias.find(c => c.id === n.categoria);
   const texto = normalizar([n.nombre, n.descripcion, n.direccion, n.catLabel,
-    cat ? cat.nombre : '', (n.servicios || []).join(' ')].join(' '));
+    cat ? cat.nombre : '', (n.servicios || []).join(' '),
+    n.modalidad !== 'local' ? 'a domicilio entrega servicio a domicilio' : ''].join(' '));
   return normalizar(q).split(/\s+/).filter(Boolean).every(p => texto.includes(p));
 }
 
@@ -1558,7 +1627,7 @@ function filtrarPorCat(cat) {
     filtroActivo = cat;
     renderCategorias();
     renderChips();
-    const listaFiltrada = negocios.filter(n => n.categoria === cat);
+    const listaFiltrada = filtrarLista(cat);
     renderNegocios(listaFiltrada);
     actualizarMarcadores(listaFiltrada);
     const grid = document.getElementById('negociosGrid');

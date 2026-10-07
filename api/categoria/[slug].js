@@ -139,7 +139,10 @@ module.exports = async (req, res) => {
         </div>
         ${desc ? `<p class="desc">${esc(desc)}</p>` : ''}
         <ul class="datos">
-          ${n.direccion ? `<li>📍 ${esc(n.direccion)}</li>` : ''}
+          ${n.modalidad === 'domicilio'
+            ? `<li class="dom">🛵 Sin local · servicio a domicilio</li>`
+            : (n.direccion ? `<li>📍 ${esc(n.direccion)}</li>` : '')}
+          ${n.modalidad === 'ambos' ? `<li class="dom">🛵 También a domicilio</li>` : ''}
           ${tHref ? `<li>📞 <a href="${esc(tHref)}">${esc(telBonito(n.telefono))}</a></li>` : ''}
           ${n.horario ? `<li>🕐 ${esc(n.horario)}</li>` : ''}
         </ul>
@@ -249,6 +252,7 @@ a.nombre:hover{color:var(--verde);text-decoration:underline}
 .desc{font-size:.86rem;color:var(--muted);line-height:1.5}
 .datos{list-style:none;display:flex;flex-direction:column;gap:.3rem;font-size:.84rem}
 .datos a{color:var(--verde);font-weight:600;text-decoration:none}
+.datos .dom{color:#9a4a06;font-weight:600}
 .acciones{display:flex;gap:.5rem;margin-top:auto;padding-top:.4rem;flex-wrap:wrap}
 .btn-wsp{background:#25D366;color:#fff;padding:.5rem .85rem;border-radius:8px;font-size:.83rem;font-weight:700;text-decoration:none}
 .btn-tel{background:var(--verde);color:#fff;padding:.5rem .85rem;border-radius:8px;font-size:.83rem;font-weight:700;text-decoration:none}

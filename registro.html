@@ -325,8 +325,17 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Dirección <span class="req">*</span></label>
+            <label for="modalidad">¿Cómo atiendes? <span class="req">*</span></label>
+            <select id="modalidad" name="modalidad" onchange="ajustarDireccion()">
+              <option value="local">🏪 Tengo local</option>
+              <option value="ambos">🏪🛵 Tengo local y también llevo a domicilio</option>
+              <option value="domicilio">🛵 No tengo local — solo a domicilio o por pedido</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="direccion">Dirección <span class="req" id="direccionReq">*</span></label>
             <input type="text" id="direccion" name="direccion" placeholder="Calle, número, colonia">
+            <p class="hint" id="direccionHint" style="display:none">Opcional. Puedes poner la zona o colonias que cubres.</p>
           </div>
           <div class="form-group span2">
             <label>Descripción del negocio <span class="req">*</span></label>
@@ -495,7 +504,10 @@ const camposObligatorios = [
     regla: v => v.trim().length < 3 ? 'Escribe el nombre completo del negocio.' : null },
   { id: 'categoria',   label: 'Categoría' },
   { id: 'direccion',   label: 'Dirección',
-    regla: v => v.trim().length < 8 ? 'Incluye calle y número o colonia para que te encuentren.' : null },
+    // Sin local, la dirección es opcional (puede ser la zona que cubre)
+    obligatorio: () => document.getElementById('modalidad').value !== 'domicilio',
+    regla: v => (document.getElementById('modalidad').value !== 'domicilio' && v.trim().length < 8)
+      ? 'Incluye calle y número o colonia para que te encuentren.' : null },
   { id: 'descripcion', label: 'Descripción',
     regla: v => v.trim().length < 30 ? 'Describe tu negocio con al menos 30 caracteres — es lo primero que leen tus clientes.' : null },
   { id: 'horario',     label: 'Horario' },
@@ -558,7 +570,7 @@ form.addEventListener('submit', function(e) {
 
   // Validar obligatorios y opcionales
   let valido = true;
-  camposObligatorios.forEach(c => { if (!validarCampo(c, true))  valido = false; });
+  camposObligatorios.forEach(c => { if (!validarCampo(c, c.obligatorio ? c.obligatorio() : true)) valido = false; });
   camposOpcionales .forEach(c => { if (!validarCampo(c, false)) valido = false; });
 
   if (!valido) {
@@ -579,6 +591,7 @@ form.addEventListener('submit', function(e) {
     nombre:            document.getElementById('nombre').value.trim(),
     categoria:         document.getElementById('categoria').value,
     direccion:         document.getElementById('direccion').value.trim(),
+    modalidad:         document.getElementById('modalidad').value || 'local',
     descripcion:       document.getElementById('descripcion').value.trim(),
     horario:           document.getElementById('horario').value.trim(),
     // Contacto público
@@ -612,6 +625,7 @@ form.addEventListener('submit', function(e) {
     nombre:             datos.nombre,
     categoria:          datos.categoria,
     direccion:          datos.direccion,
+    modalidad:          datos.modalidad,
     descripcion:        datos.descripcion,
     horario:            datos.horario,
     telefono:           datos.telefono,
@@ -626,7 +640,7 @@ form.addEventListener('submit', function(e) {
     celular_contacto:   datos.celularContacto,
   };
 
-  const guardarEnBD = fetch(`${SUPABASE_URL}/rest/v1/solicitudes`, {
+  const enviar = cuerpo => fetch(`${SUPABASE_URL}/rest/v1/solicitudes`, {
     method: 'POST',
     headers: {
       apikey: SUPABASE_ANON,
@@ -634,8 +648,22 @@ form.addEventListener('submit', function(e) {
       'Content-Type': 'application/json',
       Prefer: 'return=minimal'
     },
-    body: JSON.stringify(fila)
-  }).then(res => { if (!res.ok) throw new Error('BD: HTTP ' + res.status); return true; });
+    body: JSON.stringify(cuerpo)
+  });
+  // Si la columna `modalidad` aún no existe en la BD, se reintenta sin ella
+  // (anotándola en los servicios) para no perder nunca un registro.
+  const guardarEnBD = enviar(fila).then(async res => {
+    if (res.ok) return true;
+    const txt = await res.text().catch(() => '');
+    if (res.status === 400 && /modalidad/i.test(txt)) {
+      const { modalidad, ...resto } = fila;
+      if (modalidad === 'domicilio') resto.servicios = ['Sin local, a domicilio', resto.servicios].filter(Boolean).join(', ');
+      if (modalidad === 'ambos') resto.servicios = ['También a domicilio', resto.servicios].filter(Boolean).join(', ');
+      const r2 = await enviar(resto);
+      if (r2.ok) return true;
+    }
+    throw new Error('BD: HTTP ' + res.status);
+  });
 
   // ─────────────────────────────────────────────
   //  2) NOTIFICACIÓN POR EMAIL
@@ -649,6 +677,15 @@ form.addEventListener('submit', function(e) {
     .then(() => mostrarExito())
     .catch(() => mostrarErrorEnvio());
 });
+
+// Sin local, la dirección deja de ser obligatoria
+function ajustarDireccion() {
+  const sinLocal = document.getElementById('modalidad').value === 'domicilio';
+  document.getElementById('direccionReq').style.display = sinLocal ? 'none' : '';
+  document.getElementById('direccionHint').style.display = sinLocal ? '' : 'none';
+  document.getElementById('direccion').placeholder = sinLocal ? 'Ej: Centro y colonias cercanas' : 'Calle, número, colonia';
+  marcarError(document.getElementById('direccion'), null);
+}
 
 function mostrarErrorEnvio() {
   btnEnviar.disabled = false;

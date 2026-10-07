@@ -5,7 +5,7 @@ Revisión del sitio en vivo (celular 390 px y escritorio 1280 px), del código y
 ## Arreglado en esta ronda
 
 ### Críticos
-1. **Mapa roto.** Desde octubre de 2026 CARTO exige API key y cada mosaico mostraba "API KEY REQUIRED". El home y el panel ahora usan mosaicos de OpenStreetMap, que no piden clave. En `index.html` quedó la constante `CARTO_KEY`: si se saca una clave gratis en carto.com/basemaps/apikey (1M de peticiones al mes en el plan comercial gratuito), basta con ponerla ahí para volver a Voyager retina. La CSP en `vercel.json` ahora permite `tile.openstreetmap.org` (antes solo `*.tile.openstreetmap.org`, que no cubre ese dominio).
+1. **Mapa roto.** Desde octubre de 2026 CARTO exige API key y cada mosaico mostraba "API KEY REQUIRED". Primero se pasó a OpenStreetMap; en la segunda ronda (abajo) se cambió a OpenFreeMap "Liberty". La CSP en `vercel.json` ahora permite `tile.openstreetmap.org` (antes solo `*.tile.openstreetmap.org`, que no cubre ese dominio).
 2. **Fichas en celular.** En 2 columnas de unos 170 px, "langosta loca" se partía letra por letra (la etiqueta "Destacado" competía por el ancho), "MASCOTAS" se cortaba y los botones se apachurraban. Ahora:
    - debajo de 560 px las fichas van en una columna;
    - la etiqueta "Destacado" va junto a la categoría y ya no compite con el nombre;
@@ -62,9 +62,40 @@ Revisión del sitio en vivo (celular 390 px y escritorio 1280 px), del código y
    - 7 Fuegos: el "sitio web" es un enlace de Instagram con rastreo `fbclid`, mejor pegar solo `https://www.instagram.com/7fuegosgrill_mx`;
    - 7 negocios sin descripción;
    - Pytr sin coordenadas.
-4. **Opcional, mapa más bonito:** sacar la clave gratis de CARTO y ponerla en `CARTO_KEY` (index.html). Más adelante también se puede poner en el panel.
+4. ~~Opcional, mapa más bonito~~ → resuelto en la segunda ronda con OpenFreeMap, sin clave.
 
 ## Observaciones sin cambiar (decisión de producto)
 - "Restaurantes y comida" y "Comida" conviven y pueden confundir al visitante.
 - `registro.html` promete "miles de personas" y "te avisamos por WhatsApp". Conviene que el texto refleje lo que de verdad pasa hoy.
 - Las fotos pesan 100–230 KB para mostrarse a 120–150 px de alto. Supabase puede redimensionar al vuelo, pero solo en plan Pro. Una alternativa gratis es que el panel guarde también una miniatura de unos 600 px.
+
+
+## Segunda ronda (misma noche)
+
+### Negocios sin local / a domicilio
+- Nueva columna `modalidad` en `negocios` y `solicitudes`, con tres valores:
+  - `local`: tiene local (es el valor por defecto);
+  - `domicilio`: no tiene local, atiende a domicilio o por pedido;
+  - `ambos`: tiene local y también lleva a domicilio.
+- **Hay que correr `modalidad-2026-10-06.sql`** en Supabase → SQL Editor. La migración ya marca a Pytr como `domicilio`.
+- **Panel:** campo nuevo "¿Cómo atiende?". Si el negocio no tiene local, el aviso "⚠️ faltan N" deja de contar la dirección y la ubicación como faltantes. Al aprobar una solicitud se copia la modalidad.
+- **Registro público:** pregunta "¿Cómo atiendes?". Si el negocio no tiene local, la dirección deja de ser obligatoria (antes no podía registrarse un negocio sin dirección).
+- **Sitio público:**
+  - las fichas muestran "🛵 Sin local · servicio a domicilio" o "🛵 También a domicilio";
+  - hay un filtro nuevo "🛵 A domicilio" al inicio de los chips;
+  - el buscador encuentra estos negocios con la palabra "domicilio";
+  - en la página individual se quita "Cómo llegar" y se deja de mandar la dirección en el JSON-LD.
+- **Si el código se publica antes de correr la migración**, no se rompe nada:
+  - el sitio trata a todos como `local`;
+  - el panel guarda sin ese campo y lo avisa;
+  - el registro reintenta sin la columna y anota la modalidad en "servicios", así que la solicitud no se pierde.
+
+### Mapa nuevo
+- **OpenFreeMap, estilo Liberty:** vectorial, gratis, sin clave ni registro y sin límite de uso publicado.
+- La librería MapLibre (~220 KB) se descarga solo cuando el visitante está a unos 800 px del mapa, para no frenar la carga inicial.
+- Si el equipo no soporta WebGL o falla la carga, el mapa cae automáticamente a OpenStreetMap.
+- Se aplica en el home y en el panel.
+- **CSP:**
+  - `tiles.openfreemap.org` agregado en `img-src` y `connect-src`;
+  - `cdn.jsdelivr.net` agregado en `style-src`;
+  - `worker-src blob:` nuevo, porque MapLibre usa workers.
