@@ -498,6 +498,20 @@
     #mapa-section { background: var(--verde-bg); }
     #mapa { height: min(78vh, 680px); min-height: 460px; width: 100%; border-radius: 14px; overflow: hidden; box-shadow: var(--sombra); }
     .leaflet-popup-content-wrapper { border-radius: 10px; }
+    /* Aviso "Usa ⌘/Ctrl + scroll para hacer zoom" */
+    #mapa .mapa-aviso-zoom {
+      position: absolute; inset: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+      background: rgba(0,0,0,0.45); color: #fff; text-align: center;
+      font-size: 1.05rem; font-weight: 600; pointer-events: none;
+      opacity: 0; transition: opacity .25s ease;
+    }
+    #mapa .mapa-aviso-zoom.visible { opacity: 1; }
+    #mapa .mapa-aviso-zoom kbd {
+      font-family: inherit; background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.45); border-radius: 6px;
+      padding: 0.05rem 0.45rem; margin: 0 0.15rem;
+    }
     .popup-content { padding: 0.25rem; }
     .popup-nombre { font-weight: 700; font-size: 0.95rem; color: var(--texto); }
     .popup-cat { font-size: 0.75rem; color: var(--verde); font-weight: 600; margin-bottom: 0.35rem; }
@@ -1507,6 +1521,46 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(
 //  MAPA LEAFLET
 // ══════════════════════════════════════════
 const mapa = L.map('mapa', { maxZoom: 19, zoomSnap: 0.5 }).setView([20.0690, -97.0555], 15);
+// ── Mapa que no "atrapa" el scroll de la página ─────────────────────
+// Computadora: el zoom con rueda solo funciona con ⌘ (Mac) o Ctrl; sin la
+// tecla, la página baja normal y sale un aviso. (El pellizco del trackpad
+// manda Ctrl automáticamente, así que también hace zoom.)
+// Celular: con un dedo se baja la página; para mover el mapa se usan dos
+// dedos (pellizcar para zoom). Tocar marcadores sigue funcionando igual.
+(function () {
+  const cont = mapa.getContainer();
+  const esMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const esTactil = window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const aviso = document.createElement('div');
+  aviso.className = 'mapa-aviso-zoom';
+  cont.appendChild(aviso);
+  let tAviso;
+  function mostrarAviso(html) {
+    aviso.innerHTML = html;
+    aviso.classList.add('visible');
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => aviso.classList.remove('visible'), 1200);
+  }
+  function ocultarAviso() { clearTimeout(tAviso); aviso.classList.remove('visible'); }
+
+  // Rueda del mouse: escucha en captura en el padre, antes que Leaflet
+  cont.parentElement.addEventListener('wheel', e => {
+    if (!cont.contains(e.target)) return;
+    if (e.ctrlKey || e.metaKey) return ocultarAviso();
+    e.stopPropagation();          // Leaflet no se entera: la página hace scroll normal
+    mostrarAviso('Usa <kbd>' + (esMac ? '⌘ Cmd' : 'Ctrl') + '</kbd> + scroll para acercar o alejar el mapa');
+  }, { capture: true, passive: true });
+
+  // Pantallas táctiles: sin arrastre con un dedo (el gesto de dos dedos
+  // de Leaflet ya mueve y hace zoom al mismo tiempo)
+  if (esTactil) {
+    mapa.dragging.disable();
+    cont.addEventListener('touchmove', e => {
+      if (e.touches.length === 1) mostrarAviso('Usa dos dedos para mover el mapa');
+      else ocultarAviso();
+    }, { passive: true });
+  }
+})();
 // ── Mapa base ─────────────────────────────────────────────────────
 // OpenFreeMap "Liberty": vectorial (nítido en cualquier pantalla), gratis
 // y sin clave ni registro. Su librería (MapLibre, ~220 KB) se descarga
