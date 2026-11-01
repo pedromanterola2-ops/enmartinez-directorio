@@ -7,23 +7,29 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const SITE_URL = 'https://enmartinez-directorio.vercel.app';
 
 const CAT_LABELS = {
-  restaurantes: '🍽️ Restaurantes', abarrotes: '🛒 Abarrotes', salud: '🏥 Salud',
-  talleres: '🔧 Talleres', belleza: '💇 Belleza', hoteles: '🏨 Hoteles',
-  construccion: '🏗️ Construcción', veterinarias: '🐾 Veterinarias', ropa: '👗 Ropa',
-  servicios: '⚡ Servicios Profesionales', agro: '🌿 Agro', educacion: '🏫 Educación',
-  tecnologia: '💻 Tecnología', eventos: '🎉 Eventos', transporte: '🚕 Transporte',
-  panaderias: '🥐 Panaderías', cafes: '☕ Cafés y cafeterías', botanas: '🥤 Botanas y bebidas',
-  comida: '🍱 Comida',
-  bancos: '🏦 Bancos', profesionales: '⚖️ Profesionales',
-  agroindustria: '🍊 Agroindustria', oficios: '🔩 Oficios y servicios del hogar',
+  restaurantes: '🍽️ Restaurantes y comida',
+  panaderias: '🥐 Panaderías y botanas',
+  abarrotes: '🛒 Abarrotes y súper',
+  salud: '🏥 Salud y farmacias',
+  belleza: '💇 Belleza y estética',
+  ropa: '👗 Ropa y calzado',
+  talleres: '🔧 Talleres y transporte',
+  construccion: '🏗️ Construcción y oficios',
+  servicios: '⚡ Servicios profesionales y financieros',
+  tecnologia: '💻 Tecnología',
+  educacion: '🏫 Educación',
+  eventos: '🎉 Eventos y hospedaje',
+  agro: '🌿 Agro y agroindustria',
+  veterinarias: '🐾 Veterinarias y mascotas',
   papelerias: '📚 Papelerías y regalos'
 };
+// Categorías anteriores a la unión de 2026-10.
+const CATEGORIAS_ANTIGUAS = { comida: 'restaurantes', cafes: 'restaurantes', botanas: 'panaderias', oficios: 'construccion', transporte: 'talleres', profesionales: 'servicios', bancos: 'servicios', hoteles: 'eventos', agroindustria: 'agro' };
 
 const SCHEMA_TIPO = {
-  hoteles: 'LodgingBusiness', restaurantes: 'Restaurant', veterinarias: 'VeterinaryCare',
-  salud: 'MedicalBusiness', bancos: 'BankOrCreditUnion', belleza: 'BeautySalon',
-  talleres: 'AutoRepair', construccion: 'HomeAndConstructionBusiness',
-  cafes: 'CafeOrCoffeeShop', botanas: 'FoodEstablishment', panaderias: 'Bakery', comida: 'FoodEstablishment'
+  eventos: 'EventVenue', restaurantes: 'Restaurant', veterinarias: 'VeterinaryCare',
+  salud: 'MedicalBusiness', belleza: 'BeautySalon', talleres: 'AutoRepair',
+  construccion: 'HomeAndConstructionBusiness', panaderias: 'Bakery'
 };
 
 const PAGO_ICONOS = { Efectivo: '💵', Tarjeta: '💳', Transferencia: '📲', Crédito: '🤝' };
@@ -110,7 +116,8 @@ module.exports = async (req, res) => {
   if (!Array.isArray(rows) || rows.length === 0) return paginaNoEncontrada(res);
   const n = rows[0];
 
-  const catLabel = n.cat_label || CAT_LABELS[n.categoria] || n.categoria || 'Negocio';
+  const catNueva = CATEGORIAS_ANTIGUAS[n.categoria] || n.categoria || '';
+  const catLabel = (catNueva !== (n.categoria || '') ? CAT_LABELS[catNueva] : n.cat_label) || CAT_LABELS[catNueva] || catNueva || 'Negocio';
   const icono = n.icono || '🏪';
   const nombre = n.nombre || 'Negocio';
   const descripcion = n.descripcion || `${nombre} en Martínez de la Torre, Veracruz.`;
@@ -197,7 +204,7 @@ module.exports = async (req, res) => {
 <meta property="og:image:alt" content="EnMartinez.com — Directorio de Negocios de Martínez de la Torre, Veracruz">
 <meta name="twitter:card" content="summary_large_image">`;
 
-  const catKey = n.categoria || '';
+  const catKey = catNueva;
   const schemaTipo = SCHEMA_TIPO[catKey] || 'LocalBusiness';
   const jsonLd = {
     '@context': 'https://schema.org',

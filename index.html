@@ -835,28 +835,19 @@
     <select id="catSelect" aria-label="Categoría">
       <option value="">Todas las categorías</option>
       <option value="restaurantes">🍽️ Restaurantes y comida</option>
+      <option value="panaderias">🥐 Panaderías y botanas</option>
       <option value="abarrotes">🛒 Abarrotes y súper</option>
       <option value="salud">🏥 Salud y farmacias</option>
-      <option value="talleres">🔧 Talleres y refacciones</option>
       <option value="belleza">💇 Belleza y estética</option>
-      <option value="hoteles">🏨 Hoteles y hospedaje</option>
-      <option value="construccion">🏗️ Construcción y ferretería</option>
-      <option value="veterinarias">🐾 Veterinarias y mascotas</option>
       <option value="ropa">👗 Ropa y calzado</option>
-      <option value="servicios">⚡ Servicios Profesionales</option>
-      <option value="agro">🌿 Agro y viveros</option>
-      <option value="educacion">🏫 Educación</option>
+      <option value="talleres">🔧 Talleres y transporte</option>
+      <option value="construccion">🏗️ Construcción y oficios</option>
+      <option value="servicios">⚡ Servicios profesionales y financieros</option>
       <option value="tecnologia">💻 Tecnología</option>
-      <option value="eventos">🎉 Eventos</option>
-      <option value="transporte">🚕 Transporte</option>
-      <option value="panaderias">🥐 Panaderías y pastelerías</option>
-      <option value="cafes">☕ Cafés y cafeterías</option>
-      <option value="botanas">🥤 Botanas y bebidas</option>
-      <option value="comida">🍱 Comida</option>
-      <option value="bancos">🏦 Bancos y financieros</option>
-      <option value="profesionales">⚖️ Profesionales</option>
-      <option value="agroindustria">🍊 Agroindustria</option>
-      <option value="oficios">🔩 Oficios y servicios del hogar</option>
+      <option value="educacion">🏫 Educación</option>
+      <option value="eventos">🎉 Eventos y hospedaje</option>
+      <option value="agro">🌿 Agro y agroindustria</option>
+      <option value="veterinarias">🐾 Veterinarias y mascotas</option>
       <option value="papelerias">📚 Papelerías y regalos</option>
     </select>
     <button onclick="buscar()">Buscar</button>
@@ -1125,12 +1116,27 @@ const SUPABASE_URL  = 'https://ygeuqlohycckwngcmmxl.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZXVxbG9oeWNja3duZ2NtbXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDE1MTksImV4cCI6MjA5NTgxNzUxOX0.fuFaUcYKaTjBpunDqIc-xMIGm3gA17r5Cn_E_JxFR_Q';
 
 // Convierte una fila de la BD al formato que usa la página
+// En 2026-10 se unieron 24 categorías en 15. Los negocios que todavía traigan
+// una categoría vieja (o que se capturen con un formulario viejo) se muestran
+// en la nueva, así que no importa el orden entre publicar el sitio y correr
+// categorias-2026-10-31.sql.
+const CATEGORIAS_ANTIGUAS = { comida: 'restaurantes', cafes: 'restaurantes', botanas: 'panaderias', oficios: 'construccion', transporte: 'talleres', profesionales: 'servicios', bancos: 'servicios', hoteles: 'eventos', agroindustria: 'agro' };
+function categoriaNueva(c) { c = c || ''; return CATEGORIAS_ANTIGUAS[c] || c; }
+function etiquetaCategoria(cOriginal, labelBd) {
+  const nueva = categoriaNueva(cOriginal);
+  if (nueva !== (cOriginal || '')) {
+    const c = categorias.find(x => x.id === nueva);
+    if (c) return c.icono + ' ' + c.nombre;
+  }
+  return labelBd || '';
+}
+
 function mapearNegocio(r) {
   return {
     id: r.id,
     nombre: r.nombre || '',
-    categoria: r.categoria || '',
-    catLabel: r.cat_label || '',
+    categoria: categoriaNueva(r.categoria),
+    catLabel: etiquetaCategoria(r.categoria, r.cat_label),
     icono: r.icono || '🏪',
     descripcion: r.descripcion || '',
     direccion: r.direccion || '',
@@ -1186,6 +1192,13 @@ async function cargarNegociosIndex() {
 }
 
 let negocios = [];
+
+// Las fotos nuevas se suben en dos tamaños: la completa (nombre.jpg) y una
+// miniatura para las tarjetas (nombre-m.jpg, unos 40 KB en vez de ~200 KB).
+// Si la miniatura no existe todavía, la tarjeta cae sola a la foto completa.
+function fotoMini(url) {
+  return /\.jpg$/i.test(url) && !/-m\.jpg$/i.test(url) ? url.replace(/\.jpg$/i, '-m.jpg') : url;
+}
 
 // Lo que se ve en el inicio sin buscar ni elegir categoría: solo fichas nivel A
 // (completas). Las de nivel B aparecen al buscar o al abrir una categoría.
@@ -1257,30 +1270,21 @@ document.addEventListener('click', e => {
 //  CATÁLOGO DE CATEGORÍAS
 // ══════════════════════════════════════════
 const categorias = [
-  { id: 'restaurantes',  nombre: 'Restaurantes y comida',        icono: '🍽️', bg: '#fde8e8' },
-  { id: 'abarrotes',     nombre: 'Abarrotes y súper',            icono: '🛒', bg: '#eef5cc' },
-  { id: 'salud',         nombre: 'Salud y farmacias',            icono: '🏥', bg: '#d4ecf8' },
-  { id: 'talleres',      nombre: 'Talleres y refacciones',       icono: '🔧', bg: '#dce8ef' },
-  { id: 'belleza',       nombre: 'Belleza y estética',           icono: '💇', bg: '#f0d8f8' },
-  { id: 'hoteles',       nombre: 'Hoteles y hospedaje',          icono: '🏨', bg: '#ece0fa' },
-  { id: 'construccion',  nombre: 'Construcción y ferretería',    icono: '🏗️', bg: '#fde8da' },
-  { id: 'veterinarias',  nombre: 'Veterinarias y mascotas',      icono: '🐾', bg: '#d0f5ea' },
-  { id: 'ropa',          nombre: 'Ropa y calzado',               icono: '👗', bg: '#f8d5f0' },
-  { id: 'servicios',     nombre: 'Servicios Profesionales',      icono: '⚡', bg: '#fef8d0' },
-  { id: 'agro',          nombre: 'Agro y viveros',               icono: '🌿', bg: '#d8f5e0' },
-  { id: 'educacion',     nombre: 'Educación',                    icono: '🏫', bg: '#dde4fa' },
-  { id: 'tecnologia',    nombre: 'Tecnología',                   icono: '💻', bg: '#d0edf8' },
-  { id: 'eventos',       nombre: 'Eventos',                      icono: '🎉', bg: '#fad5e8' },
-  { id: 'transporte',    nombre: 'Transporte',                   icono: '🚕', bg: '#f0e2d0' },
-  { id: 'panaderias',    nombre: 'Panaderías y pastelerías',     icono: '🥐', bg: '#fef0e0' },
-  { id: 'cafes',         nombre: 'Cafés y cafeterías',           icono: '☕', bg: '#e8ddd2' },
-  { id: 'botanas',       nombre: 'Botanas y bebidas',            icono: '🥤', bg: '#e8f2d8' },
-  { id: 'comida',        nombre: 'Comida',                       icono: '🍱', bg: '#f5dcc0' },
-  { id: 'bancos',        nombre: 'Bancos y financieros',         icono: '🏦', bg: '#d8ddf5' },
-  { id: 'profesionales', nombre: 'Profesionales',                icono: '⚖️', bg: '#dde0e8' },
-  { id: 'agroindustria', nombre: 'Agroindustria',                icono: '🍊', bg: '#fdf0d8' },
-  { id: 'oficios',       nombre: 'Oficios y servicios del hogar',icono: '🔩', bg: '#d0f2f2' },
-  { id: 'papelerias',    nombre: 'Papelerías y regalos',         icono: '📚', bg: '#f2dce8' },
+  { id: 'restaurantes', nombre: 'Restaurantes y comida', icono: '🍽️', bg: '#fde8e8' },
+  { id: 'panaderias', nombre: 'Panaderías y botanas', icono: '🥐', bg: '#fef0e0' },
+  { id: 'abarrotes', nombre: 'Abarrotes y súper', icono: '🛒', bg: '#eef5cc' },
+  { id: 'salud', nombre: 'Salud y farmacias', icono: '🏥', bg: '#d4ecf8' },
+  { id: 'belleza', nombre: 'Belleza y estética', icono: '💇', bg: '#f0d8f8' },
+  { id: 'ropa', nombre: 'Ropa y calzado', icono: '👗', bg: '#f8d5f0' },
+  { id: 'talleres', nombre: 'Talleres y transporte', icono: '🔧', bg: '#dce8ef' },
+  { id: 'construccion', nombre: 'Construcción y oficios', icono: '🏗️', bg: '#fde8da' },
+  { id: 'servicios', nombre: 'Servicios profesionales y financieros', icono: '⚡', bg: '#fef8d0' },
+  { id: 'tecnologia', nombre: 'Tecnología', icono: '💻', bg: '#d0edf8' },
+  { id: 'educacion', nombre: 'Educación', icono: '🏫', bg: '#dde4fa' },
+  { id: 'eventos', nombre: 'Eventos y hospedaje', icono: '🎉', bg: '#fad5e8' },
+  { id: 'agro', nombre: 'Agro y agroindustria', icono: '🌿', bg: '#d8f5e0' },
+  { id: 'veterinarias', nombre: 'Veterinarias y mascotas', icono: '🐾', bg: '#d0f5ea' },
+  { id: 'papelerias', nombre: 'Papelerías y regalos', icono: '📚', bg: '#f2dce8' },
 ];
 
 function renderChips() {
@@ -1408,9 +1412,9 @@ function renderNegocios(lista, conservar) {
          aria-label="${esc(n.nombre || 'Negocio')}" onkeydown="if(event.key==='Enter'&&event.target===this)abrirModal(${Number(n.id)})">
       <div class="negocio-cat-bar" style="background:${catColor}"></div>
       ${urlSegura(n.foto)
-        ? `<div class="negocio-foto"><img src="${esc(urlSegura(n.foto))}" alt="${esc(n.nombre)}" loading="lazy" decoding="async"
+        ? `<div class="negocio-foto"><img src="${esc(fotoMini(urlSegura(n.foto)))}" data-full="${esc(urlSegura(n.foto))}" alt="${esc(n.nombre)}" loading="lazy" decoding="async"
                 style="width:100%;height:100%;object-fit:cover;display:block"
-                onerror="this.parentNode.style.display='none'"></div>`
+                onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}else{this.parentNode.style.display='none'}"></div>`
         : `<div class="negocio-foto portada" style="--c:${catColor}" aria-hidden="true">
              <span class="portada-mini m1">${portIcono}</span><span class="portada-mini m2">${portIcono}</span>
              <span class="portada-mini m3">${portIcono}</span><span class="portada-mini m4">${portIcono}</span>

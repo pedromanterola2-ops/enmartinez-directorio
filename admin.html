@@ -558,29 +558,20 @@
               <label class="fl">Categoría</label>
               <select id="a-categoria" onchange="actualizarPreview()">
                 <option value="">— Selecciona —</option>
-                <option value="restaurantes">🍽️ Restaurantes</option>
-                <option value="abarrotes">🛒 Abarrotes</option>
-                <option value="salud">🏥 Salud</option>
-                <option value="talleres">🔧 Talleres</option>
-                <option value="belleza">💇 Belleza</option>
-                <option value="hoteles">🏨 Hoteles</option>
-                <option value="construccion">🏗️ Construcción</option>
-                <option value="veterinarias">🐾 Veterinarias y mascotas</option>
-                <option value="ropa">👗 Ropa</option>
-                <option value="servicios">⚡ Servicios Profesionales</option>
-                <option value="agro">🌿 Agro</option>
-                <option value="educacion">🏫 Educación</option>
+                <option value="restaurantes">🍽️ Restaurantes y comida</option>
+                <option value="panaderias">🥐 Panaderías y botanas</option>
+                <option value="abarrotes">🛒 Abarrotes y súper</option>
+                <option value="salud">🏥 Salud y farmacias</option>
+                <option value="belleza">💇 Belleza y estética</option>
+                <option value="ropa">👗 Ropa y calzado</option>
+                <option value="talleres">🔧 Talleres y transporte</option>
+                <option value="construccion">🏗️ Construcción y oficios</option>
+                <option value="servicios">⚡ Servicios profesionales y financieros</option>
                 <option value="tecnologia">💻 Tecnología</option>
-                <option value="eventos">🎉 Eventos</option>
-                <option value="transporte">🚕 Transporte</option>
-                <option value="panaderias">🥐 Panaderías</option>
-                <option value="cafes">☕ Cafés y cafeterías</option>
-                <option value="botanas">🥤 Botanas y bebidas</option>
-                <option value="comida">🍱 Comida</option>
-                <option value="bancos">🏦 Bancos</option>
-                <option value="profesionales">⚖️ Profesionales</option>
-                <option value="agroindustria">🍊 Agroindustria</option>
-                <option value="oficios">🔩 Oficios y servicios del hogar</option>
+                <option value="educacion">🏫 Educación</option>
+                <option value="eventos">🎉 Eventos y hospedaje</option>
+                <option value="agro">🌿 Agro y agroindustria</option>
+                <option value="veterinarias">🐾 Veterinarias y mascotas</option>
                 <option value="papelerias">📚 Papelerías y regalos</option>
               </select>
             </div>
@@ -857,6 +848,10 @@
           <input type="search" id="fp-filtro" placeholder="Buscar negocio o colonia…" oninput="renderFotosPendientes()">
         </div>
         <div class="fp-progreso" id="fp-progreso"></div>
+        <div style="margin-bottom:0.9rem">
+          <button type="button" class="btn btn-gris" id="btn-minis" onclick="generarMiniaturas()">🛠️ Generar miniaturas de las fotos ya subidas</button>
+          <span id="minis-estado" style="font-size:0.82rem;color:var(--texto-muted);margin-left:0.5rem"></span>
+        </div>
         <div id="fp-lista"></div>
       </div>
     </div>
@@ -1025,7 +1020,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 // Fila de BD → formato del panel
 function dbANegocio(r) {
   return {
-    id: r.id, nombre: r.nombre || '', categoria: r.categoria || '',
+    id: r.id, nombre: r.nombre || '', categoria: (typeof CATEGORIAS_ANTIGUAS !== 'undefined' && CATEGORIAS_ANTIGUAS[r.categoria]) || r.categoria || '',
     catLabel: r.cat_label || '', icono: r.icono || '🏪',
     descripcion: r.descripcion || '', direccion: r.direccion || '',
     telefono: r.telefono || '', whatsapp: r.whatsapp || '',
@@ -1060,17 +1055,25 @@ function negocioADb(n) {
 }
 
 const CAT_LABELS = {
-  restaurantes:'🍽️ Restaurantes', abarrotes:'🛒 Abarrotes', salud:'🏥 Salud',
-  talleres:'🔧 Talleres', belleza:'💇 Belleza', hoteles:'🏨 Hoteles',
-  construccion:'🏗️ Construcción', veterinarias:'🐾 Veterinarias y mascotas', ropa:'👗 Ropa',
-  servicios:'⚡ Servicios Profesionales', agro:'🌿 Agro', educacion:'🏫 Educación',
-  tecnologia:'💻 Tecnología', eventos:'🎉 Eventos', transporte:'🚕 Transporte',
-  panaderias:'🥐 Panaderías', cafes:'☕ Cafés y cafeterías', botanas:'🥤 Botanas y bebidas',
-  comida:'🍱 Comida',
-  bancos:'🏦 Bancos', profesionales:'⚖️ Profesionales',
-  agroindustria:'🍊 Agroindustria',
-  oficios:'🔩 Oficios y servicios del hogar', papelerias:'📚 Papelerías y regalos'
+  restaurantes:'🍽️ Restaurantes y comida',
+  panaderias:'🥐 Panaderías y botanas',
+  abarrotes:'🛒 Abarrotes y súper',
+  salud:'🏥 Salud y farmacias',
+  belleza:'💇 Belleza y estética',
+  ropa:'👗 Ropa y calzado',
+  talleres:'🔧 Talleres y transporte',
+  construccion:'🏗️ Construcción y oficios',
+  servicios:'⚡ Servicios profesionales y financieros',
+  tecnologia:'💻 Tecnología',
+  educacion:'🏫 Educación',
+  eventos:'🎉 Eventos y hospedaje',
+  agro:'🌿 Agro y agroindustria',
+  veterinarias:'🐾 Veterinarias y mascotas',
+  papelerias:'📚 Papelerías y regalos'
 };
+// Categorías anteriores a la unión de 2026-10: apuntan a la nueva.
+const CATEGORIAS_ANTIGUAS = { comida: 'restaurantes', cafes: 'restaurantes', botanas: 'panaderias', oficios: 'construccion', transporte: 'talleres', profesionales: 'servicios', bancos: 'servicios', hoteles: 'eventos', agroindustria: 'agro' };
+Object.entries(CATEGORIAS_ANTIGUAS).forEach(([v, n]) => { CAT_LABELS[v] = CAT_LABELS[n]; });
 
 // ── Datos por defecto (mismos que index.html) ──
 // Los 13 negocios de ejemplo se eliminaron: publicar datos inventados
@@ -1429,6 +1432,20 @@ function comprimirImagen(file, maxLado = 1200, calidad = 0.82) {
   });
 }
 
+// Sube la foto completa y su miniatura (-m.jpg) para las tarjetas del sitio.
+// Si la miniatura falla, no se pierde la foto: el sitio usa la completa.
+async function subirConMiniatura(file, nombreBase) {
+  const blob = await comprimirImagen(file);
+  const ruta = `${nombreBase}-${Date.now()}.jpg`;
+  const sube = await sb.storage.from('negocios').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+  if (sube.error) throw sube.error;
+  try {
+    const mini = await comprimirImagen(file, 640, 0.78);
+    await sb.storage.from('negocios').upload(ruta.replace(/\.jpg$/, '-m.jpg'), mini, { contentType: 'image/jpeg', upsert: false });
+  } catch (e) { console.warn('Miniatura no subida:', e); }
+  return { url: sb.storage.from('negocios').getPublicUrl(ruta).data.publicUrl, kb: Math.round(blob.size / 1024) };
+}
+
 function pintarFotoPreview(url) {
   const caja   = document.getElementById('a-foto-preview');
   const quitar = document.getElementById('a-foto-quitar');
@@ -1454,24 +1471,15 @@ async function subirFoto(input) {
   estado.textContent = '⏳ Procesando y subiendo la foto…';
 
   try {
-    const blob = await comprimirImagen(file);
-
     // Nombre único: evita que dos negocios se pisen la foto.
     const base = (document.getElementById('a-nombre').value.trim() || 'negocio')
       .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'negocio';
-    const ruta = `${base}-${Date.now()}.jpg`;
-
-    const { error } = await sb.storage.from('negocios')
-      .upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
-    if (error) throw error;
-
-    const { data } = sb.storage.from('negocios').getPublicUrl(ruta);
-    document.getElementById('a-foto').value = data.publicUrl;
-    pintarFotoPreview(data.publicUrl);
+    const { url, kb } = await subirConMiniatura(file, base);
+    document.getElementById('a-foto').value = url;
+    pintarFotoPreview(url);
     actualizarPreview();
 
-    const kb = Math.round(blob.size / 1024);
     estado.style.color = '#15803d';
     estado.textContent = `✅ Foto lista (${kb} KB). Se guarda al presionar "Guardar negocio".`;
     input.value = '';
@@ -1796,12 +1804,23 @@ let filtroSolActivo = 'todas';
 let pendingRechazarId = null;
 
 const CAT_ICONS = {
-  restaurantes:'🍽️', abarrotes:'🛒', salud:'💊', talleres:'🔧',
-  belleza:'💇', hoteles:'🏨', construccion:'🏗️', veterinarias:'🐾',
-  ropa:'👗', servicios:'⚡', agro:'🌿', educacion:'🏫',
-  tecnologia:'💻', eventos:'🎉', transporte:'🚕', panaderias:'🥐',
-  cafes:'☕', botanas:'🥤', comida:'🍱', bancos:'🏦', profesionales:'⚖️', agroindustria:'🍊', oficios:'🔩', papelerias:'📚'
+  restaurantes:'🍽️',
+  panaderias:'🥐',
+  abarrotes:'🛒',
+  salud:'🏥',
+  belleza:'💇',
+  ropa:'👗',
+  talleres:'🔧',
+  construccion:'🏗️',
+  servicios:'⚡',
+  tecnologia:'💻',
+  educacion:'🏫',
+  eventos:'🎉',
+  agro:'🌿',
+  veterinarias:'🐾',
+  papelerias:'📚'
 };
+Object.entries(CATEGORIAS_ANTIGUAS).forEach(([v, n]) => { CAT_ICONS[v] = CAT_ICONS[n]; });
 
 function actualizarBadgeSolicitudes() {
   const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
@@ -2292,6 +2311,33 @@ function renderFotosPendientes() {
     (pend.length > LIMITE ? `<p style="color:var(--texto-muted);font-size:0.85rem;margin-top:0.8rem">Se muestran ${LIMITE} de ${pend.length}. Usa el buscador para acotar.</p>` : '');
 }
 
+// Para las fotos subidas antes de que existieran las miniaturas: baja cada una,
+// crea su -m.jpg y la sube. Se puede repetir sin problema.
+async function generarMiniaturas() {
+  const btn = document.getElementById('btn-minis');
+  const est = document.getElementById('minis-estado');
+  const marca = '/storage/v1/object/public/negocios/';
+  const lista = negocios.filter(n => n.foto && n.foto.includes(marca) && /\.jpg$/i.test(n.foto) && !/-m\.jpg$/i.test(n.foto));
+  if (!lista.length) { est.textContent = 'No hay fotos que procesar.'; return; }
+  btn.disabled = true;
+  let hechas = 0, ya = 0, fallos = 0;
+  for (const n of lista) {
+    est.textContent = `⏳ ${hechas + ya + fallos + 1} de ${lista.length}…`;
+    try {
+      const rutaMini = n.foto.split(marca)[1].replace(/\.jpg$/i, '-m.jpg');
+      const existe = await fetch(n.foto.replace(/\.jpg$/i, '-m.jpg'), { method: 'HEAD' });
+      if (existe.ok) { ya++; continue; }
+      const blobFull = await (await fetch(n.foto)).blob();
+      const mini = await comprimirImagen(blobFull, 640, 0.78);
+      const r = await sb.storage.from('negocios').upload(decodeURIComponent(rutaMini), mini, { contentType: 'image/jpeg', upsert: false });
+      if (r.error) throw r.error;
+      hechas++;
+    } catch (e) { console.warn('Miniatura falló:', n.nombre, e); fallos++; }
+  }
+  btn.disabled = false;
+  est.textContent = `✅ Listo: ${hechas} creadas, ${ya} ya existían` + (fallos ? `, ${fallos} con error (ver consola)` : '');
+}
+
 function tarjetaFotoPendiente(n) {
   const wa = String(n.whatsapp || '').replace(/\D/g, '').slice(-10);
   const tel = String(n.telefono || '').replace(/\D/g, '').slice(-10);
@@ -2329,13 +2375,9 @@ async function subirFotoRapida(input, id) {
   estado.style.color = 'var(--texto-muted)';
   estado.textContent = '⏳ Procesando y subiendo…';
   try {
-    const blob = await comprimirImagen(file);
     const base = (n.slug || n.nombre || 'negocio').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'negocio';
-    const ruta = `${base}-${Date.now()}.jpg`;
-    const sube = await sb.storage.from('negocios').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
-    if (sube.error) throw sube.error;
-    const url = sb.storage.from('negocios').getPublicUrl(ruta).data.publicUrl;
+    const { url } = await subirConMiniatura(file, base);
     const guarda = await sb.from('negocios').update({ foto: url }).eq('id', id);
     if (guarda.error) throw guarda.error;
     n.foto = url;

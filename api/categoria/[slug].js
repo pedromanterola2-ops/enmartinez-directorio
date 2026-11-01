@@ -11,31 +11,26 @@ const CIUDAD = 'Martínez de la Torre, Veracruz';
 
 // Cada categoría con el texto que se usa en título, descripción y encabezado.
 const CATEGORIAS = {
-  restaurantes:  { icono: '🍽️', nombre: 'Restaurantes y comida',        plural: 'restaurantes y lugares para comer' },
-  abarrotes:     { icono: '🛒', nombre: 'Abarrotes y súper',            plural: 'tiendas de abarrotes y supermercados' },
-  salud:         { icono: '🏥', nombre: 'Salud y farmacias',            plural: 'farmacias y servicios de salud' },
-  talleres:      { icono: '🔧', nombre: 'Talleres y refacciones',       plural: 'talleres mecánicos y refaccionarias' },
-  belleza:       { icono: '💇', nombre: 'Belleza y estética',           plural: 'salones de belleza y estéticas' },
-  hoteles:       { icono: '🏨', nombre: 'Hoteles y hospedaje',          plural: 'hoteles y lugares de hospedaje' },
-  construccion:  { icono: '🏗️', nombre: 'Construcción y ferretería',    plural: 'ferreterías y materiales de construcción' },
-  veterinarias:  { icono: '🐾', nombre: 'Veterinarias y mascotas',      plural: 'veterinarias y tiendas de mascotas' },
-  ropa:          { icono: '👗', nombre: 'Ropa y calzado',               plural: 'tiendas de ropa y calzado' },
-  servicios:     { icono: '⚡', nombre: 'Servicios Profesionales',      plural: 'servicios profesionales' },
-  agro:          { icono: '🌿', nombre: 'Agro y viveros',               plural: 'negocios agrícolas y viveros' },
-  educacion:     { icono: '🏫', nombre: 'Educación',                    plural: 'escuelas y centros educativos' },
-  tecnologia:    { icono: '💻', nombre: 'Tecnología',                   plural: 'negocios de tecnología y cómputo' },
-  eventos:       { icono: '🎉', nombre: 'Eventos',                      plural: 'servicios para eventos y fiestas' },
-  transporte:    { icono: '🚕', nombre: 'Transporte',                   plural: 'servicios de transporte' },
-  panaderias:    { icono: '🥐', nombre: 'Panaderías y pastelerías',     plural: 'panaderías y pastelerías' },
-  cafes:         { icono: '☕', nombre: 'Cafés y cafeterías',           plural: 'cafés y cafeterías' },
-  botanas:       { icono: '🥤', nombre: 'Botanas y bebidas',            plural: 'negocios de botanas y bebidas' },
-  comida:        { icono: '🍱', nombre: 'Comida',                      plural: 'negocios de comida para llevar, a domicilio y por encargo' },
-  bancos:        { icono: '🏦', nombre: 'Bancos y financieros',         plural: 'bancos y servicios financieros' },
-  profesionales: { icono: '⚖️', nombre: 'Profesionales',                plural: 'despachos y profesionistas' },
-  agroindustria: { icono: '🍊', nombre: 'Agroindustria',                plural: 'empresas agroindustriales' },
-  oficios:       { icono: '🔩', nombre: 'Oficios y servicios del hogar', plural: 'oficios y servicios para el hogar' },
-  papelerias:    { icono: '📚', nombre: 'Papelerías y regalos',         plural: 'papelerías y tiendas de regalos' },
+  restaurantes: { icono: '🍽️', nombre: 'Restaurantes y comida', plural: 'restaurantes, cafés y lugares para comer' },
+  panaderias: { icono: '🥐', nombre: 'Panaderías y botanas', plural: 'panaderías, pastelerías y negocios de botanas y bebidas' },
+  abarrotes: { icono: '🛒', nombre: 'Abarrotes y súper', plural: 'tiendas de abarrotes y supermercados' },
+  salud: { icono: '🏥', nombre: 'Salud y farmacias', plural: 'farmacias y servicios de salud' },
+  belleza: { icono: '💇', nombre: 'Belleza y estética', plural: 'salones de belleza y estéticas' },
+  ropa: { icono: '👗', nombre: 'Ropa y calzado', plural: 'tiendas de ropa y calzado' },
+  talleres: { icono: '🔧', nombre: 'Talleres y transporte', plural: 'talleres mecánicos, refaccionarias y servicios de transporte' },
+  construccion: { icono: '🏗️', nombre: 'Construcción y oficios', plural: 'ferreterías, materiales de construcción y oficios para el hogar' },
+  servicios: { icono: '⚡', nombre: 'Servicios profesionales y financieros', plural: 'despachos, profesionistas y servicios financieros' },
+  tecnologia: { icono: '💻', nombre: 'Tecnología', plural: 'negocios de tecnología y cómputo' },
+  educacion: { icono: '🏫', nombre: 'Educación', plural: 'escuelas y centros educativos' },
+  eventos: { icono: '🎉', nombre: 'Eventos y hospedaje', plural: 'servicios para eventos, fiestas y hospedaje' },
+  agro: { icono: '🌿', nombre: 'Agro y agroindustria', plural: 'negocios agrícolas, viveros y empresas agroindustriales' },
+  veterinarias: { icono: '🐾', nombre: 'Veterinarias y mascotas', plural: 'veterinarias y tiendas de mascotas' },
+  papelerias: { icono: '📚', nombre: 'Papelerías y regalos', plural: 'papelerías y tiendas de regalos' },
 };
+
+// Categorías anteriores a la unión de 2026-10: redirigen (301) a la nueva y
+// sus negocios se consultan junto con los de la nueva hasta que se corra el SQL.
+const CATEGORIAS_ANTIGUAS = { comida: 'restaurantes', cafes: 'restaurantes', botanas: 'panaderias', oficios: 'construccion', transporte: 'talleres', profesionales: 'servicios', bancos: 'servicios', hoteles: 'eventos', agroindustria: 'agro' };
 
 function esc(v) {
   return String(v == null ? '' : v)
@@ -81,7 +76,13 @@ a{color:#1a6b3c;font-weight:700;text-decoration:none}a:hover{text-decoration:und
 }
 
 module.exports = async (req, res) => {
-  const slug = String((req.query && req.query.slug) || '').toLowerCase();
+  const slugPedido = String((req.query && req.query.slug) || '').toLowerCase();
+  if (CATEGORIAS_ANTIGUAS[slugPedido]) {
+    res.statusCode = 301;
+    res.setHeader('Location', `/categoria/${CATEGORIAS_ANTIGUAS[slugPedido]}`);
+    return res.end();
+  }
+  const slug = slugPedido;
   const cat = CATEGORIAS[slug];
 
   if (!cat) {
@@ -92,7 +93,7 @@ module.exports = async (req, res) => {
   let negocios = [];
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/negocios?select=*&categoria=eq.${encodeURIComponent(slug)}&order=destacado.desc,nombre.asc`,
+      `${SUPABASE_URL}/rest/v1/negocios?select=*&categoria=in.(${encodeURIComponent([slug, ...Object.keys(CATEGORIAS_ANTIGUAS).filter(k => CATEGORIAS_ANTIGUAS[k] === slug)].join(','))})&order=destacado.desc,nombre.asc`,
       { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
     );
     if (!r.ok) throw new Error('HTTP ' + r.status);

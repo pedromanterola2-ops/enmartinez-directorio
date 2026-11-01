@@ -8,6 +8,9 @@ const SUPABASE_URL = 'https://ygeuqlohycckwngcmmxl.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZXVxbG9oeWNja3duZ2NtbXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDE1MTksImV4cCI6MjA5NTgxNzUxOX0.fuFaUcYKaTjBpunDqIc-xMIGm3gA17r5Cn_E_JxFR_Q';
 const SITE_URL = 'https://enmartinez-directorio.vercel.app';
 
+// Categorías anteriores a la unión de 2026-10: se cuentan como la nueva.
+const ANTIGUAS = { comida: 'restaurantes', cafes: 'restaurantes', botanas: 'panaderias', oficios: 'construccion', transporte: 'talleres', profesionales: 'servicios', bancos: 'servicios', hoteles: 'eventos', agroindustria: 'agro' };
+
 function esc(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -55,7 +58,7 @@ module.exports = async (req, res) => {
 
   // Una página por categoría que tenga negocios (evita publicar páginas vacías)
   const categoriasConNegocios = [...new Set(
-    negocios.map(n => n.categoria).filter(Boolean)
+    negocios.map(n => ANTIGUAS[n.categoria] || n.categoria).filter(Boolean)
   )].sort();
 
   for (const cat of categoriasConNegocios) {
