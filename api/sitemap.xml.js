@@ -49,6 +49,7 @@ module.exports = async (req, res) => {
   const urls = [
     entrada(`${SITE_URL}/`,         hoy, 'daily',   '1.0'),
     entrada(`${SITE_URL}/registro`, hoy, 'monthly', '0.7'),
+    entrada(`${SITE_URL}/destacados`, hoy, 'monthly', '0.6'),
     entrada(`${SITE_URL}/contacto`, hoy, 'monthly', '0.5'),
   ];
 

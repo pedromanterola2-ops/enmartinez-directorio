@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Negocio Destacado — EnMartinez.com</title>
+  <meta name="description" content="Aparece primero en tu categoría en el directorio de Martínez de la Torre y recibe cada mes un reporte de cuánta gente vio tu negocio y te contactó.">
+  <link rel="canonical" href="https://enmartinez-directorio.vercel.app/destacados">
+  <meta name="theme-color" content="#1a6b3c">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EnMartinez.com">
+  <meta property="og:title" content="Negocio Destacado — EnMartinez.com">
+  <meta property="og:description" content="Aparece primero en tu categoría y recibe un reporte mensual de visitas y contactos.">
+  <meta property="og:url" content="https://enmartinez-directorio.vercel.app/destacados">
+  <meta property="og:image" content="https://enmartinez-directorio.vercel.app/og-image.png">
+  <meta property="og:locale" content="es_MX">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --verde: #1a6b3c; --verde-claro: #22883f; --verde-bg: #f0f7f2;
+      --naranja: #f97316; --naranja-hover: #ea6c0a;
+      --texto: #1f2937; --texto-muted: #6b7280; --blanco: #ffffff; --borde: #e5e7eb;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8faf8; color: var(--texto); min-height: 100vh; display: flex; flex-direction: column; line-height: 1.55; }
+    header { background: var(--verde); padding: 0 1.5rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 1rem; position: relative; }
+    .logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+    .logo-icon { font-size: 1.5rem; }
+    .logo-text { font-size: 1.25rem; font-weight: 800; color: var(--blanco); letter-spacing: -0.5px; }
+    .logo-text span { color: var(--naranja); }
+    nav { display: flex; gap: 0.25rem; position: absolute; left: 50%; transform: translateX(-50%); }
+    nav a { color: rgba(255,255,255,0.85); text-decoration: none; padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.9rem; font-weight: 500; }
+    nav a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    nav a.active { color: #fff; font-weight: 700; border-bottom: 2.5px solid var(--naranja); padding-bottom: 0.25rem; }
+    .volver-movil { display: none; color: rgba(255,255,255,0.9); text-decoration: none; font-size: 0.88rem; font-weight: 600; white-space: nowrap; }
+
+    main { flex: 1; width: 100%; max-width: 860px; margin: 0 auto; padding: 2.5rem 1.25rem 3rem; }
+    .hero { text-align: center; margin-bottom: 2rem; }
+    .hero .insignia { display: inline-block; background: #fff4e5; color: #b45309; border: 1px solid #fcd9a8; border-radius: 999px; padding: 0.25rem 0.8rem; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.8rem; }
+    .hero h1 { font-size: 2rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.6rem; }
+    .hero p { color: var(--texto-muted); font-size: 1.02rem; max-width: 560px; margin: 0 auto; }
+
+    .precio-card { background: var(--blanco); border: 2px solid var(--verde); border-radius: 18px; padding: 1.6rem 1.5rem; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+    .precio { font-size: 2.6rem; font-weight: 800; color: var(--verde); line-height: 1; }
+    .precio small { font-size: 1rem; font-weight: 600; color: var(--texto-muted); }
+    .oferta { margin-top: 0.6rem; font-size: 0.95rem; font-weight: 600; color: var(--naranja-hover); }
+    .acciones { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; margin-top: 1.2rem; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 46px; padding: 0.7rem 1.3rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; text-decoration: none; border: 2px solid transparent; }
+    .btn-primario { background: var(--verde); color: #fff; }
+    .btn-primario:hover { background: var(--verde-claro); }
+    .btn-secundario { background: #fff; color: var(--verde); border-color: var(--verde); }
+    .btn-secundario:hover { background: var(--verde-bg); }
+    .btn-wa { background: #25d366; color: #063; }
+
+    h2 { font-size: 1.3rem; font-weight: 800; margin: 2rem 0 0.9rem; }
+    .beneficios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+    .beneficio { background: var(--blanco); border: 1px solid var(--borde); border-radius: 14px; padding: 1.1rem 1.1rem; }
+    .beneficio .ico { font-size: 1.6rem; display: block; margin-bottom: 0.4rem; }
+    .beneficio h3 { font-size: 1rem; margin-bottom: 0.25rem; }
+    .beneficio p { font-size: 0.9rem; color: var(--texto-muted); }
+
+    .reporte { background: var(--blanco); border: 1px solid var(--borde); border-radius: 14px; padding: 1.2rem; }
+    .reporte .nota { font-size: 0.8rem; color: var(--texto-muted); margin-top: 0.8rem; }
+    .reporte-cifras { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; margin-top: 0.8rem; }
+    .cifra { background: var(--verde-bg); border-radius: 10px; padding: 0.8rem 0.5rem; text-align: center; }
+    .cifra strong { display: block; font-size: 1.5rem; color: var(--verde); }
+    .cifra span { font-size: 0.78rem; color: var(--texto-muted); }
+
+    table { width: 100%; border-collapse: collapse; background: var(--blanco); border: 1px solid var(--borde); border-radius: 14px; overflow: hidden; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+    th { background: var(--verde-bg); font-size: 0.85rem; }
+    tr:last-child td { border-bottom: none; }
+
+    details { background: var(--blanco); border: 1px solid var(--borde); border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 0.6rem; }
+    summary { font-weight: 700; cursor: pointer; }
+    details p { margin-top: 0.5rem; color: var(--texto-muted); font-size: 0.93rem; }
+
+    footer { background: var(--verde); color: rgba(255,255,255,0.7); padding: 1.25rem 1.5rem; text-align: center; font-size: 0.8rem; }
+    footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin-left: 1rem; }
+    footer a:hover { color: var(--naranja); }
+
+    @media (max-width: 640px) {
+      nav { display: none; }
+      .volver-movil { display: inline-block; }
+      .hero h1 { font-size: 1.55rem; }
+      .beneficios { grid-template-columns: 1fr; }
+      .reporte-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">
+      <span class="logo-icon">🌿</span>
+      <span class="logo-text">En<span>Martinez</span>.com</span>
+    </a>
+    <nav>
+      <a href="/">Inicio</a>
+      <a href="/#categorias">Categorías</a>
+      <a href="/#negocios">Negocios</a>
+      <a href="/#mapa-section">Mapa</a>
+      <a href="/destacados" class="active">Destacado</a>
+      <a href="/contacto">Contacto</a>
+    </nav>
+    <a href="/" class="volver-movil">← Directorio</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <span class="insignia">⭐ Plan Destacado</span>
+    <h1>Que tus clientes te encuentren primero</h1>
+    <p>Aparece al principio de tu categoría y recibe cada mes un reporte de cuánta gente vio tu negocio y te contactó.</p>
+  </section>
+
+  <section class="precio-card">
+    <div class="precio">$199 <small>MXN al mes</small></div>
+    <div class="oferta">Primer mes gratis para los primeros 10 negocios</div>
+    <p style="color:var(--texto-muted);font-size:0.9rem;margin-top:0.5rem">Sin contrato: cancelas cuando quieras. Pago por transferencia o depósito.</p>
+    <div class="acciones">
+      <a class="btn btn-primario" href="/registro">Registrar mi negocio como Destacado</a>
+      <a class="btn btn-secundario" href="/contacto">Ya estoy en el directorio, quiero ser Destacado</a>
+      <a class="btn btn-wa" id="btn-wa" href="#" style="display:none" rel="noopener">💬 Escribir por WhatsApp</a>
+    </div>
+  </section>
+
+  <h2>Qué incluye</h2>
+  <div class="beneficios">
+    <div class="beneficio"><span class="ico">⬆️</span><h3>Apareces primero</h3><p>Tu ficha sale antes que las demás de tu categoría y en los resultados de búsqueda.</p></div>
+    <div class="beneficio"><span class="ico">⭐</span><h3>Insignia “Destacado”</h3><p>Una etiqueta visible en tu tarjeta y en tu ficha, que da confianza a quien te busca.</p></div>
+    <div class="beneficio"><span class="ico">📍</span><h3>Más visible en el mapa</h3><p>Tu marcador se ve más grande que el de los demás negocios.</p></div>
+    <div class="beneficio"><span class="ico">📊</span><h3>Reporte mensual</h3><p>Te mandamos por WhatsApp cuántas personas abrieron tu ficha, te escribieron, te llamaron o llegaron por tu código QR.</p></div>
+    <div class="beneficio"><span class="ico">🖨️</span><h3>Cartel con tu código QR</h3><p>Un cartel listo para imprimir que lleva directo a tu ficha. Cada escaneo se cuenta en tu reporte.</p></div>
+    <div class="beneficio"><span class="ico">✏️</span><h3>Ficha al día</h3><p>Actualizamos tu horario, teléfono y fotos cuando lo necesites.</p></div>
+  </div>
+
+  <h2>Así se ve el reporte</h2>
+  <div class="reporte">
+    <strong>Reporte del mes · Tu negocio</strong>
+    <div class="reporte-cifras">
+      <div class="cifra"><strong>120</strong><span>vieron tu ficha</span></div>
+      <div class="cifra"><strong>18</strong><span>te escribieron por WhatsApp</span></div>
+      <div class="cifra"><strong>9</strong><span>te llamaron</span></div>
+      <div class="cifra"><strong>6</strong><span>escanearon tu QR</span></div>
+    </div>
+    <p class="nota">Ejemplo con cifras ilustrativas, no son de ningún negocio real. Tu reporte trae tus números reales del mes.</p>
+  </div>
+
+  <h2>Básico y Destacado</h2>
+  <table>
+    <thead><tr><th>&nbsp;</th><th>Básico (gratis)</th><th>Destacado ($199/mes)</th></tr></thead>
+    <tbody>
+      <tr><td>Ficha con dirección, teléfono y WhatsApp</td><td>Sí</td><td>Sí</td></tr>
+      <tr><td>Aparece en el mapa y en tu categoría</td><td>Sí</td><td>Sí, antes que los demás</td></tr>
+      <tr><td>Insignia “Destacado”</td><td>No</td><td>Sí</td></tr>
+      <tr><td>Marcador más grande en el mapa</td><td>No</td><td>Sí</td></tr>
+      <tr><td>Reporte mensual de visitas y contactos</td><td>No</td><td>Sí</td></tr>
+      <tr><td>Cartel con tu código QR</td><td>No</td><td>Sí</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Preguntas frecuentes</h2>
+  <details><summary>¿Tengo que pagar para salir en el directorio?</summary><p>No. Salir en el directorio es gratis. El plan Destacado es opcional.</p></details>
+  <details><summary>¿Cómo pago?</summary><p>Por transferencia o depósito. Te avisamos por WhatsApp unos días antes de cada vencimiento.</p></details>
+  <details><summary>¿Puedo cancelar?</summary><p>Sí, cuando quieras. Tu ficha vuelve al plan Básico y sigue visible.</p></details>
+  <details><summary>¿Cómo sé si me está sirviendo?</summary><p>Con el reporte mensual. Si ves que no te llegan contactos, lo platicamos y ajustamos tu ficha.</p></details>
+</main>
+
+<footer>
+  © 2026 EnMartinez.com — Martínez de la Torre, Veracruz
+  <a href="/">Inicio</a>
+  <a href="/registro">Registra tu negocio</a>
+  <a href="/contacto">Contacto</a>
+</footer>
+
+<script>
+  // Si algún día quieres un botón directo de WhatsApp en esta página,
+  // escribe aquí el número a 10 dígitos (sin +52) y el botón aparece solo.
+  const WHATSAPP_VENTAS = '';
+  const d = String(WHATSAPP_VENTAS).replace(/\D/g, '');
+  if (d.length === 10) {
+    const b = document.getElementById('btn-wa');
+    b.href = 'https://wa.me/52' + d + '?text=' + encodeURIComponent('Hola, me interesa el plan Destacado de EnMartinez.com');
+    b.style.display = 'inline-flex';
+  }
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

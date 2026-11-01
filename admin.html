@@ -601,6 +601,15 @@
             </select>
           </div>
 
+          <div class="form-group" style="margin-bottom:0.85rem">
+            <label class="fl">Nivel de la ficha <span style="font-size:0.72rem;color:var(--texto-muted)">(A sale en el inicio; B solo al buscar o por categoría; C se retira)</span></label>
+            <select id="a-nivel">
+              <option value="A">A · Completa (foto, WhatsApp, descripción real)</option>
+              <option value="B">B · Básica</option>
+              <option value="C">C · Retirada (duplicada o cerrada)</option>
+            </select>
+          </div>
+
           <div class="form-grid2" style="margin-bottom:0.85rem">
             <div class="form-group">
               <label class="fl">Dirección <span style="font-size:0.72rem;color:var(--texto-muted)">(si no tiene local, la zona que cubre o vacío)</span></label>
@@ -996,7 +1005,8 @@ function dbANegocio(r) {
     facebook: r.facebook || '', web: r.web || '',
     destacado: !!r.destacado, lat: r.lat, lng: r.lng,
     slug: r.slug || '', foto: r.foto || '',
-    modalidad: r.modalidad || 'local'
+    modalidad: r.modalidad || 'local',
+    nivel: r.nivel || ''
   };
 }
 
@@ -1013,7 +1023,9 @@ function negocioADb(n) {
     lng: (typeof n.lng === 'number' && isFinite(n.lng)) ? n.lng : null,
     foto: n.foto || null,
     // Solo se manda si viene: así la importación y otras rutas no fallan
-    ...(n.modalidad ? { modalidad: n.modalidad } : {})
+    ...(n.modalidad ? { modalidad: n.modalidad } : {}),
+    // Solo si viene: así las rutas que no lo mandan dejan el valor por defecto
+    ...(n.nivel ? { nivel: n.nivel } : {})
   };
 }
 
@@ -1282,6 +1294,7 @@ function limpiarForm() {
   document.getElementById('a-categoria').value = '';
   document.getElementById('a-destacado').checked = false;
   document.getElementById('a-modalidad').value = 'local';
+  document.getElementById('a-nivel').value = 'A';   // lo que se captura a mano nace completo
   document.querySelectorAll('input[name="a-pago"]').forEach(c => c.checked = false);
   document.getElementById('previewArea').style.display = 'none';
   pintarFotoPreview('');
@@ -1326,6 +1339,7 @@ function abrirFormularioEditar(id) {
   document.getElementById('a-categoria').value  = n.categoria   || '';
   document.getElementById('a-destacado').checked= !!n.destacado;
   document.getElementById('a-modalidad').value  = n.modalidad   || 'local';
+  document.getElementById('a-nivel').value      = n.nivel       || 'A';
   document.getElementById('a-foto').value       = n.foto        || '';
   pintarFotoPreview(n.foto || '');
 
@@ -1525,6 +1539,7 @@ function guardarFormulario() {
     lng: isFinite(lngVal) ? lngVal : null,
     destacado: document.getElementById('a-destacado').checked,
     modalidad: document.getElementById('a-modalidad').value || 'local',
+    nivel: document.getElementById('a-nivel').value || 'A',
     foto: document.getElementById('a-foto').value.trim()
   };
   // Antes se forzaba ['Efectivo'] cuando no marcabas nada: eso inventaba
@@ -1548,6 +1563,13 @@ async function guardarEnBD(data) {
     if (editandoId !== null) ({ error } = await sb.from('negocios').update(fila).eq('id', editandoId));
     else ({ error } = await sb.from('negocios').insert(fila));
     if (!error) mostrarToast('⚠️ Guardado, pero sin "¿Cómo atiende?": falta correr modalidad-2026-10-06.sql en Supabase', 'error');
+  }
+  // Igual con nivel-2026-10-31.sql: si la columna aún no existe, se guarda lo demás.
+  if (error && /nivel/i.test(error.message || '') && 'nivel' in fila) {
+    delete fila.nivel;
+    if (editandoId !== null) ({ error } = await sb.from('negocios').update(fila).eq('id', editandoId));
+    else ({ error } = await sb.from('negocios').insert(fila));
+    if (!error) mostrarToast('⚠️ Guardado, pero sin "Nivel de la ficha": falta correr nivel-2026-10-31.sql en Supabase', 'error');
   }
   if (error) {
     mostrarToast('❌ No se pudo guardar: ' + error.message, 'error');

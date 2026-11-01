@@ -1037,7 +1037,7 @@
         <h4>Explorar</h4>
         <a href="#inicio" onclick="scrollSeccion(event,'inicio')">🔍 Búsqueda</a>
         <a href="#categorias" onclick="scrollSeccion(event,'categorias')">Todas las categorías</a>
-        <a href="#negocios" onclick="scrollSeccion(event,'negocios')">Negocios destacados</a>
+        <a href="/destacados">Negocio Destacado</a>
         <a href="#mapa-section" onclick="scrollSeccion(event,'mapa-section')">Mapa de negocios</a>
         <a href="#qr-directorio" onclick="scrollSeccion(event,'qr-directorio')">Código QR del directorio</a>
       </div>
@@ -1145,6 +1145,9 @@ function mapearNegocio(r) {
     lat: r.lat, lng: r.lng,
     slug: r.slug || '',
     foto: r.foto || '',
+    // Nivel de ficha: 'A' completa, 'B' básica, 'C' retirada. Vacío si la columna
+    // aún no existe en la BD (ver nivel-2026-10-31.sql).
+    nivel: ['A', 'B', 'C'].includes(r.nivel) ? r.nivel : '',
     // 'local' | 'domicilio' (sin local) | 'ambos'. Si la columna aún no
     // existe en la BD, todos cuentan como 'local'.
     modalidad: ['domicilio', 'ambos'].includes(r.modalidad) ? r.modalidad : 'local'
@@ -1173,14 +1176,27 @@ async function cargarNegociosIndex() {
   // Orden del listado: destacados, luego los más completos (con foto,
   // WhatsApp, horario — normalmente capturados a mano), y al final los que
   // solo traen lo básico (importados del DENUE). Dentro de cada grupo, A–Z.
-  const completitud = r => (r.destacado ? 100 : 0) + (r.foto ? 4 : 0) + (r.whatsapp ? 2 : 0)
+  const completitud = r => (r.destacado ? 100 : 0) + (r.nivel === 'A' ? 50 : 0) + (r.foto ? 4 : 0) + (r.whatsapp ? 2 : 0)
                          + (r.horario ? 2 : 0) + (r.origen ? 0 : 3);
+  // Nivel C = retirados (duplicados, cerrados): no se muestran en ninguna parte.
+  rows = rows.filter(r => r.nivel !== 'C');
   rows.sort((a, b) => completitud(b) - completitud(a)
                    || String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
   return rows.map(mapearNegocio);
 }
 
 let negocios = [];
+
+// Lo que se ve en el inicio sin buscar ni elegir categoría: solo fichas nivel A
+// (completas). Las de nivel B aparecen al buscar o al abrir una categoría.
+// Si la columna `nivel` no existe todavía, o no hay ninguna nivel A, se
+// muestra todo como antes: nunca se deja el inicio vacío.
+let listaInicio = [];
+function calcularListaInicio() {
+  const hayNiveles = negocios.some(n => n.nivel);
+  const nivelA = hayNiveles ? negocios.filter(n => n.nivel === 'A') : negocios;
+  listaInicio = nivelA.length ? nivelA : negocios;
+}
 
 // ══════════════════════════════════════════
 //  CONTADOR DE VISITAS Y CLICS (tabla `eventos`)
@@ -1354,8 +1370,11 @@ function renderNegocios(lista, conservar) {
   if (!conservar) cuantosVisibles = POR_TANDA;
   listaVisible = lista;
   const grid = document.getElementById('negociosGrid');
-  document.getElementById('negocios-count').textContent =
-    `Mostrando ${lista.length} negocio${lista.length !== 1 ? 's' : ''}`;
+  let textoConteo = `Mostrando ${lista.length} negocio${lista.length !== 1 ? 's' : ''}`;
+  if (lista === listaInicio && listaInicio.length < negocios.length) {
+    textoConteo += ` · hay ${negocios.length - listaInicio.length} más en el listado básico: usa el buscador o elige una categoría`;
+  }
+  document.getElementById('negocios-count').textContent = textoConteo;
   document.getElementById('total-negocios').textContent = negocios.length;
   // Mostrar/ocultar botón limpiar filtro
   document.getElementById('btn-limpiar-filtro').style.display = filtroActivo ? 'flex' : 'none';
@@ -1961,7 +1980,7 @@ function coincide(n, q) {
 function buscar() {
   const texto = (document.getElementById('mainSearch').value || document.getElementById('headerSearch').value).trim();
   const cat = document.getElementById('catSelect').value;
-  let lista = negocios;
+  let lista = (!cat && !texto) ? listaInicio : negocios;
   if (cat) lista = lista.filter(n => n.categoria === cat);
   if (texto) lista = lista.filter(n => coincide(n, texto));
   renderNegocios(lista);
@@ -1991,7 +2010,7 @@ function limpiarFiltro() {
   filtroActivo = null;
   renderCategorias();
   renderChips();
-  renderNegocios(negocios);
+  renderNegocios(listaInicio);
   actualizarMarcadores(negocios);
 }
 
@@ -1999,7 +2018,7 @@ document.getElementById('mainSearch').addEventListener('keydown', e => { if (e.k
 document.getElementById('headerSearch').addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
 document.getElementById('headerSearch').addEventListener('input', e => {
   const texto = e.target.value.trim();
-  const lista = texto ? negocios.filter(n => coincide(n, texto)) : negocios;
+  const lista = texto ? negocios.filter(n => coincide(n, texto)) : listaInicio;
   renderNegocios(lista);
   actualizarMarcadores(lista);
 });
@@ -2239,7 +2258,8 @@ async function init() {
   crearMarcadores();
   renderCategorias();
   renderChips();
-  renderNegocios(negocios);
+  calcularListaInicio();
+  renderNegocios(listaInicio);
   actualizarMarcadores(negocios, 'ciudad');
   inyectarJsonLd();
 }
