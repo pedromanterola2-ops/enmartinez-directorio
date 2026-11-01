@@ -505,6 +505,9 @@
       <button class="tab" onclick="cambiarTab('stats')" id="tab-stats">
         📊 Estadísticas
       </button>
+      <button class="tab" onclick="cambiarTab('fotos')" id="tab-fotos">
+        📷 Fotos pendientes <span class="tab-badge" id="badge-fotos" style="display:none;background:#f97316">0</span>
+      </button>
       <button class="tab" onclick="cambiarTab('mapa')" id="tab-mapa">
         🗺️ Ubicaciones <span class="tab-badge" id="badge-sin-coords" style="display:none;background:#ef4444">0</span>
       </button>
@@ -828,6 +831,33 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ════ TAB: FOTOS PENDIENTES ════ -->
+    <div class="tab-content" id="content-fotos">
+      <style>
+        .fp-barra { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:0.9rem; }
+        .fp-barra select, .fp-barra input { padding:0.5rem 0.7rem; border:1.5px solid var(--borde,#e5e7eb); border-radius:8px; font-size:0.9rem; font-family:inherit; }
+        .fp-progreso { font-size:0.88rem; color:var(--texto-muted); margin-bottom:0.9rem; }
+        .fp-zona { font-size:0.8rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:var(--verde,#1a6b3c); margin:1.1rem 0 0.5rem; }
+        .fp-card { background:#fff; border:1px solid var(--borde,#e5e7eb); border-radius:12px; padding:0.8rem 0.9rem; margin-bottom:0.55rem; }
+        .fp-nombre { font-weight:700; }
+        .fp-meta { font-size:0.8rem; color:var(--texto-muted); margin-top:0.1rem; }
+        .fp-acciones { display:flex; flex-wrap:wrap; gap:0.45rem; margin-top:0.6rem; }
+        .fp-acciones .btn, .fp-acciones label.btn { min-height:42px; padding:0.45rem 0.85rem; font-size:0.85rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+        .fp-estado { font-size:0.8rem; margin-top:0.4rem; }
+      </style>
+      <div class="panel-card" style="padding:1rem">
+        <div class="fp-barra">
+          <select id="fp-modo" onchange="renderFotosPendientes()">
+            <option value="A">Solo fichas nivel A</option>
+            <option value="todas">Todas las que no tienen foto</option>
+          </select>
+          <input type="search" id="fp-filtro" placeholder="Buscar negocio o colonia…" oninput="renderFotosPendientes()">
+        </div>
+        <div class="fp-progreso" id="fp-progreso"></div>
+        <div id="fp-lista"></div>
       </div>
     </div>
 
@@ -1206,6 +1236,9 @@ function cambiarTab(id) {
   if (id === 'stats') {
     cargarStats();
   }
+  if (id === 'fotos') {
+    renderFotosPendientes();
+  }
   if (id === 'mapa') {
     // setTimeout asegura que el contenedor ya es visible antes de inicializar Leaflet
     setTimeout(initMapaAdmin, 50);
@@ -1214,6 +1247,8 @@ function cambiarTab(id) {
 
 function actualizarBadge() {
   document.getElementById('badge-count').textContent = negocios.length;
+  const bf = document.getElementById('badge-fotos');
+  if (bf) { const n = fotosPendientes('A').length; bf.textContent = n; bf.style.display = n ? '' : 'none'; }
 }
 
 // ══════════════════════════════════════
@@ -2194,6 +2229,124 @@ async function copiarReporte(i) {
     mostrarToast('📋 Reporte copiado. Pégalo en WhatsApp.', 'exito');
   } catch (e) {
     window.prompt('Copia el reporte:', txt);
+  }
+}
+
+// ══════════════════════════════════════
+//  FOTOS PENDIENTES (vista interna para salir a tomar fotos)
+// ══════════════════════════════════════
+// Lista las fichas sin foto agrupadas por colonia. Cada una trae botones para
+// tomar la foto con la cámara o elegirla de la galería (por ejemplo, la que
+// te mandó el dueño por WhatsApp) y un enlace de WhatsApp con el mensaje listo.
+const MENSAJE_FOTO_DUENO = (nombre, url) =>
+  `Hola, soy Pedro de EnMartinez.com, el directorio de negocios de Martínez de la Torre. ` +
+  `${nombre} ya aparece en el directorio, sin costo. Para que se vea mejor, ¿nos puedes mandar una foto ` +
+  `de tu negocio (de preferencia la fachada con el letrero, de día)? Nosotros la subimos.` +
+  (url ? ` Aquí está tu ficha: ${url}` : '') + ` ¡Gracias!`;
+
+function fotosPendientes(modo) {
+  const hayNiveles = negocios.some(n => n.nivel);
+  return negocios.filter(n => !n.foto && n.nivel !== 'C' &&
+    (modo === 'todas' || !hayNiveles || n.nivel === 'A'));
+}
+
+// Colonia o zona de una dirección: "…, El Mirador, 93607 Martínez…" → "El Mirador"
+function zonaDeDireccion(dir) {
+  const partes = String(dir || '').split(',').map(t => t.trim()).filter(Boolean);
+  const limpia = t => t.replace(/^(colonia|col\.?|fraccionamiento|fracc\.?)\s+/i, '')
+    .replace(/^./, c => c.toUpperCase());
+  const col = partes.find(t => /^(col\.?|colonia|fracc\.?|fraccionamiento|barrio|ejido|infonavit)\b/i.test(t));
+  if (col) return limpia(col);
+  const iCp = partes.findIndex(t => /\b\d{5}\b/.test(t));
+  if (iCp > 1) return limpia(partes[iCp - 1]);
+  if (partes.length === 1 && !/\d/.test(partes[0])) return limpia(partes[0]);   // p. ej. "centro"
+  return 'Sin zona';
+}
+
+function renderFotosPendientes() {
+  const lista = document.getElementById('fp-lista');
+  if (!lista) return;
+  const modo = document.getElementById('fp-modo').value;
+  const q = (document.getElementById('fp-filtro').value || '').trim().toLowerCase();
+  const hayNiveles = negocios.some(n => n.nivel);
+  const base = negocios.filter(n => n.nivel !== 'C' && (modo === 'todas' || !hayNiveles || n.nivel === 'A'));
+  const conFoto = base.filter(n => n.foto).length;
+  document.getElementById('fp-progreso').textContent =
+    `${conFoto} de ${base.length} fichas con foto · faltan ${base.length - conFoto}`;
+
+  let pend = base.filter(n => !n.foto);
+  if (q) pend = pend.filter(n => (n.nombre + ' ' + zonaDeDireccion(n.direccion)).toLowerCase().includes(q));
+  if (!pend.length) {
+    lista.innerHTML = '<p style="color:var(--texto-muted);padding:1rem 0">🎉 No hay fichas pendientes con este filtro.</p>';
+    return;
+  }
+  const LIMITE = 120;
+  const recorte = pend.slice(0, LIMITE);
+  const grupos = {};
+  recorte.forEach(n => { (grupos[zonaDeDireccion(n.direccion)] ||= []).push(n); });
+  const zonas = Object.keys(grupos).sort((a, b) => grupos[b].length - grupos[a].length || a.localeCompare(b, 'es'));
+
+  lista.innerHTML = zonas.map(z => `
+    <div class="fp-zona">${esc(z)} · ${grupos[z].length}</div>
+    ${grupos[z].map(n => tarjetaFotoPendiente(n)).join('')}`).join('') +
+    (pend.length > LIMITE ? `<p style="color:var(--texto-muted);font-size:0.85rem;margin-top:0.8rem">Se muestran ${LIMITE} de ${pend.length}. Usa el buscador para acotar.</p>` : '');
+}
+
+function tarjetaFotoPendiente(n) {
+  const wa = String(n.whatsapp || '').replace(/\D/g, '').slice(-10);
+  const tel = String(n.telefono || '').replace(/\D/g, '').slice(-10);
+  const urlFicha = n.slug ? `${SITIO}/negocio/${n.slug}` : '';
+  const msg = MENSAJE_FOTO_DUENO(n.nombre, urlFicha);
+  // Si no hay WhatsApp registrado pero sí un celular de 10 dígitos, se ofrece
+  // probarlo en WhatsApp (muchos teléfonos del DENUE son celulares); además de llamar.
+  const numWa = wa.length === 10 ? wa : (tel.length === 10 ? tel : '');
+  const botonWa = (numWa
+    ? `<a class="btn btn-gris" target="_blank" rel="noopener" href="https://wa.me/52${numWa}?text=${encodeURIComponent(msg)}">💬 ${wa.length === 10 ? 'Pedir foto al dueño' : 'Probar en WhatsApp'}</a>`
+    : '') + (tel.length >= 7 ? `<a class="btn btn-gris" href="tel:${tel}">📞 Llamar</a>` : '');
+  return `
+  <div class="fp-card" id="fp-${n.id}">
+    <div class="fp-nombre">${esc(n.nombre)}</div>
+    <div class="fp-meta">${esc(CAT_LABELS[n.categoria] || n.categoria || 'Sin categoría')} · ${esc(n.direccion || 'Sin dirección')}</div>
+    <div class="fp-acciones">
+      <label class="btn btn-primary">📷 Cámara
+        <input type="file" accept="image/*" capture="environment" hidden onchange="subirFotoRapida(this, ${n.id})">
+      </label>
+      <label class="btn btn-gris">🖼️ Galería
+        <input type="file" accept="image/*" hidden onchange="subirFotoRapida(this, ${n.id})">
+      </label>
+      ${botonWa}
+    </div>
+    <div class="fp-estado" id="fp-estado-${n.id}"></div>
+  </div>`;
+}
+
+async function subirFotoRapida(input, id) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const n = negocios.find(x => x.id === id);
+  const estado = document.getElementById('fp-estado-' + id);
+  if (!n || !estado) return;
+  estado.style.color = 'var(--texto-muted)';
+  estado.textContent = '⏳ Procesando y subiendo…';
+  try {
+    const blob = await comprimirImagen(file);
+    const base = (n.slug || n.nombre || 'negocio').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'negocio';
+    const ruta = `${base}-${Date.now()}.jpg`;
+    const sube = await sb.storage.from('negocios').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+    if (sube.error) throw sube.error;
+    const url = sb.storage.from('negocios').getPublicUrl(ruta).data.publicUrl;
+    const guarda = await sb.from('negocios').update({ foto: url }).eq('id', id);
+    if (guarda.error) throw guarda.error;
+    n.foto = url;
+    mostrarToast(`✅ Foto guardada: ${n.nombre}`);
+    actualizarBadge();
+    renderFotosPendientes();
+  } catch (e) {
+    estado.style.color = '#b91c1c';
+    estado.textContent = '❌ No se pudo subir: ' + (e.message || 'error desconocido');
+  } finally {
+    input.value = '';
   }
 }
 
