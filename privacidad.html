@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aviso de privacidad — EnMartinez.com</title>
+  <meta name="description" content="Aviso de privacidad de EnMartinez.com: qué datos guardamos, para qué, de dónde salen las fichas y cómo corregir o retirar la de tu negocio.">
+  <link rel="canonical" href="https://enmartinez-directorio.vercel.app/privacidad">
+  <meta name="theme-color" content="#1a6b3c">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EnMartinez.com">
+  <meta property="og:title" content="Aviso de privacidad — EnMartinez.com">
+  <meta property="og:description" content="Qué datos guardamos, para qué y cómo corregir o retirar la ficha de tu negocio.">
+  <meta property="og:url" content="https://enmartinez-directorio.vercel.app/privacidad">
+  <meta property="og:image" content="https://enmartinez-directorio.vercel.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="EnMartinez.com — Directorio de Negocios de Martínez de la Torre, Veracruz">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:locale" content="es_MX">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --verde: #1a6b3c;
+      --verde-claro: #22883f;
+      --verde-bg: #f0f7f2;
+      --naranja: #f97316;
+      --naranja-hover: #ea6c0a;
+      --texto: #1f2937;
+      --texto-muted: #6b7280;
+      --blanco: #ffffff;
+      --borde: #e5e7eb;
+      --sombra: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8faf8; color: var(--texto); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--verde);
+      padding: 0 1.5rem;
+      position: sticky; top: 0; z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px; gap: 1rem; position: relative;
+    }
+    .logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+    .logo-icon { font-size: 1.5rem; }
+    .logo-text { font-size: 1.25rem; font-weight: 800; color: var(--blanco); letter-spacing: -0.5px; }
+    .logo-text span { color: var(--naranja); }
+    nav { display: flex; gap: 0.25rem; position: absolute; left: 50%; transform: translateX(-50%); }
+    nav a {
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      padding: 0.4rem 0.9rem; border-radius: 6px;
+      font-size: 0.9rem; font-weight: 500;
+      transition: background 0.2s, color 0.2s;
+    }
+    nav a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    nav a.active { color: #fff; font-weight: 700; border-bottom: 2.5px solid var(--naranja); padding-bottom: 0.25rem; }
+
+    .volver-movil { display: none; color: rgba(255,255,255,0.9); text-decoration: none; font-size: 0.88rem; font-weight: 600; white-space: nowrap; }
+    @media (max-width: 640px) {
+      nav { display: none; }
+      .volver-movil { display: inline-block; }
+      main { padding: 1.5rem 1rem; }
+    }
+
+    /* ── MAIN ── */
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; }
+
+    .contact-card {
+      background: var(--blanco);
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 2.5rem 2rem;
+      width: 100%; max-width: 520px;
+    }
+
+    .contact-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .contact-icon {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 0.75rem;
+    }
+    .contact-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--texto);
+      margin-bottom: 0.4rem;
+    }
+    .contact-header p {
+      color: var(--texto-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--texto);
+      margin-bottom: 0.4rem;
+    }
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--borde);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--texto);
+      background: #fafafa;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--verde);
+      box-shadow: 0 0 0 3px rgba(26,107,60,0.1);
+      background: #fff;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 130px;
+    }
+
+    .btn-enviar {
+      width: 100%;
+      background: var(--verde);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .btn-enviar:hover { background: var(--verde-claro); }
+    .btn-enviar:active { transform: scale(0.98); }
+
+    /* Mensaje de éxito */
+    .success-msg {
+      display: none;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .success-msg .success-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
+    .success-msg h2 { font-size: 1.3rem; font-weight: 800; color: var(--verde); margin-bottom: 0.5rem; }
+    .success-msg p { color: var(--texto-muted); font-size: 0.9rem; }
+    .success-msg a {
+      display: inline-block; margin-top: 1.25rem;
+      color: var(--naranja); font-weight: 600; font-size: 0.9rem; text-decoration: none;
+    }
+    .success-msg a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--verde);
+      color: rgba(255,255,255,0.7);
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+      font-size: 0.8rem;
+    }
+    footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin-left: 1rem; }
+    footer a:hover { color: var(--naranja); }
+    .legal { max-width: 760px; margin: 2rem auto; background:#fff; border-radius:18px; padding:2rem 1.75rem; box-shadow:0 4px 24px rgba(0,0,0,.06); line-height:1.65; font-size:.95rem }
+    .legal h1 { font-size:1.6rem; color:#1a6b3c; margin-bottom:.3rem }
+    .legal h2 { font-size:1.08rem; color:#1a6b3c; margin:1.6rem 0 .5rem }
+    .legal p, .legal li { color:#374151 }
+    .legal ul { padding-left:1.25rem; margin:.4rem 0 }
+    .legal li { margin:.25rem 0 }
+    .legal a { color:#1a6b3c; font-weight:600 }
+    .legal .fecha { color:#6b7280; font-size:.85rem; margin-bottom:1.2rem }
+    .legal .caja { background:#f0f7f3; border-radius:12px; padding:1rem 1.1rem; margin:1rem 0 }
+    @media (max-width:640px){ .legal{ margin:1rem; padding:1.4rem 1.15rem } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">
+      <span class="logo-icon">🌿</span>
+      <span class="logo-text">En<span>Martinez</span>.com</span>
+    </a>
+    <nav>
+      <a href="/">Inicio</a>
+      <a href="/#categorias">Categorías</a>
+      <a href="/#negocios">Negocios</a>
+      <a href="/#mapa-section">Mapa</a>
+      <a href="/contacto">Contacto</a>
+    </nav>
+    <a href="/" class="volver-movil">← Directorio</a>
+  </div>
+</header>
+
+<main>
+  <article class="legal">
+    <h1>Aviso de privacidad</h1>
+    <p class="fecha">Última actualización: 19 de noviembre de 2026</p>
+
+    <div class="caja">
+      <strong>En corto:</strong> no vendemos ni compartimos tus datos. Las fichas muestran datos de negocios, no de personas. Si una ficha es de tu negocio y quieres corregirla o que la quitemos, <a href="/contacto?motivo=retirar">escríbenos aquí</a> y lo atendemos.
+    </div>
+
+    <h2>¿Quién es responsable de tus datos?</h2>
+    <p>EnMartinez.com es un directorio de negocios de Martínez de la Torre, Veracruz, administrado por Pedro Sebastián, con domicilio en Martínez de la Torre, Veracruz, México. Para cualquier tema de privacidad puedes escribir a <a href="mailto:enmartinez1@outlook.com">enmartinez1@outlook.com</a> o usar el <a href="/contacto">formulario de contacto</a>.</p>
+
+    <h2>¿Qué datos guardamos y de dónde vienen?</h2>
+    <ul>
+      <li><strong>Datos de los negocios</strong> (nombre comercial, giro, dirección, teléfono del negocio, horario, redes y fotos). Vienen de tres fuentes: lo que el propio negocio nos manda, lo que confirmamos al visitarlo, y el <strong>DENUE del INEGI</strong>, que es un directorio público del gobierno. Las fichas tomadas del DENUE lo indican y están marcadas como "sin confirmar" hasta que hablamos con el negocio.</li>
+      <li><strong>Si registras tu negocio:</strong> tu nombre, correo y WhatsApp de contacto. No se publican; solo los usamos para avisarte cuando tu ficha esté lista y para cualquier duda sobre ella.</li>
+      <li><strong>Si nos escribes:</strong> tu nombre, correo y el mensaje.</li>
+      <li><strong>Estadísticas de uso:</strong> contamos cuántas veces se abre una ficha o se toca "WhatsApp", "Llamar" o "Cómo llegar", para poder decirle a cada negocio cuántos contactos le llegan. Esto <strong>no</strong> guarda tu IP, tu nombre ni nada que te identifique.</li>
+    </ul>
+    <p>No pedimos datos sensibles (salud, religión, origen, etc.) ni datos bancarios.</p>
+
+    <h2>¿Para qué los usamos?</h2>
+    <ul>
+      <li>Publicar y mantener al día las fichas del directorio.</li>
+      <li>Revisar y aprobar los registros de negocios.</li>
+      <li>Responder tus mensajes.</li>
+      <li>Mandarle a cada negocio un reporte de cuántas visitas y contactos tuvo su ficha.</li>
+      <li>Ofrecerle al negocio, si le interesa, el plan de ficha Destacada.</li>
+    </ul>
+    <p>Este último punto es opcional: si no quieres que te contactemos para ofrecerte servicios, dínoslo y no lo haremos.</p>
+
+    <h2>¿Con quién se comparten?</h2>
+    <p>Con nadie para fines comerciales. Los datos se guardan en servicios de alojamiento (Supabase para la base de datos y Vercel para el sitio), que solo los resguardan por nosotros. Solo los entregaríamos a una autoridad si la ley nos obliga.</p>
+
+    <h2>Tus derechos (ARCO)</h2>
+    <p>Puedes pedir <strong>acceso</strong> a tus datos, su <strong>rectificación</strong> si están mal, su <strong>cancelación</strong> o <strong>oponerte</strong> a que los usemos, así como retirar tu consentimiento. Escríbenos a <a href="mailto:enmartinez1@outlook.com">enmartinez1@outlook.com</a> o por el <a href="/contacto">formulario</a>, di qué necesitas y cómo podemos confirmar que eres tú o el dueño del negocio. Te respondemos en un máximo de 20 días hábiles.</p>
+
+    <h2>Corregir o retirar la ficha de tu negocio</h2>
+    <p>En cada ficha hay un enlace <strong>"¿Es tu negocio?"</strong>. Desde ahí puedes pedir que corrijamos datos o que retiremos la ficha. Mientras revisamos tu solicitud podemos ocultarla de inmediato.</p>
+
+    <h2>Cookies</h2>
+    <p>El sitio no usa cookies de publicidad ni de rastreo. Solo guarda en tu navegador datos técnicos de la sesión (por ejemplo, para no contar dos veces la misma visita).</p>
+
+    <h2>Cambios a este aviso</h2>
+    <p>Si cambiamos este aviso, publicaremos la nueva versión en esta misma página con su fecha.</p>
+
+    <p style="margin-top:1.5rem;font-size:.85rem;color:#6b7280">Este aviso se emite conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (2025). Si consideras que tus derechos no fueron atendidos, puedes acudir a la Secretaría Anticorrupción y Buen Gobierno.</p>
+  </article>
+</main>
+
+<footer>
+  © 2026 EnMartinez.com — Martínez de la Torre, Veracruz
+  <a href="/">Inicio</a>
+  <a href="/registro">Registra tu negocio</a>
+  <a href="/privacidad">Aviso de privacidad</a>
+  <br><a href="https://pytr-pagina.vercel.app/" style="color:inherit;opacity:.35;text-decoration:none;font-size:0.75rem;">Pytr</a>
+</footer>
+</body>
+</html>

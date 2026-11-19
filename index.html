@@ -1006,6 +1006,9 @@
     <div id="m-link-wrap" style="padding:0 1.5rem 0.9rem;margin-top:-0.6rem;text-align:right;display:none">
       <a id="m-link-pagina" href="#" target="_blank" rel="noopener" style="color:var(--verde);text-decoration:none;font-weight:600;font-size:0.82rem">🔗 Ver página del negocio / compartir</a>
     </div>
+    <div id="m-dueno" style="padding:0.7rem 1.5rem 1rem;border-top:1px solid #e5e7eb;font-size:0.8rem;color:#6b7280;display:none">
+      ¿Es tu negocio? <a id="m-dueno-link" href="/contacto" style="color:var(--verde);font-weight:600;text-decoration:none">Corrige los datos o pide que la retiremos</a>
+    </div>
   </div>
 </div>
 
@@ -1036,6 +1039,7 @@
         <h4>¿Tienes un negocio?</h4>
         <a href="/registro">Registra tu negocio</a>
         <a href="/contacto">Contacto</a>
+        <a href="/privacidad">Aviso de privacidad</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -1167,12 +1171,24 @@ async function cargarNegociosIndex() {
   // Supabase entrega máximo 1000 filas por consulta: se pide por páginas.
   const PAGINA = 1000;
   let rows = [];
+  // Solo las fichas visibles (sin nivel C) y solo las columnas que usa el
+  // sitio: con el recorte de noviembre son ~180 de 599 y pesa ~80 % menos.
+  // Si la consulta fallara (p. ej. falta alguna columna), se pide todo como antes.
+  const COLS = 'id,nombre,categoria,cat_label,icono,descripcion,direccion,telefono,whatsapp,horario,'
+             + 'servicios,pago,facebook,web,destacado,lat,lng,slug,foto,nivel,modalidad,origen';
+  let consulta = `select=${COLS}&or=(nivel.is.null,nivel.neq.C)`;
   for (let desde = 0; ; desde += PAGINA) {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/negocios?select=*&order=destacado.desc,nombre.asc,id.asc`,
+    let res = await fetch(
+      `${SUPABASE_URL}/rest/v1/negocios?${consulta}&order=destacado.desc,nombre.asc,id.asc`,
       { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON,
                    'Range-Unit': 'items', Range: `${desde}-${desde + PAGINA - 1}` } }
     );
+    if (!res.ok && desde === 0 && consulta !== 'select=*') {
+      consulta = 'select=*';
+      res = await fetch(`${SUPABASE_URL}/rest/v1/negocios?select=*&order=destacado.desc,nombre.asc,id.asc`,
+        { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON,
+                     'Range-Unit': 'items', Range: `${desde}-${desde + PAGINA - 1}` } });
+    }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const lote = await res.json();
     if (!Array.isArray(lote)) throw new Error('Respuesta inesperada de la base de datos');
@@ -1485,6 +1501,12 @@ function abrirModal(id, origen) {
   document.getElementById('m-icono').textContent = n.icono || '🏪';
   document.getElementById('m-cat').textContent = n.catLabel || 'Negocio';
   document.getElementById('m-nombre').textContent = n.nombre || 'Negocio sin nombre';
+  // Enlace para el dueño: corregir o retirar la ficha
+  const mDueno = document.getElementById('m-dueno');
+  if (n.slug) {
+    document.getElementById('m-dueno-link').href = '/contacto?motivo=corregir&ficha=' + encodeURIComponent(n.slug);
+    mDueno.style.display = 'block';
+  } else { mDueno.style.display = 'none'; }
 
   // Foto de fachada (si el negocio tiene)
   const mFoto = document.getElementById('m-foto');
@@ -2250,20 +2272,49 @@ async function init() {
   document.getElementById('negociosGrid').innerHTML =
     '<div class="empty"><div class="empty-icon">⏳</div><p>Cargando negocios…</p></div>';
 
+  // 1b) Si ya visitó antes, pinta al instante la última lista guardada en
+  //     este navegador (máx. 7 días) mientras llega la versión fresca.
+  const CACHE_KEY = 'enm-negocios-v1';
+  let pintadoDesdeCache = false;
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (c && Array.isArray(c.n) && c.n.length && Date.now() - c.t < 7 * 864e5) {
+      negocios = c.n;
+      renderCategorias();
+      renderChips();
+      calcularListaInicio();
+      renderNegocios(listaInicio);
+      pintadoDesdeCache = true;
+    }
+  } catch (e) { /* almacenamiento no disponible: se carga normal */ }
+
   // 2) Trae los negocios y actualiza conteos, lista y mapa cuando lleguen
   try {
     negocios = await cargarNegociosIndex();
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), n: negocios })); } catch (e) {}
   } catch (e) {
     console.error('No se pudo cargar el directorio:', e);
-    mostrarErrorCarga();
-    return;
+    if (!pintadoDesdeCache) { mostrarErrorCarga(); return; }
   }
 
   crearMarcadores();
   renderCategorias();
   renderChips();
   calcularListaInicio();
-  renderNegocios(listaInicio);
+  // Si mientras cargaba (con la lista guardada) el visitante ya filtró o
+  // buscó, se respeta lo que eligió en vez de regresarlo al inicio.
+  const textoBusq = ((document.getElementById('mainSearch') || {}).value || (document.getElementById('headerSearch') || {}).value || '').trim();
+  const catBusq = (document.getElementById('catSelect') || {}).value || '';
+  if (pintadoDesdeCache && filtroActivo) {
+    renderNegocios(filtrarLista(filtroActivo));
+  } else if (pintadoDesdeCache && (textoBusq || catBusq)) {
+    let lista = negocios;
+    if (catBusq) lista = lista.filter(n => n.categoria === catBusq);
+    if (textoBusq) lista = lista.filter(n => coincide(n, textoBusq));
+    renderNegocios(lista);
+  } else {
+    renderNegocios(listaInicio);
+  }
   actualizarMarcadores(negocios, 'ciudad');
   inyectarJsonLd();
 }

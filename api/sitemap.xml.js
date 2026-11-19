@@ -55,6 +55,7 @@ module.exports = async (req, res) => {
     entrada(`${SITE_URL}/registro`, hoy, 'monthly', '0.7'),
     entrada(`${SITE_URL}/destacados`, hoy, 'monthly', '0.6'),
     entrada(`${SITE_URL}/contacto`, hoy, 'monthly', '0.5'),
+    entrada(`${SITE_URL}/privacidad`, hoy, 'yearly', '0.3'),
   ];
 
   // Una página por categoría que tenga negocios (evita publicar páginas vacías)

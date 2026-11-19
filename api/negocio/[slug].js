@@ -149,6 +149,8 @@ module.exports = async (req, res) => {
   // data-ev / data-id: el script del final cuenta estos clics en `eventos`
   const ev = tipo => `data-ev="${tipo}" data-id="${evId}"`;
   const tieneDescripcion = !!(n.descripcion && n.descripcion.trim());
+  // Fichas del DENUE que todavía no se confirman con el negocio (nivel B)
+  const sinConfirmar = !!n.origen && n.nivel !== 'A';
   const tieneCoords = typeof n.lat === 'number' && typeof n.lng === 'number' && isFinite(n.lat) && isFinite(n.lng);
   const url = `${SITE_URL}/negocio/${encodeURIComponent(n.slug)}`;
   const metaDesc = descripcion.length > 155 ? descripcion.slice(0, 152) + '...' : descripcion;
@@ -328,6 +330,9 @@ nav a.reg{background:var(--naranja);color:#fff;font-weight:700;margin-left:0.5re
 footer a{color:rgba(255,255,255,.85)}
 .volver{display:inline-block;margin-top:1.25rem;color:var(--verde);text-decoration:none;font-weight:600;font-size:0.9rem}
 .volver:hover{text-decoration:underline}
+.dueno{padding:0.9rem 1.75rem 1.1rem;border-top:1px solid var(--borde);font-size:0.86rem;color:#4b5563;line-height:1.6}
+.dueno a{color:var(--verde);font-weight:600;text-decoration:none}.dueno a:hover{text-decoration:underline}
+.dueno .fuente{margin:0 0 .35rem;color:#6b7280;font-size:0.8rem}
 footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin-top:2rem;text-align:center;font-size:0.8rem}
 </style>
 </head>
@@ -375,12 +380,18 @@ footer{background:#0f2d1c;color:rgba(255,255,255,0.7);padding:2rem 1.5rem;margin
     <div class="footer-btns">
       ${wspBtn}
     </div>
+    <div class="dueno">
+      ${sinConfirmar ? '<p class="fuente">ℹ️ Datos públicos del DENUE (INEGI), aún sin confirmar con el negocio.</p>' : ''}
+      <strong>¿Es tu negocio?</strong>
+      <a href="/contacto?motivo=corregir&amp;ficha=${encodeURIComponent(n.slug)}">Corregir datos</a> ·
+      <a href="/contacto?motivo=retirar&amp;ficha=${encodeURIComponent(n.slug)}">Pedir que la retiremos</a>
+    </div>
   </div>
   <a class="volver" href="/">← Volver al directorio</a>
 </div>
 
 <footer>© 2026 EnMartinez.com — Martínez de la Torre, Veracruz · Hecho con 💚 para la comunidad
-<br><a href="/registro">¿Tienes un negocio? Regístralo gratis</a> · <a href="/contacto">Contacto</a></footer>
+<br><a href="/registro">¿Tienes un negocio? Regístralo gratis</a> · <a href="/contacto">Contacto</a> · <a href="/privacidad">Aviso de privacidad</a></footer>
 <script>
 // Contador de visitas y clics (tabla eventos). Sin datos del visitante.
 (function () {

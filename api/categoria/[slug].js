@@ -306,7 +306,7 @@ footer a{color:inherit}
 </main>
 
 <footer>© 2026 EnMartinez.com — ${esc(CIUDAD)} · Hecho con 💚 para la comunidad
-<br><a href="/">Directorio</a> · <a href="/registro">Registra tu negocio</a> · <a href="/contacto">Contacto</a></footer>
+<br><a href="/">Directorio</a> · <a href="/registro">Registra tu negocio</a> · <a href="/contacto">Contacto</a> · <a href="/privacidad">Aviso de privacidad</a></footer>
 <script>
 // Contador de clics en WhatsApp / Llamar (tabla eventos). Sin datos del visitante.
 document.addEventListener('click', function (e) {

@@ -2089,6 +2089,8 @@ function renderMensajes() {
                 border-radius:10px;padding:1rem 1.15rem;margin-bottom:0.85rem;background:#fff">
       <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.5rem">
         <strong style="font-size:0.95rem">${esc(m.nombre)}</strong>
+        ${/^🚫 RETIRAR FICHA/.test(m.mensaje || '') ? '<span style="background:#fee2e2;color:#b91c1c;border-radius:20px;padding:0.1rem 0.55rem;font-size:0.74rem;font-weight:700">Pide retirar su ficha</span>' : ''}
+        ${/^✏️ CORREGIR FICHA/.test(m.mensaje || '') ? '<span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:0.1rem 0.55rem;font-size:0.74rem;font-weight:700">Corrección de ficha</span>' : ''}
         <span style="font-size:0.78rem;color:${color};font-weight:700">${etiquetas[m.estado] || m.estado}</span>
         <span style="margin-left:auto;font-size:0.76rem;color:var(--texto-muted)">${fmtFecha(m.creado_en)}</span>
       </div>
