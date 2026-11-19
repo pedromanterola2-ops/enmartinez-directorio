@@ -71,6 +71,29 @@ function dominioCorto(u) {
   try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; }
 }
 
+// Ficha nivel C: existe en la base pero está oculta mientras se confirma
+// (o porque cerró / estaba duplicada). 404 + noindex para que Google la quite,
+// con salida para que el dueño la registre.
+function paginaEnRevision(res) {
+  res.statusCode = 404;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.end(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha en revisión | EnMartinez.com</title>
+<meta name="robots" content="noindex">
+<style>body{font-family:'Segoe UI',system-ui,sans-serif;background:#f8faf8;color:#1f2937;text-align:center;padding:4rem 1.5rem;line-height:1.5}
+a{color:#1a6b3c;font-weight:700;text-decoration:none}a:hover{text-decoration:underline}
+.btn{display:inline-block;margin:1.2rem 0 .8rem;background:#f97316;color:#fff;padding:.7rem 1.2rem;border-radius:10px}</style>
+</head><body>
+<h1>🌿 Esta ficha está en revisión</h1>
+<p>Estamos confirmando los datos de este negocio antes de volver a publicarlo.</p>
+<p>¿Es tu negocio? Regístralo y lo publicamos con tus datos correctos.</p>
+<a class="btn" href="/registro">＋ Registrar mi negocio</a><br>
+<a href="/">← Volver al directorio</a>
+</body></html>`);
+}
+
 function paginaNoEncontrada(res) {
   res.statusCode = 404;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -115,6 +138,7 @@ module.exports = async (req, res) => {
 
   if (!Array.isArray(rows) || rows.length === 0) return paginaNoEncontrada(res);
   const n = rows[0];
+  if (n.nivel === 'C') return paginaEnRevision(res);
 
   const catNueva = CATEGORIAS_ANTIGUAS[n.categoria] || n.categoria || '';
   const catLabel = (catNueva !== (n.categoria || '') ? CAT_LABELS[catNueva] : n.cat_label) || CAT_LABELS[catNueva] || catNueva || 'Negocio';

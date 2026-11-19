@@ -98,7 +98,8 @@ module.exports = async (req, res) => {
     );
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const filas = await r.json();
-    if (Array.isArray(filas)) negocios = filas;
+    // Nivel C = oculta (sin confirmar, duplicada o cerrada): no se publica.
+    if (Array.isArray(filas)) negocios = filas.filter(n => n.nivel !== 'C');
   } catch (e) {
     return paginaSimple(res, 500, 'Ocurrió un error',
       'No pudimos consultar el directorio en este momento. Intenta de nuevo en unos minutos.');
@@ -107,7 +108,7 @@ module.exports = async (req, res) => {
   const titulo = `${cat.nombre} en ${CIUDAD}`;
   const url = `${SITE_URL}/categoria/${encodeURIComponent(slug)}`;
   const metaDesc = negocios.length
-    ? `Directorio de ${cat.plural} en Martínez de la Torre: ${negocios.length} ${negocios.length === 1 ? 'negocio' : 'negocios'} con teléfono, dirección, horarios y WhatsApp.`
+    ? `Directorio de ${cat.plural} en Martínez de la Torre: ${negocios.length} ${negocios.length === 1 ? 'negocio' : 'negocios'} con teléfono y dirección.`
     : `Directorio de ${cat.plural} en Martínez de la Torre, Veracruz. Registra tu negocio gratis en EnMartinez.com.`;
 
   // Las categorías sin negocios existen (el enlace no se rompe) pero no se

@@ -1,0 +1,11 @@
+# Archivos internos: no se publican en el sitio (Vercel sube toda la carpeta)
+*.md
+*.sql
+*.csv
+*.py
+importacion-denue/
+limpieza-categorias/
+revision-negocios/
+supabase/
+impresos/
+ejemplo-pagina-negocio.html

@@ -36,13 +36,14 @@ module.exports = async (req, res) => {
   let negocios = [];
 
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/negocios?select=slug,categoria,creado_en&order=nombre.asc`,
-      { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
-    );
+    const h = { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } };
+    let r = await fetch(`${SUPABASE_URL}/rest/v1/negocios?select=slug,categoria,creado_en,nivel&order=nombre.asc`, h);
+    // Si la columna `nivel` no existiera, se pide sin ella (todas cuentan como visibles)
+    if (!r.ok) r = await fetch(`${SUPABASE_URL}/rest/v1/negocios?select=slug,categoria,creado_en&order=nombre.asc`, h);
     if (r.ok) {
       const filas = await r.json();
-      if (Array.isArray(filas)) negocios = filas;
+      // Nivel C = oculta: fuera del sitemap
+      if (Array.isArray(filas)) negocios = filas.filter(n => n.nivel !== 'C');
     }
   } catch (e) {
     // Si Supabase falla seguimos publicando las páginas fijas: un sitemap

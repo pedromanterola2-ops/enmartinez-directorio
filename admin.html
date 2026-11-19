@@ -526,6 +526,13 @@
               style="padding:0.38rem 0.65rem;border:1px solid var(--borde);border-radius:8px;font-size:0.8rem;outline:none;color:var(--texto-muted)">
               <option value="">Todas las categorías</option>
             </select>
+            <select id="filtroNivel" onchange="renderLista()"
+              style="padding:0.38rem 0.65rem;border:1px solid var(--borde);border-radius:8px;font-size:0.8rem;outline:none;color:var(--texto-muted)">
+              <option value="">Todos los niveles</option>
+              <option value="A">A · Completas</option>
+              <option value="B">B · Por revisar</option>
+              <option value="C">C · Ocultas</option>
+            </select>
             <input type="text" id="searchAdmin" placeholder="Buscar negocio…"
               style="padding:0.38rem 0.75rem;border:1px solid var(--borde);border-radius:8px;font-size:0.82rem;outline:none;width:180px"
               oninput="renderLista()">
@@ -596,11 +603,11 @@
           </div>
 
           <div class="form-group" style="margin-bottom:0.85rem">
-            <label class="fl">Nivel de la ficha <span style="font-size:0.72rem;color:var(--texto-muted)">(A sale en el inicio; B solo al buscar o por categoría; C se retira)</span></label>
+            <label class="fl">Nivel de la ficha <span style="font-size:0.72rem;color:var(--texto-muted)">(A sale en el inicio; B solo al buscar o por categoría; C no se publica)</span></label>
             <select id="a-nivel">
               <option value="A">A · Completa (foto, WhatsApp, descripción real)</option>
               <option value="B">B · Básica</option>
-              <option value="C">C · Retirada (duplicada o cerrada)</option>
+              <option value="C">C · Oculta (sin confirmar, duplicada o cerrada)</option>
             </select>
           </div>
 
@@ -1267,9 +1274,10 @@ function poblarFiltroCategoria() {
 function renderLista() {
   const q   = (document.getElementById('searchAdmin')?.value || '').toLowerCase().trim();
   const cat = document.getElementById('filtroCategoria')?.value || '';
+  const niv = document.getElementById('filtroNivel')?.value || '';
 
   let lista = negocios.filter(n => {
-    const matchCat = !cat || n.categoria === cat;
+    const matchCat = (!cat || n.categoria === cat) && (!niv || (n.nivel || 'B') === niv);
     const matchQ   = !q   || n.nombre.toLowerCase().includes(q) ||
                      (CAT_LABELS[n.categoria] || '').toLowerCase().includes(q);
     return matchCat && matchQ;
@@ -1290,6 +1298,7 @@ function renderLista() {
         <div class="neg-nombre">${esc(n.nombre)}</div>
         <div class="neg-meta">
           <span class="neg-cat-pill">${esc(CAT_LABELS[n.categoria] || n.categoria || 'Sin categoría')}</span>
+          ${n.nivel ? `<span class="neg-cat-pill" title="Nivel de la ficha" style="${n.nivel === 'C' ? 'background:#f3f4f6;color:#6b7280' : ''}">${n.nivel === 'C' ? '🙈 C' : esc(n.nivel)}</span>` : ''}
           ${esc(n.direccion || 'Sin dirección')}
           ${(() => { const f = camposFaltantes(n);
             return f.length ? `<span class="neg-falta" title="Falta: ${esc(f.join(', '))}">⚠️ faltan ${f.length}</span>` : ''; })()}

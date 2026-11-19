@@ -857,7 +857,7 @@
   <div class="hero-stats">
     <!-- El JS reemplaza estos valores con el conteo real; "—" evita mostrar/indexar una cifra falsa -->
     <div class="hero-stat"><strong id="total-negocios">—</strong><span>Negocios registrados</span></div>
-    <div class="hero-stat"><strong id="total-categorias">24</strong><span>Categorías</span></div>
+    <div class="hero-stat"><strong id="total-categorias">—</strong><span>Categorías</span></div>
     <div class="hero-stat"><strong>MDT</strong><span>Martínez de la Torre, Ver.</span></div>
   </div>
 </section>
@@ -1184,7 +1184,7 @@ async function cargarNegociosIndex() {
   // solo traen lo básico (importados del DENUE). Dentro de cada grupo, A–Z.
   const completitud = r => (r.destacado ? 100 : 0) + (r.nivel === 'A' ? 50 : 0) + (r.foto ? 4 : 0) + (r.whatsapp ? 2 : 0)
                          + (r.horario ? 2 : 0) + (r.origen ? 0 : 3);
-  // Nivel C = retirados (duplicados, cerrados): no se muestran en ninguna parte.
+  // Nivel C = ocultas (sin confirmar, duplicadas o cerradas): no se muestran en ninguna parte.
   rows = rows.filter(r => r.nivel !== 'C');
   rows.sort((a, b) => completitud(b) - completitud(a)
                    || String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
