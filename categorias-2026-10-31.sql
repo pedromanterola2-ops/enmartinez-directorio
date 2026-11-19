@@ -30,6 +30,7 @@ begin;
 -- 0) Copia de seguridad (solo la primera vez)
 create table if not exists public.negocios_categoria_respaldo as
   select id, categoria, cat_label from public.negocios;
+alter table public.negocios_categoria_respaldo enable row level security;
 
 -- 1) Las 2 papelerías sin categoría
 update public.negocios
